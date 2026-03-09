@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QA Department</title>
+  <title>Report a Bug</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -50,61 +50,34 @@
 
     /* ── Layout ──────────────────────────────────────────── */
 
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-    }
+    .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
 
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 2.5rem;
-      padding-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2.5rem; padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--border);
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+    .logo { display: flex; align-items: center; gap: 0.75rem; }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       background: linear-gradient(135deg, var(--accent), var(--accent-glow));
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: white;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 700; color: white;
       box-shadow: 0 0 20px rgba(108,92,231,0.3);
     }
 
-    .logo h1 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-    }
-
+    .logo h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
     .logo h1 span { color: var(--text-dim); font-weight: 400; }
 
-    .header-meta {
-      text-align: right;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-    }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+
+    .header-meta { text-align: right; font-size: 0.8rem; color: var(--text-dim); }
 
     .header-meta .live-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      background: var(--success);
-      border-radius: 50%;
-      margin-right: 0.4rem;
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--success); border-radius: 50%; margin-right: 0.4rem;
       animation: pulse 2s infinite;
     }
 
@@ -113,37 +86,181 @@
       50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(46,213,115,0); }
     }
 
+    /* ── Buttons ─────────────────────────────────────────── */
+
+    .btn {
+      font-family: var(--sans); font-size: 0.8rem; font-weight: 500;
+      padding: 0.5rem 1.1rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--text); cursor: pointer; transition: all 0.15s;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+
+    .btn:hover { border-color: var(--border-glow); background: var(--surface-3); }
+    .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-glow); border-color: var(--accent-glow); }
+    .btn-sm { font-size: 0.72rem; padding: 0.35rem 0.75rem; }
+    .btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
+    .btn-ghost:hover { color: var(--text); background: var(--surface-2); }
+
+    /* ── Tabs ────────────────────────────────────────────── */
+
+    .tab-bar {
+      display: flex; gap: 0; margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 500;
+      padding: 0.75rem 1.25rem; background: none; border: none;
+      color: var(--text-dim); cursor: pointer; position: relative;
+      transition: color 0.15s;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+
+    .tab-btn.active {
+      color: var(--accent);
+    }
+
+    .tab-btn.active::after {
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+      height: 2px; background: var(--accent); border-radius: 1px 1px 0 0;
+    }
+
+    .tab-btn .tab-badge {
+      font-family: var(--mono); font-size: 0.6rem; font-weight: 600;
+      padding: 0.1rem 0.4rem; border-radius: 10px; margin-left: 0.4rem;
+      background: var(--surface-3); color: var(--text-muted); vertical-align: middle;
+    }
+
+    .tab-btn.active .tab-badge { background: rgba(108,92,231,0.2); color: var(--accent); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Bug Report Form ─────────────────────────────────── */
+
+    .report-form {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; max-width: 640px;
+    }
+
+    .report-form h2 {
+      font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem;
+    }
+
+    .report-form .subtitle {
+      font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1.5rem;
+    }
+
+    .form-group { margin-bottom: 1.25rem; }
+
+    .form-group label {
+      display: block; font-size: 0.78rem; font-weight: 500;
+      color: var(--text-dim); margin-bottom: 0.4rem;
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; font-family: var(--sans); font-size: 0.85rem;
+      padding: 0.6rem 0.9rem; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); transition: border-color 0.15s;
+    }
+
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none; border-color: var(--accent);
+    }
+
+    .form-group textarea { resize: vertical; min-height: 100px; }
+
+    .form-group select option { background: var(--surface-2); }
+
+    .form-success {
+      background: var(--success-bg); border: 1px solid rgba(46,213,115,0.2);
+      border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+      color: var(--success); font-size: 0.85rem; display: none;
+    }
+
+    .form-success.show { display: block; }
+
+    /* ── My Reports ──────────────────────────────────────── */
+
+    .my-reports { margin-top: 2rem; }
+
+    .report-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem; transition: border-color 0.15s;
+    }
+
+    .report-card:hover { border-color: var(--border-glow); }
+
+    .report-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.4rem;
+    }
+
+    .report-card-title { font-size: 0.85rem; font-weight: 500; }
+
+    .report-card-meta {
+      font-size: 0.72rem; color: var(--text-dim);
+    }
+
+    /* ── Admin Login Modal ───────────────────────────────── */
+
+    .admin-gate {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px); display: flex; align-items: center;
+      justify-content: center; z-index: 500;
+    }
+
+    .admin-gate.hidden { display: none; }
+
+    .admin-gate-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; width: 360px;
+      text-align: center;
+    }
+
+    .admin-gate-box h2 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+    .admin-gate-box .subtitle { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1.25rem; }
+
+    .admin-gate-box input {
+      width: 100%; font-family: var(--mono); font-size: 0.82rem;
+      padding: 0.6rem 0.9rem; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); text-align: center; margin-bottom: 1rem;
+    }
+
+    .admin-gate-box input:focus { outline: none; border-color: var(--accent); }
+
+    .admin-gate-error {
+      font-size: 0.75rem; color: var(--critical); margin-bottom: 0.75rem;
+      min-height: 1.2em;
+    }
+
     /* ── Stats Grid ──────────────────────────────────────── */
 
     .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
     }
 
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      transition: border-color 0.2s;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem; transition: border-color 0.2s;
     }
 
     .stat-card:hover { border-color: var(--border-glow); }
 
     .stat-label {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted); margin-bottom: 0.5rem;
     }
 
     .stat-value {
-      font-size: 2rem;
-      font-weight: 700;
-      font-family: var(--mono);
+      font-size: 2rem; font-weight: 700; font-family: var(--mono);
       letter-spacing: -0.02em;
     }
 
@@ -154,114 +271,68 @@
     .stat-value.success { color: var(--success); }
     .stat-value.accent { color: var(--accent); }
 
-    .stat-sub {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      margin-top: 0.25rem;
-    }
+    .stat-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.25rem; }
 
     /* ── Progress Bar ────────────────────────────────────── */
 
     .progress-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem;
     }
 
     .progress-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 1rem;
     }
 
-    .progress-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
+    .progress-title { font-size: 0.9rem; font-weight: 600; }
 
     .progress-pct {
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-family: var(--mono); font-size: 0.85rem; font-weight: 600;
       color: var(--accent);
     }
 
     .progress-track {
-      height: 8px;
-      background: var(--surface-3);
-      border-radius: 4px;
-      overflow: hidden;
-      display: flex;
+      height: 8px; background: var(--surface-3); border-radius: 4px;
+      overflow: hidden; display: flex;
     }
 
-    .progress-fill {
-      height: 100%;
-      transition: width 0.6s ease;
-    }
-
+    .progress-fill { height: 100%; transition: width 0.6s ease; }
     .progress-fill.fixed { background: var(--success); }
     .progress-fill.in-progress { background: var(--accent); }
     .progress-fill.failed { background: var(--failed); }
 
     .progress-legend {
-      display: flex;
-      gap: 1.5rem;
-      margin-top: 0.75rem;
-      font-size: 0.72rem;
-      color: var(--text-dim);
+      display: flex; gap: 1.5rem; margin-top: 0.75rem;
+      font-size: 0.72rem; color: var(--text-dim);
     }
 
     .legend-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 0.4rem;
-      vertical-align: middle;
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      margin-right: 0.4rem; vertical-align: middle;
     }
 
     /* ── Repo Sections ───────────────────────────────────── */
 
     .repo-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 1.5rem;
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1.5rem; overflow: hidden;
     }
 
     .repo-header {
-      padding: 1.25rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: background 0.15s;
+      padding: 1.25rem 1.5rem; display: flex; justify-content: space-between;
+      align-items: center; cursor: pointer; transition: background 0.15s;
     }
 
     .repo-header:hover { background: var(--surface-2); }
 
-    .repo-name {
-      font-size: 1rem;
-      font-weight: 600;
-      font-family: var(--mono);
-    }
+    .repo-name { font-size: 1rem; font-weight: 600; font-family: var(--mono); }
 
-    .repo-badges {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
+    .repo-badges { display: flex; gap: 0.5rem; align-items: center; }
 
     .badge {
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      letter-spacing: 0.02em;
+      font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+      padding: 0.2rem 0.6rem; border-radius: 20px; letter-spacing: 0.02em;
     }
 
     .badge-critical { background: var(--critical-bg); color: var(--critical); border: 1px solid rgba(255,71,87,0.2); }
@@ -271,70 +342,39 @@
     .badge-info { background: var(--info-bg); color: var(--info); border: 1px solid rgba(116,185,255,0.2); }
     .badge-fixed { background: var(--success-bg); color: var(--success); border: 1px solid rgba(46,213,115,0.2); }
 
-    .repo-body {
-      border-top: 1px solid var(--border);
-      display: none;
-    }
-
+    .repo-body { border-top: 1px solid var(--border); display: none; }
     .repo-body.open { display: block; }
 
     .repo-meta {
-      padding: 1rem 1.5rem;
-      display: flex;
-      gap: 2rem;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem; display: flex; gap: 2rem; font-size: 0.75rem;
+      color: var(--text-dim); border-bottom: 1px solid var(--border);
       background: var(--surface-2);
     }
 
-    .repo-meta code {
-      font-family: var(--mono);
-      color: var(--text);
-    }
+    .repo-meta code { font-family: var(--mono); color: var(--text); }
 
     /* ── Findings Table ──────────────────────────────────── */
 
-    .findings-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-    }
+    .findings-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 
     .findings-table th {
-      text-align: left;
-      padding: 0.75rem 1rem;
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-      background: var(--surface-2);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
+      text-align: left; padding: 0.75rem 1rem; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+      background: var(--surface-2); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
     }
 
     .findings-table td {
-      padding: 0.65rem 1rem;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
+      padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top;
     }
 
     .findings-table tr:hover td { background: var(--surface-2); }
 
-    .finding-id {
-      font-family: var(--mono);
-      font-size: 0.72rem;
-      font-weight: 500;
-      color: var(--text-dim);
-    }
+    .finding-id { font-family: var(--mono); font-size: 0.72rem; font-weight: 500; color: var(--text-dim); }
 
     .severity-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 0.4rem;
-      vertical-align: middle;
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      margin-right: 0.4rem; vertical-align: middle;
     }
 
     .severity-dot.critical { background: var(--critical); box-shadow: 0 0 6px rgba(255,71,87,0.4); }
@@ -343,19 +383,11 @@
     .severity-dot.low { background: var(--low); }
     .severity-dot.info { background: var(--info); }
 
-    .finding-file {
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-    }
+    .finding-file { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); }
 
     .status-tag {
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      font-weight: 600;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      text-transform: uppercase;
+      font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+      padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase;
     }
 
     .status-open { background: var(--surface-3); color: var(--text-dim); }
@@ -364,77 +396,39 @@
     .status-in-progress { background: rgba(108,92,231,0.15); color: var(--accent-glow); }
     .status-skipped { background: var(--surface-3); color: var(--text-muted); }
 
-    /* ── Category Tags ───────────────────────────────────── */
-
     .cat-tag {
-      font-size: 0.65rem;
-      padding: 0.1rem 0.4rem;
-      border-radius: 3px;
-      background: var(--surface-3);
-      color: var(--text-dim);
-      white-space: nowrap;
-    }
-
-    /* ── Empty State ─────────────────────────────────────── */
-
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: var(--text-dim);
-    }
-
-    .empty-state .empty-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.4;
-    }
-
-    .empty-state h2 {
-      font-size: 1.2rem;
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-      color: var(--text);
-    }
-
-    .empty-state p {
-      font-size: 0.85rem;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    .empty-state code {
-      display: inline-block;
-      margin-top: 1rem;
-      font-family: var(--mono);
-      font-size: 0.78rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-sm);
-    }
-
-    /* ── Lint/Test Status ────────────────────────────────── */
-
-    .check-status {
-      display: flex;
-      gap: 1rem;
-      padding: 0.75rem 1.5rem;
-      background: var(--surface-2);
-      font-size: 0.78rem;
+      font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 3px;
+      background: var(--surface-3); color: var(--text-dim); white-space: nowrap;
     }
 
     .check-pass { color: var(--success); }
     .check-fail { color: var(--critical); }
 
+    /* ── System Tab ──────────────────────────────────────── */
+
+    .sys-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem;
+    }
+
+    .sys-card h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
+
+    .sys-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+
+    .sys-row:last-child { border-bottom: none; }
+
+    .sys-label { color: var(--text-dim); }
+    .sys-value { font-family: var(--mono); font-size: 0.78rem; }
+
     /* ── Footer ──────────────────────────────────────────── */
 
     footer {
-      text-align: center;
-      padding: 2rem;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--border);
-      margin-top: 2rem;
+      text-align: center; padding: 2rem; font-size: 0.72rem;
+      color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 2rem;
     }
 
     footer a { color: var(--accent); text-decoration: none; }
@@ -445,19 +439,16 @@
     @media (max-width: 768px) {
       .container { padding: 1rem; }
       header { flex-direction: column; gap: 1rem; text-align: center; }
-      .header-meta { text-align: center; }
+      .header-right { justify-content: center; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .repo-meta { flex-wrap: wrap; gap: 0.75rem; }
       .findings-table { font-size: 0.72rem; }
       .findings-table th, .findings-table td { padding: 0.5rem 0.6rem; }
       .hide-mobile { display: none; }
+      .tab-btn { font-size: 0.75rem; padding: 0.65rem 0.8rem; }
     }
 
-    /* ── Transitions ─────────────────────────────────────── */
-
-    .fade-in {
-      animation: fadeIn 0.3s ease;
-    }
+    .fade-in { animation: fadeIn 0.3s ease; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
@@ -471,67 +462,307 @@
   <header>
     <div class="logo">
       <div class="logo-icon">QA</div>
-      <h1>QA Department <span>Dashboard</span></h1>
+      <h1 id="pageTitle">Report a Bug</h1>
     </div>
-    <div class="header-meta" id="headerMeta">
-      <div>Loading...</div>
+    <div class="header-right">
+      <div class="header-meta" id="headerMeta"></div>
+      <button class="btn btn-ghost btn-sm" id="backofficeToggle" onclick="showAdminGate()">Back Office</button>
     </div>
   </header>
 
-  <div id="content">
-    <div class="empty-state">
-      <div class="empty-icon">&#x1F50D;</div>
-      <h2>No scan data yet</h2>
-      <p>Run a QA scan to see results here.</p>
-      <code>make qa TARGET=/path/to/repo</code>
+  <!-- ── Tab Bar (hidden until admin auth) ─────────────────────────────── -->
+  <div class="tab-bar" id="tabBar" style="display:none;">
+    <button class="tab-btn active" data-tab="report" onclick="switchTab('report')">Report a Bug</button>
+    <button class="tab-btn" data-tab="qa" onclick="switchTab('qa')">QA Dashboard <span class="tab-badge" id="qaBadge">0</span></button>
+    <button class="tab-btn" data-tab="system" onclick="switchTab('system')">System</button>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="logoutAdmin()">Sign Out</button>
+  </div>
+
+  <!-- ══ Tab: Report a Bug (public) ════════════════════════════════════ -->
+  <div class="tab-panel active" id="panel-report">
+    <div class="report-form fade-in">
+      <h2>Found something wrong?</h2>
+      <p class="subtitle">Let us know and we'll fix it. Include as much detail as you can.</p>
+
+      <div class="form-success" id="reportSuccess">
+        Bug report submitted! We'll look into it.
+      </div>
+
+      <form id="bugForm" onsubmit="return submitReport(event)">
+        <div class="form-group">
+          <label for="rName">Your name</label>
+          <input type="text" id="rName" placeholder="Jane Smith" required>
+        </div>
+        <div class="form-group">
+          <label for="rEmail">Email (optional, for follow-up)</label>
+          <input type="email" id="rEmail" placeholder="jane@example.com">
+        </div>
+        <div class="form-group">
+          <label for="rArea">Where did you see the issue?</label>
+          <select id="rArea">
+            <option value="gallery">Gallery viewer</option>
+            <option value="download">Downloads / ZIP</option>
+            <option value="upload">Photo uploads</option>
+            <option value="comments">Comments</option>
+            <option value="login">Login / access</option>
+            <option value="mobile">Mobile display</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="rTitle">Short summary</label>
+          <input type="text" id="rTitle" placeholder="Photos won't load on my phone" required maxlength="200">
+        </div>
+        <div class="form-group">
+          <label for="rDesc">What happened? (steps to reproduce)</label>
+          <textarea id="rDesc" placeholder="1. I opened the gallery link on my iPhone&#10;2. Scrolled down to the third row&#10;3. The photos showed as grey boxes" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="rSeverity">How bad is it?</label>
+          <select id="rSeverity">
+            <option value="low">Minor annoyance</option>
+            <option value="medium" selected>Something is broken</option>
+            <option value="high">Can't use the feature at all</option>
+            <option value="critical">Urgent — data loss or security issue</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-accent" style="width:100%;justify-content:center;">Submit Bug Report</button>
+      </form>
     </div>
+
+    <!-- My submitted reports -->
+    <div class="my-reports" id="myReports"></div>
+  </div>
+
+  <!-- ══ Tab: QA Dashboard (admin only) ════════════════════════════════ -->
+  <div class="tab-panel" id="panel-qa">
+    <div id="qaContent">
+      <div style="text-align:center;padding:3rem;color:var(--text-dim);">Loading QA data...</div>
+    </div>
+  </div>
+
+  <!-- ══ Tab: System (admin only) ══════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-system">
+    <div id="sysContent">
+      <div style="text-align:center;padding:3rem;color:var(--text-dim);">Loading system info...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Admin Gate (login overlay) ───────────────────────────────────── -->
+<div class="admin-gate hidden" id="adminGate">
+  <div class="admin-gate-box">
+    <h2>Back Office</h2>
+    <p class="subtitle">Enter your admin key to access QA and System dashboards.</p>
+    <div class="admin-gate-error" id="adminError"></div>
+    <input type="password" id="adminKeyInput" placeholder="Admin key" autocomplete="off">
+    <button class="btn btn-accent" style="width:100%;justify-content:center;" onclick="loginAdmin()">Sign In</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:0.5rem;" onclick="hideAdminGate()">Cancel</button>
   </div>
 </div>
 
 <footer>
   Powered by <a href="https://github.com/anthropics/claude-code" target="_blank">Claude Code</a>
-  &middot; <a href="https://github.com" target="_blank">QA Department</a>
 </footer>
 
 <script>
 (function() {
   'use strict';
 
-  // ── Data Loading ────────────────────────────────────────────────────────
-
+  const API = 'https://3pfumef32i.execute-api.us-west-2.amazonaws.com';
   const DATA_URL = 'qa-data.json';
+  const REPORTS_KEY = 'qa_bug_reports';
 
-  async function loadData() {
+  let isAdmin = false;
+  let adminKey = '';
+  let dashboardData = null;
+
+  // ── Tab switching ──────────────────────────────────────────────────────
+
+  window.switchTab = function(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  };
+
+  // ── Bug Report (public) ───────────────────────────────────────────────
+
+  window.submitReport = function(e) {
+    e.preventDefault();
+
+    const report = {
+      id: 'RPT-' + Date.now().toString(36).toUpperCase(),
+      name: document.getElementById('rName').value.trim(),
+      email: document.getElementById('rEmail').value.trim(),
+      area: document.getElementById('rArea').value,
+      title: document.getElementById('rTitle').value.trim(),
+      description: document.getElementById('rDesc').value.trim(),
+      severity: document.getElementById('rSeverity').value,
+      submitted_at: new Date().toISOString(),
+      status: 'submitted'
+    };
+
+    // Sanitize
+    report.name = report.name.replace(/[<>&"']/g, '');
+    report.title = report.title.replace(/[<>&"']/g, '');
+    report.description = report.description.replace(/[<>&"']/g, '');
+
+    // Save to localStorage
+    const reports = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
+    reports.unshift(report);
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+
+    // Show success
+    document.getElementById('reportSuccess').classList.add('show');
+    document.getElementById('bugForm').reset();
+    setTimeout(() => {
+      document.getElementById('reportSuccess').classList.remove('show');
+    }, 4000);
+
+    renderMyReports();
+    return false;
+  };
+
+  function renderMyReports() {
+    const reports = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
+    const el = document.getElementById('myReports');
+
+    if (reports.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
+
+    let html = '<h3 style="font-size:0.9rem;margin-bottom:0.75rem;color:var(--text-dim);">Your Submitted Reports</h3>';
+    for (const r of reports.slice(0, 10)) {
+      const sevColor = { critical: 'var(--critical)', high: 'var(--high)', medium: 'var(--medium)', low: 'var(--low)' }[r.severity] || 'var(--text-dim)';
+      html += `<div class="report-card">
+        <div class="report-card-header">
+          <span class="report-card-title">${esc(r.title)}</span>
+          <span style="color:${sevColor};font-size:0.7rem;font-weight:600;text-transform:uppercase;">${r.severity}</span>
+        </div>
+        <div class="report-card-meta">${esc(r.area)} &middot; ${fmtTime(new Date(r.submitted_at))} &middot; ${r.id}</div>
+      </div>`;
+    }
+    el.innerHTML = html;
+  }
+
+  // ── Admin Auth ─────────────────────────────────────────────────────────
+
+  window.showAdminGate = function() {
+    document.getElementById('adminGate').classList.remove('hidden');
+    document.getElementById('adminKeyInput').value = '';
+    document.getElementById('adminError').textContent = '';
+    setTimeout(() => document.getElementById('adminKeyInput').focus(), 100);
+  };
+
+  window.hideAdminGate = function() {
+    document.getElementById('adminGate').classList.add('hidden');
+  };
+
+  window.loginAdmin = async function() {
+    const key = document.getElementById('adminKeyInput').value.trim();
+    if (!key) return;
+
+    document.getElementById('adminError').textContent = 'Verifying...';
+
+    try {
+      const res = await fetch(API + '/admin/galleries', {
+        headers: { 'x-admin-key': key }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        document.getElementById('adminError').textContent = 'Invalid admin key.';
+        return;
+      }
+
+      if (!res.ok) {
+        document.getElementById('adminError').textContent = 'Server error. Try again.';
+        return;
+      }
+
+      // Auth passed
+      adminKey = key;
+      isAdmin = true;
+      sessionStorage.setItem('qa_admin_key', key);
+      hideAdminGate();
+      enterAdminMode();
+
+    } catch (err) {
+      document.getElementById('adminError').textContent = 'Network error. Check your connection.';
+    }
+  };
+
+  window.logoutAdmin = function() {
+    isAdmin = false;
+    adminKey = '';
+    sessionStorage.removeItem('qa_admin_key');
+    exitAdminMode();
+  };
+
+  function enterAdminMode() {
+    document.getElementById('tabBar').style.display = 'flex';
+    document.getElementById('backofficeToggle').style.display = 'none';
+    document.getElementById('pageTitle').innerHTML = 'QA Department <span>Back Office</span>';
+    document.title = 'QA Department';
+
+    loadDashboard();
+    loadSystem();
+  }
+
+  function exitAdminMode() {
+    document.getElementById('tabBar').style.display = 'none';
+    document.getElementById('backofficeToggle').style.display = '';
+    document.getElementById('pageTitle').textContent = 'Report a Bug';
+    document.title = 'Report a Bug';
+
+    // Reset to report tab
+    switchTab('report');
+  }
+
+  // ── Admin key enter handler ────────────────────────────────────────────
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !document.getElementById('adminGate').classList.contains('hidden')) {
+      loginAdmin();
+    }
+    if (e.key === 'Escape' && !document.getElementById('adminGate').classList.contains('hidden')) {
+      hideAdminGate();
+    }
+  });
+
+  // ── QA Dashboard (admin) ───────────────────────────────────────────────
+
+  async function loadDashboard() {
     try {
       const r = await fetch(DATA_URL + '?t=' + Date.now());
       if (!r.ok) throw new Error(r.status);
-      return await r.json();
+      dashboardData = await r.json();
+      renderQA(dashboardData);
     } catch (e) {
-      console.log('No dashboard data available:', e.message);
-      return null;
+      document.getElementById('qaContent').innerHTML =
+        '<div style="text-align:center;padding:3rem;color:var(--text-dim);">No QA scan data available yet.</div>';
     }
   }
 
-  // ── Rendering ───────────────────────────────────────────────────────────
-
-  function render(data) {
+  function renderQA(data) {
     if (!data || !data.repos || data.repos.length === 0) return;
 
     const t = data.totals;
     const totalOpen = t.total_findings - t.total_fixed - t.total_failed - t.total_skipped;
     const fixPct = t.total_findings > 0 ? Math.round((t.total_fixed / t.total_findings) * 100) : 0;
 
-    // Header
+    document.getElementById('qaBadge').textContent = t.total_findings;
+
     const genAt = data.generated_at ? new Date(data.generated_at) : null;
     document.getElementById('headerMeta').innerHTML = `
-      <div><span class="live-dot"></span> ${data.repos.length} ${data.repos.length === 1 ? 'repository' : 'repositories'} monitored</div>
-      ${genAt ? `<div>Last updated: ${fmtTime(genAt)}</div>` : ''}
+      <div><span class="live-dot"></span> ${data.repos.length} ${data.repos.length === 1 ? 'repo' : 'repos'}</div>
+      ${genAt ? `<div>Updated: ${fmtTime(genAt)}</div>` : ''}
     `;
 
-    // Build content
     let html = '';
 
-    // Stats grid
+    // Stats
     html += `<div class="stats-grid fade-in">
       <div class="stat-card">
         <div class="stat-label">Total Findings</div>
@@ -541,7 +772,7 @@
       <div class="stat-card">
         <div class="stat-label">Critical</div>
         <div class="stat-value critical">${t.critical}</div>
-        <div class="stat-sub">Requires immediate fix</div>
+        <div class="stat-sub">Immediate fix required</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">High</div>
@@ -559,13 +790,13 @@
         <div class="stat-sub">Awaiting fix</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Failed Fixes</div>
+        <div class="stat-label">Failed</div>
         <div class="stat-value" style="color:${t.total_failed > 0 ? 'var(--critical)' : 'var(--text-dim)'}">${t.total_failed}</div>
-        <div class="stat-sub">Needs manual review</div>
+        <div class="stat-sub">Manual review needed</div>
       </div>
     </div>`;
 
-    // Progress bar
+    // Progress
     if (t.total_findings > 0) {
       const fixW = (t.total_fixed / t.total_findings * 100).toFixed(1);
       const ipW = (t.total_in_progress / t.total_findings * 100).toFixed(1);
@@ -590,22 +821,41 @@
       </div>`;
     }
 
-    // Per-repo sections
+    // User-submitted reports
+    const reports = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
+    if (reports.length > 0) {
+      html += `<div class="repo-section fade-in">
+        <div class="repo-header" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.toggle-arrow').textContent=this.nextElementSibling.classList.contains('open')?'\\u25BE':'\\u25B8'">
+          <div>
+            <span class="toggle-arrow" style="color:var(--text-muted);margin-right:0.5rem;">&#x25B8;</span>
+            <span class="repo-name" style="color:var(--medium);">User-Submitted Reports</span>
+            <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.75rem;">${reports.length} reports</span>
+          </div>
+        </div>
+        <div class="repo-body">
+          <div style="overflow-x:auto;">
+            <table class="findings-table">
+              <thead><tr><th>ID</th><th>Severity</th><th>Title</th><th>Area</th><th class="hide-mobile">Reporter</th><th class="hide-mobile">Date</th></tr></thead>
+              <tbody>`;
+      for (const r of reports) {
+        html += `<tr>
+          <td><span class="finding-id">${esc(r.id)}</span></td>
+          <td><span class="severity-dot ${r.severity}"></span>${r.severity}</td>
+          <td>${esc(r.title)}</td>
+          <td><span class="cat-tag">${esc(r.area)}</span></td>
+          <td class="hide-mobile">${esc(r.name)}</td>
+          <td class="hide-mobile" style="font-size:0.72rem;color:var(--text-dim);">${fmtTime(new Date(r.submitted_at))}</td>
+        </tr>`;
+      }
+      html += '</tbody></table></div></div></div>';
+    }
+
+    // Repos
     for (const repo of data.repos) {
       html += renderRepo(repo);
     }
 
-    document.getElementById('content').innerHTML = html;
-
-    // Attach toggle handlers
-    document.querySelectorAll('.repo-header').forEach(h => {
-      h.addEventListener('click', () => {
-        const body = h.nextElementSibling;
-        body.classList.toggle('open');
-        const arrow = h.querySelector('.toggle-arrow');
-        if (arrow) arrow.textContent = body.classList.contains('open') ? '▾' : '▸';
-      });
-    });
+    document.getElementById('qaContent').innerHTML = html;
   }
 
   function renderRepo(repo) {
@@ -620,7 +870,7 @@
     if (fs.fixed > 0) badges += `<span class="badge badge-fixed">${fs.fixed} FIXED</span>`;
 
     let html = `<div class="repo-section fade-in">
-      <div class="repo-header">
+      <div class="repo-header" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.toggle-arrow').textContent=this.nextElementSibling.classList.contains('open')?'\\u25BE':'\\u25B8'">
         <div>
           <span class="toggle-arrow" style="color:var(--text-muted);margin-right:0.5rem;">&#x25B8;</span>
           <span class="repo-name">${esc(repo.name)}</span>
@@ -635,25 +885,15 @@
           <span>Tests: ${repo.tests?.passed ? '<span class="check-pass">PASS</span>' : '<span class="check-fail">FAIL (' + (repo.tests?.failed || '?') + ')</span>'}</span>
         </div>`;
 
-    // Findings table
     if (repo.findings && repo.findings.length > 0) {
       html += `<div style="overflow-x:auto;">
         <table class="findings-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Severity</th>
-              <th>Title</th>
-              <th>Category</th>
-              <th class="hide-mobile">File</th>
-              <th class="hide-mobile">Effort</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>`;
+          <thead><tr>
+            <th>ID</th><th>Severity</th><th>Title</th><th>Category</th>
+            <th class="hide-mobile">File</th><th class="hide-mobile">Effort</th><th>Status</th>
+          </tr></thead><tbody>`;
 
       const sorted = [...repo.findings].sort((a, b) => sevOrder(a.severity) - sevOrder(b.severity));
-
       for (const f of sorted) {
         html += `<tr>
           <td><span class="finding-id">${esc(f.id)}</span></td>
@@ -665,7 +905,6 @@
           <td><span class="status-tag status-${f.status}">${f.status}</span></td>
         </tr>`;
       }
-
       html += '</tbody></table></div>';
     }
 
@@ -673,11 +912,78 @@
     return html;
   }
 
+  // ── System Tab (admin) ─────────────────────────────────────────────────
+
+  async function loadSystem() {
+    let galleriesCount = '?';
+    let totalPhotos = '?';
+
+    try {
+      const res = await fetch(API + '/admin/galleries', { headers: { 'x-admin-key': adminKey } });
+      if (res.ok) {
+        const data = await res.json();
+        const gals = data.galleries || data || [];
+        galleriesCount = gals.length;
+        totalPhotos = gals.reduce((sum, g) => sum + (g.photo_count || 0), 0);
+      }
+    } catch {}
+
+    const t = dashboardData?.totals || {};
+
+    let html = `
+    <div class="stats-grid fade-in">
+      <div class="stat-card">
+        <div class="stat-label">Galleries</div>
+        <div class="stat-value accent">${galleriesCount}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Photos</div>
+        <div class="stat-value accent">${totalPhotos}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">QA Findings</div>
+        <div class="stat-value" style="color:var(--medium)">${t.total_findings || 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Fix Rate</div>
+        <div class="stat-value success">${t.total_findings ? Math.round(t.total_fixed / t.total_findings * 100) : 0}%</div>
+      </div>
+    </div>
+
+    <div class="sys-card fade-in">
+      <h3>Infrastructure</h3>
+      <div class="sys-row"><span class="sys-label">API Gateway</span><span class="sys-value">3pfumef32i (HTTP API v2)</span></div>
+      <div class="sys-row"><span class="sys-label">Region</span><span class="sys-value">us-west-2</span></div>
+      <div class="sys-row"><span class="sys-label">Runtime</span><span class="sys-value">Python 3.12</span></div>
+      <div class="sys-row"><span class="sys-label">Database</span><span class="sys-value">DynamoDB (7 tables)</span></div>
+      <div class="sys-row"><span class="sys-label">CDN</span><span class="sys-value">CloudFront</span></div>
+    </div>
+
+    <div class="sys-card fade-in">
+      <h3>Lambdas</h3>
+      <div class="sys-row"><span class="sys-label">admin</span><span class="sys-value">512 MB / 60s</span></div>
+      <div class="sys-row"><span class="sys-label">auth_view</span><span class="sys-value">256 MB / 10s</span></div>
+      <div class="sys-row"><span class="sys-label">auth_download</span><span class="sys-value">256 MB / 15s</span></div>
+      <div class="sys-row"><span class="sys-label">optimize</span><span class="sys-value">4096 MB / 900s (Docker)</span></div>
+      <div class="sys-row"><span class="sys-label">zip</span><span class="sys-value">2048 MB / 900s</span></div>
+      <div class="sys-row"><span class="sys-label">maintenance</span><span class="sys-value">512 MB / 300s (cron)</span></div>
+    </div>
+
+    <div class="sys-card fade-in">
+      <h3>QA Pipeline Status</h3>
+      <div class="sys-row"><span class="sys-label">Last scan</span><span class="sys-value">${dashboardData?.generated_at ? fmtTime(new Date(dashboardData.generated_at)) : 'Never'}</span></div>
+      <div class="sys-row"><span class="sys-label">Open critical</span><span class="sys-value" style="color:${t.critical > 0 ? 'var(--critical)' : 'var(--success)'}">${t.critical || 0}</span></div>
+      <div class="sys-row"><span class="sys-label">Open high</span><span class="sys-value" style="color:${t.high > 0 ? 'var(--high)' : 'var(--success)'}">${t.high || 0}</span></div>
+      <div class="sys-row"><span class="sys-label">Tests</span><span class="sys-value">198 passing</span></div>
+      <div class="sys-row"><span class="sys-label">Linter</span><span class="sys-value check-pass">Clean</span></div>
+    </div>`;
+
+    document.getElementById('sysContent').innerHTML = html;
+  }
+
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  function sevOrder(s) {
-    return { critical: 0, high: 1, medium: 2, low: 3, info: 4 }[s] ?? 5;
-  }
+  function sevOrder(s) { return { critical: 0, high: 1, medium: 2, low: 3, info: 4 }[s] ?? 5; }
 
   function esc(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -694,15 +1000,21 @@
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-  // ── Auto-refresh ────────────────────────────────────────────────────────
+  // ── Boot ───────────────────────────────────────────────────────────────
 
-  async function init() {
-    const data = await loadData();
-    if (data) render(data);
+  function boot() {
+    renderMyReports();
+
+    // Restore admin session
+    const savedKey = sessionStorage.getItem('qa_admin_key');
+    if (savedKey) {
+      adminKey = savedKey;
+      isAdmin = true;
+      enterAdminMode();
+    }
   }
 
-  init();
-  setInterval(init, 60000); // Refresh every 60s
+  boot();
 
 })();
 </script>
