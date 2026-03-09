@@ -1,6 +1,6 @@
 # Back Office
 
-A portable back office dashboard for any website, powered by [Claude Code](https://claude.com/claude-code). Drop `qa.html` into any S3-hosted site to get automated QA, bug tracking, test management, and task tracking — all behind admin key authentication.
+A portable back office dashboard for any website, powered by [Claude Code](https://claude.com/claude-code). Drop `backoffice.html` into any S3-hosted site to get automated QA, bug tracking, test management, and task tracking — all behind admin key authentication.
 
 ## What It Does
 
@@ -33,7 +33,7 @@ A portable back office dashboard for any website, powered by [Claude Code](https
        │
        ▼
   ┌──────────┐
-  │ Dashboard │  <── qa.html (static, hosted on S3/CloudFront)
+  │ Dashboard │  <── backoffice.html (static, hosted on S3/CloudFront)
   └──────────┘
 ```
 
@@ -92,7 +92,7 @@ make watch TARGET=/path/to/your/repo
 
 ## Dashboard
 
-A single static HTML file (`dashboard/qa.html`) — no build step, no dependencies. Deploy it to any S3-hosted website. Features:
+A single static HTML file (`dashboard/backoffice.html`) — no build step, no dependencies. Deploy it to any S3-hosted website. Features:
 
 - **Public**: Bug report form for clients/photographers
 - **Admin (behind key)**: QA findings, test management, task tracking, system health
@@ -103,7 +103,7 @@ Configure deployment targets in `config/qa-config.yaml`:
 ```yaml
 dashboard_targets:
   - bucket: "my-website-bucket"
-    path: "qa.html"
+    path: "backoffice.html"
     cloudfront_id: "EXXXXXXXXX"
 ```
 
@@ -149,7 +149,7 @@ Launches a Claude Code session that:
 5. Runs tests and linter before merging
 6. Records fix status in `results/{repo}/fixes.json`
 
-### Dashboard (`dashboard/qa.html`)
+### Dashboard (`dashboard/backoffice.html`)
 
 Static HTML + vanilla JS. Reads `qa-data.json` and renders the full back office with public bug reporting, admin QA dashboard, test management, task tracking, and system overview.
 
@@ -168,7 +168,7 @@ back-office/
 │   ├── qa-config.example.yaml
 │   └── targets.example.yaml
 ├── dashboard/
-│   └── qa.html             # Static dashboard (drop into any site)
+│   └── backoffice.html             # Static dashboard (drop into any site)
 ├── results/                # Scan results (gitignored)
 ├── scripts/
 │   ├── setup.sh

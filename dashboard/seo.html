@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO & AI Optimization — BreakPoint Labs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --surface-3: #22222e;
+      --border: #2a2a3a;
+      --border-glow: #3a3a5a;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --text-muted: #5a5a70;
+      --accent: #6c5ce7;
+      --accent-glow: #7c6cf7;
+      --seo: #00b894;
+      --seo-glow: #00d9a7;
+      --seo-bg: rgba(0,184,148,0.1);
+      --critical: #ff4757;
+      --critical-bg: rgba(255,71,87,0.1);
+      --high: #ff8c42;
+      --high-bg: rgba(255,140,66,0.1);
+      --medium: #ffd166;
+      --medium-bg: rgba(255,209,102,0.1);
+      --low: #4ecdc4;
+      --low-bg: rgba(78,205,196,0.1);
+      --info: #74b9ff;
+      --info-bg: rgba(116,185,255,0.1);
+      --success: #2ed573;
+      --success-bg: rgba(46,213,115,0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1320px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* -- Header -- */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2.5rem; padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo { display: flex; align-items: center; gap: 0.75rem; }
+
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--seo), var(--seo-glow));
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; color: white;
+      box-shadow: 0 0 20px rgba(0,184,148,0.3);
+    }
+
+    .logo-text h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; }
+    .logo-text h1 span { color: var(--text-dim); font-weight: 400; font-size: 0.85rem; }
+    .logo-text .logo-sub { font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.04em; }
+
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+
+    .header-meta { text-align: right; font-size: 0.8rem; color: var(--text-dim); }
+
+    .header-meta .live-dot {
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--success); border-radius: 50%; margin-right: 0.4rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46,213,115,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(46,213,115,0); }
+    }
+
+    .btn {
+      font-family: var(--sans); font-size: 0.8rem; font-weight: 500;
+      padding: 0.5rem 1.1rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--text); cursor: pointer; transition: all 0.15s;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+
+    .btn:hover { border-color: var(--border-glow); background: var(--surface-3); }
+    .btn-seo { background: var(--seo); border-color: var(--seo); color: #fff; }
+    .btn-seo:hover { background: var(--seo-glow); border-color: var(--seo-glow); }
+    .btn-sm { font-size: 0.72rem; padding: 0.35rem 0.75rem; }
+    .btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
+    .btn-ghost:hover { color: var(--text); background: var(--surface-2); }
+
+    /* -- Score Arc -- */
+    .score-hero {
+      display: flex; align-items: center; gap: 3rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem 2.5rem; margin-bottom: 2rem;
+    }
+
+    .score-arc-wrap { position: relative; width: 160px; height: 160px; flex-shrink: 0; }
+
+    .score-arc-wrap svg { width: 160px; height: 160px; transform: rotate(-90deg); }
+
+    .score-arc-bg { fill: none; stroke: var(--surface-3); stroke-width: 10; }
+    .score-arc-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke 0.5s; }
+
+    .score-arc-label {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+
+    .score-arc-num { font-family: var(--mono); font-size: 2.8rem; font-weight: 700; line-height: 1; }
+    .score-arc-text { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3rem; }
+
+    .score-details { flex: 1; }
+    .score-details h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .score-summary { font-size: 0.82rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* -- Stats Grid -- */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 1rem; margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem; transition: border-color 0.2s;
+      cursor: default;
+    }
+
+    .stat-card:hover { border-color: var(--border-glow); }
+
+    .stat-label {
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted); margin-bottom: 0.4rem;
+    }
+
+    .stat-row { display: flex; align-items: baseline; justify-content: space-between; }
+
+    .stat-value {
+      font-size: 1.8rem; font-weight: 700; font-family: var(--mono);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-issues {
+      font-size: 0.72rem; font-family: var(--mono); color: var(--text-dim);
+      background: var(--surface-3); padding: 0.15rem 0.5rem; border-radius: 10px;
+    }
+
+    .stat-bar { height: 4px; background: var(--surface-3); border-radius: 2px; margin-top: 0.75rem; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+    /* -- Tab Nav -- */
+    .tab-bar {
+      display: flex; gap: 0; margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 500;
+      padding: 0.75rem 1.25rem; background: none; border: none;
+      color: var(--text-dim); cursor: pointer; position: relative;
+      transition: color 0.15s;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+
+    .tab-btn.active { color: var(--seo); }
+
+    .tab-btn.active::after {
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+      height: 2px; background: var(--seo); border-radius: 1px 1px 0 0;
+    }
+
+    .tab-btn .tab-badge {
+      font-family: var(--mono); font-size: 0.6rem; font-weight: 600;
+      padding: 0.1rem 0.4rem; border-radius: 10px; margin-left: 0.4rem;
+      background: var(--surface-3); color: var(--text-muted); vertical-align: middle;
+    }
+
+    .tab-btn.active .tab-badge { background: var(--seo-bg); color: var(--seo); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* -- Toolbar -- */
+    .toolbar {
+      display: flex; gap: 0.75rem; margin-bottom: 1.25rem; align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      font-family: var(--sans); font-size: 0.82rem; padding: 0.5rem 0.9rem;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text); width: 240px;
+      transition: border-color 0.15s;
+    }
+
+    .search-box:focus { outline: none; border-color: var(--seo); }
+    .search-box::placeholder { color: var(--text-muted); }
+
+    .filter-btn {
+      font-family: var(--sans); font-size: 0.72rem; font-weight: 500;
+      padding: 0.35rem 0.75rem; border-radius: 20px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-dim); cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--border-glow); }
+    .filter-btn.active { background: var(--seo); border-color: var(--seo); color: #fff; }
+
+    .toolbar-spacer { flex: 1; }
+
+    .auto-refresh-toggle {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.72rem; color: var(--text-dim); cursor: pointer;
+    }
+
+    .auto-refresh-toggle input { accent-color: var(--seo); }
+
+    /* -- Findings Table -- */
+    .findings-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+
+    .findings-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+
+    .findings-table th {
+      text-align: left; padding: 0.75rem 1rem; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+      background: var(--surface-2); border-bottom: 1px solid var(--border);
+      cursor: pointer; user-select: none; white-space: nowrap;
+    }
+
+    .findings-table th:hover { color: var(--text-dim); }
+    .findings-table th .sort-arrow { margin-left: 0.3rem; font-size: 0.6rem; }
+
+    .findings-table td {
+      padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top;
+    }
+
+    .findings-table tr.finding-row { cursor: pointer; transition: background 0.1s; }
+    .findings-table tr.finding-row:hover td { background: var(--surface-2); }
+
+    .finding-id { font-family: var(--mono); font-size: 0.72rem; font-weight: 500; color: var(--text-dim); }
+
+    .badge {
+      font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+      padding: 0.2rem 0.6rem; border-radius: 20px; letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .badge-critical { background: var(--critical-bg); color: var(--critical); border: 1px solid rgba(255,71,87,0.2); }
+    .badge-high { background: var(--high-bg); color: var(--high); border: 1px solid rgba(255,140,66,0.2); }
+    .badge-medium { background: var(--medium-bg); color: var(--medium); border: 1px solid rgba(255,209,102,0.2); }
+    .badge-low { background: var(--low-bg); color: var(--low); border: 1px solid rgba(78,205,196,0.2); }
+    .badge-info { background: var(--info-bg); color: var(--info); border: 1px solid rgba(116,185,255,0.2); }
+
+    .cat-tag {
+      font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 3px;
+      background: var(--surface-3); color: var(--text-dim); white-space: nowrap;
+    }
+
+    .effort-tag { font-size: 0.65rem; color: var(--text-dim); font-family: var(--mono); }
+
+    .status-tag {
+      font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+      padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase;
+    }
+
+    .status-open { background: var(--surface-3); color: var(--text-dim); }
+    .status-fixed { background: var(--success-bg); color: var(--success); }
+    .status-in-progress { background: rgba(108,92,231,0.15); color: var(--accent-glow); }
+
+    .finding-detail {
+      display: none; background: var(--surface-2);
+    }
+
+    .finding-detail.open { display: table-row; }
+
+    .finding-detail td {
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+    }
+
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+
+    .detail-block h4 {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); margin-bottom: 0.4rem;
+    }
+
+    .detail-block p, .detail-block pre {
+      font-size: 0.8rem; color: var(--text-dim); line-height: 1.6;
+    }
+
+    .detail-block pre {
+      font-family: var(--mono); font-size: 0.72rem; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem; overflow-x: auto; margin-top: 0.3rem;
+      white-space: pre-wrap;
+    }
+
+    .detail-fix {
+      background: var(--seo-bg); border: 1px solid rgba(0,184,148,0.2);
+      border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-top: 0.75rem;
+    }
+
+    .detail-fix h4 { color: var(--seo); }
+
+    .no-results {
+      text-align: center; padding: 3rem 1rem; color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* -- Two Column Layout (findings + sidebar) -- */
+    .main-layout {
+      display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem;
+      align-items: start;
+    }
+
+    /* -- Checklist Panel -- */
+    .checklist-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; position: sticky; top: 1rem;
+    }
+
+    .checklist-panel h3 {
+      font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;
+    }
+
+    .checklist-panel .checklist-sub {
+      font-size: 0.7rem; color: var(--text-muted); margin-bottom: 1rem;
+    }
+
+    .checklist-item {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.45rem 0; border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+
+    .checklist-item:last-child { border-bottom: none; }
+
+    .check-icon {
+      width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 700;
+    }
+
+    .check-pass { background: var(--success-bg); color: var(--success); border: 1px solid rgba(46,213,115,0.2); }
+    .check-fail { background: var(--critical-bg); color: var(--critical); border: 1px solid rgba(255,71,87,0.2); }
+    .check-warn { background: var(--medium-bg); color: var(--medium); border: 1px solid rgba(255,209,102,0.2); }
+
+    .checklist-label { flex: 1; color: var(--text-dim); }
+    .checklist-item.pass .checklist-label { color: var(--text); }
+
+    .checklist-score {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
+    }
+
+    .checklist-score-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .checklist-score-val { font-family: var(--mono); font-size: 1.1rem; font-weight: 700; }
+
+    /* -- Trend Chart -- */
+    .trend-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; margin-top: 1.5rem;
+    }
+
+    .trend-section h3 {
+      font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem;
+    }
+
+    .trend-chart {
+      display: flex; align-items: flex-end; gap: 6px; height: 100px;
+      padding: 0.5rem 0;
+    }
+
+    .trend-bar-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    }
+
+    .trend-bar {
+      width: 100%; border-radius: 3px 3px 0 0; transition: height 0.5s ease;
+      min-height: 4px; position: relative;
+    }
+
+    .trend-bar:hover { opacity: 0.8; }
+
+    .trend-bar-label {
+      font-size: 0.55rem; color: var(--text-muted); font-family: var(--mono);
+      white-space: nowrap;
+    }
+
+    .trend-bar-val {
+      font-size: 0.6rem; color: var(--text-dim); font-family: var(--mono);
+      font-weight: 600;
+    }
+
+    /* -- Footer -- */
+    footer {
+      text-align: center; padding: 2rem; font-size: 0.72rem;
+      color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 2rem;
+    }
+
+    footer a { color: var(--seo); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* -- Responsive -- */
+    @media (max-width: 1024px) {
+      .main-layout { grid-template-columns: 1fr; }
+      .checklist-panel { position: static; }
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      header { flex-direction: column; gap: 1rem; text-align: center; }
+      .header-right { justify-content: center; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .score-hero { flex-direction: column; text-align: center; gap: 1.5rem; padding: 1.5rem; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .findings-table th, .findings-table td { padding: 0.5rem 0.6rem; }
+      .hide-mobile { display: none; }
+      .tab-btn { font-size: 0.72rem; padding: 0.6rem 0.7rem; }
+      .search-box { width: 100%; }
+    }
+
+    .fade-in { animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scoreIn {
+      from { stroke-dashoffset: 408; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">BP</div>
+      <div class="logo-text">
+        <h1>BreakPoint Labs <span>/ SEO & AI Optimization</span></h1>
+        <div class="logo-sub">Automated Site Health Analysis</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-meta">
+        <span class="live-dot"></span> System Active<br>
+        <span id="lastScan">Last scan: loading...</span>
+      </div>
+      <a href="index.html" class="btn btn-ghost btn-sm">&larr; Back to HQ</a>
+    </div>
+  </header>
+
+  <!-- Score Hero -->
+  <div class="score-hero fade-in" id="scoreHero">
+    <div class="score-arc-wrap">
+      <svg viewBox="0 0 140 140">
+        <circle class="score-arc-bg" cx="70" cy="70" r="65" />
+        <circle class="score-arc-fill" id="scoreArc" cx="70" cy="70" r="65"
+                stroke-dasharray="408.4" stroke-dashoffset="408.4" />
+      </svg>
+      <div class="score-arc-label">
+        <div class="score-arc-num" id="scoreNum">--</div>
+        <div class="score-arc-text">SEO Score</div>
+      </div>
+    </div>
+    <div class="score-details">
+      <h2>Overall SEO Health</h2>
+      <p class="score-summary" id="scoreSummary">Loading scan results...</p>
+    </div>
+  </div>
+
+  <!-- Category Score Cards -->
+  <div class="stats-grid fade-in" id="categoryCards"></div>
+
+  <!-- Tab Navigation -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="all" onclick="switchTab('all')">All Findings <span class="tab-badge" id="badgeAll">0</span></button>
+    <button class="tab-btn" data-tab="technical" onclick="switchTab('technical')">Technical SEO <span class="tab-badge" id="badgeTechnical">0</span></button>
+    <button class="tab-btn" data-tab="ai" onclick="switchTab('ai')">AI Optimization <span class="tab-badge" id="badgeAi">0</span></button>
+    <button class="tab-btn" data-tab="content" onclick="switchTab('content')">Content SEO <span class="tab-badge" id="badgeContent">0</span></button>
+    <button class="tab-btn" data-tab="performance" onclick="switchTab('performance')">Performance SEO <span class="tab-badge" id="badgePerformance">0</span></button>
+    <button class="tab-btn" data-tab="social" onclick="switchTab('social')">Social Meta <span class="tab-badge" id="badgeSocial">0</span></button>
+  </div>
+
+  <!-- Main Layout: Findings + Sidebar -->
+  <div class="main-layout">
+    <div class="findings-area">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <input type="text" class="search-box" id="searchBox" placeholder="Search findings..." oninput="applyFilters()">
+        <button class="filter-btn active" data-severity="all" onclick="setSeverity('all')">All</button>
+        <button class="filter-btn" data-severity="critical" onclick="setSeverity('critical')">Critical</button>
+        <button class="filter-btn" data-severity="high" onclick="setSeverity('high')">High</button>
+        <button class="filter-btn" data-severity="medium" onclick="setSeverity('medium')">Medium</button>
+        <button class="filter-btn" data-severity="low" onclick="setSeverity('low')">Low</button>
+        <div class="toolbar-spacer"></div>
+        <label class="auto-refresh-toggle">
+          <input type="checkbox" id="autoRefreshCheck" onchange="toggleAutoRefresh()"> Auto-refresh
+        </label>
+      </div>
+
+      <!-- Findings Table -->
+      <div class="findings-wrap">
+        <table class="findings-table" id="findingsTable">
+          <thead>
+            <tr>
+              <th onclick="sortFindings('severity')">Severity <span class="sort-arrow" id="sortSeverity"></span></th>
+              <th onclick="sortFindings('id')">ID <span class="sort-arrow" id="sortId"></span></th>
+              <th onclick="sortFindings('title')">Title <span class="sort-arrow" id="sortTitle"></span></th>
+              <th onclick="sortFindings('category')">Category <span class="sort-arrow" id="sortCategory"></span></th>
+              <th class="hide-mobile" onclick="sortFindings('file')">File <span class="sort-arrow" id="sortFile"></span></th>
+              <th class="hide-mobile">Effort</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="findingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="checklist-panel" id="checklistPanel">
+        <h3>SEO Essentials</h3>
+        <div class="checklist-sub">Checklist of core requirements</div>
+        <div id="checklistItems"></div>
+        <div class="checklist-score">
+          <span class="checklist-score-label">Checklist Score</span>
+          <span class="checklist-score-val" id="checklistScoreVal">--</span>
+        </div>
+      </div>
+
+      <!-- Trend Chart -->
+      <div class="trend-section" id="trendSection">
+        <h3>Score Trend (Last 8 Scans)</h3>
+        <div class="trend-chart" id="trendChart"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  BreakPoint Labs &mdash; SEO & AI Optimization Dashboard &middot;
+  <a href="backoffice.html">QA Dashboard</a> &middot;
+  <a href="index.html">Back to HQ</a>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // -- State --
+  let findings = [];
+  let categories = {};
+  let checklist = [];
+  let trendData = [];
+  let currentTab = 'all';
+  let currentSeverity = 'all';
+  let sortField = 'severity';
+  let sortDir = 'desc';
+  let autoRefreshTimer = null;
+
+  const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+
+  // -- Demo Data --
+  const DEMO_DATA = {
+    scan_time: new Date().toISOString(),
+    overall_score: 72,
+    categories: {
+      technical:   { name: 'Technical SEO',   score: 78, issues: 6  },
+      ai:          { name: 'AI Optimization',  score: 55, issues: 8  },
+      content:     { name: 'Content SEO',      score: 82, issues: 4  },
+      performance: { name: 'Performance SEO',  score: 68, issues: 7  },
+      social:      { name: 'Social Meta',      score: 74, issues: 5  }
+    },
+    checklist: [
+      { label: 'Meta title present on all pages',  status: 'pass' },
+      { label: 'Meta descriptions present',         status: 'pass' },
+      { label: 'Canonical URLs set',                status: 'fail' },
+      { label: 'robots.txt exists',                 status: 'pass' },
+      { label: 'sitemap.xml exists',                status: 'pass' },
+      { label: 'Schema.org markup',                 status: 'fail' },
+      { label: 'Open Graph tags',                   status: 'warn' },
+      { label: 'Twitter Card tags',                 status: 'fail' },
+      { label: 'H1 tags (exactly 1 per page)',      status: 'pass' },
+      { label: 'Image alt text coverage',           status: 'warn' },
+      { label: 'Mobile viewport meta',              status: 'pass' },
+      { label: 'HTTPS enforced',                    status: 'pass' },
+      { label: 'AI-friendly content structure',     status: 'fail' }
+    ],
+    trend: [62, 65, 64, 68, 70, 69, 71, 72],
+    findings: [
+      { id: 'SEO-001', severity: 'critical', title: 'Missing canonical URLs on 12 pages', category: 'technical', file: 'src/pages/*.html', effort: 'Medium', status: 'open', description: 'Multiple pages lack canonical link elements, risking duplicate content penalties.', evidence: '<link rel="canonical"> missing from head section of 12 template files.', fix: 'Add <link rel="canonical" href="..."> to the <head> of each page template.' },
+      { id: 'SEO-002', severity: 'high', title: 'No structured data (Schema.org) found', category: 'ai', file: 'src/layouts/base.html', effort: 'High', status: 'open', description: 'The site has no JSON-LD or Microdata markup. AI crawlers and rich results depend on structured data.', evidence: 'Zero instances of application/ld+json or itemscope found in any template.', fix: 'Add JSON-LD structured data for Organization, WebSite, and per-page types (Article, Product, etc.).' },
+      { id: 'SEO-003', severity: 'high', title: 'Render-blocking CSS delays LCP by 2.3s', category: 'performance', file: 'src/assets/main.css', effort: 'Medium', status: 'open', description: 'Large synchronous CSS file blocks first paint. Lighthouse reports a 2.3s delay to Largest Contentful Paint.', evidence: 'main.css is 148KB unminified, loaded synchronously in <head>.', fix: 'Split critical CSS inline, defer non-critical styles with media="print" onload pattern.' },
+      { id: 'SEO-004', severity: 'medium', title: 'Open Graph tags incomplete on blog posts', category: 'social', file: 'src/templates/blog-post.html', effort: 'Low', status: 'open', description: 'Blog posts are missing og:image and og:description tags, reducing social sharing quality.', evidence: 'Only og:title present. og:image, og:description, og:type are absent.', fix: 'Add complete OG meta tags in the blog post template head section.' },
+      { id: 'SEO-005', severity: 'medium', title: 'Images missing alt text (23 instances)', category: 'content', file: 'src/components/*.vue', effort: 'Medium', status: 'in-progress', description: '23 images across the site lack descriptive alt attributes, hurting accessibility and image SEO.', evidence: 'grep found 23 <img> tags without alt or with alt="" in component files.', fix: 'Add descriptive alt text to each image that conveys the image content.' },
+      { id: 'SEO-006', severity: 'low', title: 'H1 tag count: 3 pages have multiple H1s', category: 'content', file: 'src/pages/about.html', effort: 'Low', status: 'open', description: 'Three pages have more than one H1 tag which can confuse crawlers about page topic hierarchy.', evidence: 'about.html (2x H1), team.html (3x H1), services.html (2x H1).', fix: 'Ensure exactly one H1 per page. Demote extras to H2 or H3.' },
+      { id: 'SEO-007', severity: 'critical', title: 'AI crawlers blocked by robots.txt', category: 'ai', file: 'public/robots.txt', effort: 'Low', status: 'open', description: 'robots.txt contains blanket disallow rules that block GPTBot, Google-Extended, and other AI crawlers.', evidence: 'User-agent: GPTBot\nDisallow: /\nUser-agent: Google-Extended\nDisallow: /', fix: 'Review robots.txt and selectively allow AI crawlers access to public content pages.' },
+      { id: 'SEO-008', severity: 'high', title: 'No llms.txt file for AI discoverability', category: 'ai', file: 'public/', effort: 'Low', status: 'open', description: 'The site lacks an llms.txt file that helps AI systems understand site structure and purpose.', evidence: '404 on /llms.txt — file does not exist.', fix: 'Create a public/llms.txt describing the site purpose, key pages, and content structure.' },
+      { id: 'SEO-009', severity: 'medium', title: 'Twitter Card meta tags missing', category: 'social', file: 'src/layouts/base.html', effort: 'Low', status: 'open', description: 'No twitter:card, twitter:title, or twitter:image meta tags found. Posts shared on X will lack rich previews.', evidence: 'Zero twitter: meta tags in any template file.', fix: 'Add twitter:card, twitter:title, twitter:description, twitter:image meta tags.' },
+      { id: 'SEO-010', severity: 'medium', title: 'Cumulative Layout Shift exceeds 0.25', category: 'performance', file: 'src/components/Hero.vue', effort: 'High', status: 'open', description: 'CLS score of 0.32 detected. Images and dynamic content cause visible layout shifts during load.', evidence: 'Lighthouse CLS: 0.32. Primary offender: Hero image without explicit dimensions.', fix: 'Set explicit width/height on images and use aspect-ratio CSS. Reserve space for dynamic content.' },
+      { id: 'SEO-011', severity: 'low', title: 'Sitemap missing lastmod dates', category: 'technical', file: 'public/sitemap.xml', effort: 'Low', status: 'fixed', description: 'sitemap.xml entries lack <lastmod> elements, so crawlers cannot prioritize recently updated content.', evidence: 'All 34 URL entries have no <lastmod> child element.', fix: 'Generate sitemap.xml with accurate lastmod dates from file modification times or CMS data.' },
+      { id: 'SEO-012', severity: 'high', title: 'No meta descriptions on 8 key pages', category: 'content', file: 'src/pages/*.html', effort: 'Medium', status: 'open', description: 'Eight high-traffic pages have no meta description, leading to auto-generated snippets in search results.', evidence: 'Homepage, pricing, 3 product pages, and 3 blog posts missing <meta name="description">.', fix: 'Write unique, compelling meta descriptions (120-160 chars) for each page.' },
+      { id: 'SEO-013', severity: 'medium', title: 'Unminified JavaScript bundles (340KB)', category: 'performance', file: 'dist/js/app.js', effort: 'Medium', status: 'open', description: 'JavaScript bundles are served unminified, increasing page weight and parse time significantly.', evidence: 'app.js: 340KB (would be ~95KB minified+gzipped).', fix: 'Enable minification in build config. Add terser plugin or configure bundler for production mode.' },
+      { id: 'SEO-014', severity: 'low', title: 'Missing hreflang for multi-language pages', category: 'technical', file: 'src/layouts/base.html', effort: 'Medium', status: 'open', description: 'The site has /en/ and /fr/ versions but no hreflang annotations, causing potential duplicate content across locales.', evidence: 'No <link rel="alternate" hreflang="..."> found in any template.', fix: 'Add hreflang link elements for each language variant in the page head.' },
+      { id: 'SEO-015', severity: 'high', title: 'No AI-parseable content summaries', category: 'ai', file: 'src/pages/*.html', effort: 'High', status: 'open', description: 'Pages lack clear introductory summaries and semantic sectioning that AI models use for content extraction.', evidence: 'No <article>, <section>, or summary/abstract patterns detected in content pages.', fix: 'Wrap main content in <article> with semantic sections. Add a visible summary paragraph at the top of each page.' },
+      { id: 'SEO-016', severity: 'medium', title: 'Missing Open Graph image dimensions', category: 'social', file: 'src/layouts/base.html', effort: 'Low', status: 'open', description: 'og:image:width and og:image:height are missing where og:image is present, causing slow social card rendering.', evidence: 'Homepage has og:image but no dimension meta tags.', fix: 'Add og:image:width and og:image:height meta tags alongside og:image.' },
+      { id: 'SEO-017', severity: 'low', title: 'Internal links use absolute URLs inconsistently', category: 'technical', file: 'src/components/Nav.vue', effort: 'Low', status: 'open', description: 'Some internal links use full absolute URLs while others use relative paths, causing minor crawl confusion.', evidence: 'Nav.vue mixes href="https://example.com/about" with href="/pricing".', fix: 'Standardize all internal links to use relative paths (e.g., /about, /pricing).' },
+      { id: 'SEO-018', severity: 'medium', title: 'No preconnect hints for third-party origins', category: 'performance', file: 'src/layouts/base.html', effort: 'Low', status: 'open', description: 'The page loads fonts and analytics from external origins without preconnect hints, adding DNS+TLS latency.', evidence: 'Google Fonts, analytics.js loaded without <link rel="preconnect">.', fix: 'Add <link rel="preconnect" href="https://fonts.googleapis.com"> and similar for other third-party origins.' },
+      { id: 'SEO-019', severity: 'critical', title: 'Noindex tag found on 3 indexable pages', category: 'technical', file: 'src/pages/pricing.html', effort: 'Low', status: 'open', description: 'Three important pages have <meta name="robots" content="noindex"> preventing them from appearing in search results.', evidence: 'pricing.html, features.html, and integrations.html all contain noindex directives.', fix: 'Remove the noindex meta tag from these public-facing pages. Use noindex only for private/utility pages.' },
+      { id: 'SEO-020', severity: 'low', title: 'Missing favicon and apple-touch-icon', category: 'social', file: 'src/layouts/base.html', effort: 'Low', status: 'open', description: 'No favicon or apple-touch-icon defined, resulting in missing icons in browser tabs and bookmarks.', evidence: 'No <link rel="icon"> or <link rel="apple-touch-icon"> in head.', fix: 'Add favicon.ico, favicon-32x32.png, and apple-touch-icon.png with corresponding link tags.' }
+    ]
+  };
+
+  // -- Init --
+  function init() {
+    loadData();
+  }
+
+  function loadData() {
+    fetch('seo-data.json')
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(data => applyData(data))
+      .catch(() => applyData(DEMO_DATA));
+  }
+
+  function applyData(data) {
+    findings = data.findings || [];
+    categories = data.categories || {};
+    checklist = data.checklist || [];
+    trendData = data.trend || [];
+
+    updateTimestamp(data.scan_time);
+    renderScoreArc(data.overall_score);
+    renderCategoryCards();
+    renderTabBadges();
+    renderChecklist();
+    renderTrend();
+    renderFindings();
+  }
+
+  // -- Timestamp --
+  function updateTimestamp(iso) {
+    const d = iso ? new Date(iso) : new Date();
+    const fmt = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    document.getElementById('lastScan').textContent = 'Last scan: ' + fmt;
+  }
+
+  // -- Score Arc --
+  function renderScoreArc(score) {
+    const arc = document.getElementById('scoreArc');
+    const num = document.getElementById('scoreNum');
+    const summary = document.getElementById('scoreSummary');
+    const circumference = 408.4;
+    const offset = circumference - (circumference * score / 100);
+
+    let color = 'var(--critical)';
+    if (score >= 80) color = 'var(--seo)';
+    else if (score >= 50) color = 'var(--medium)';
+
+    arc.style.stroke = color;
+    num.style.color = color;
+
+    // Animate
+    requestAnimationFrame(() => {
+      arc.style.strokeDashoffset = offset;
+    });
+
+    num.textContent = score;
+
+    const issueCount = findings.length;
+    const critical = findings.filter(f => f.severity === 'critical').length;
+    if (score >= 80) {
+      summary.textContent = `Good health. ${issueCount} findings detected across all categories. Site is well-optimized with minor improvements available.`;
+    } else if (score >= 50) {
+      summary.textContent = `Needs improvement. ${issueCount} findings detected, including ${critical} critical issue${critical !== 1 ? 's' : ''}. Address high-priority items to improve search visibility.`;
+    } else {
+      summary.textContent = `Poor health. ${issueCount} findings with ${critical} critical issue${critical !== 1 ? 's' : ''}. Immediate action required to restore search engine visibility.`;
+    }
+  }
+
+  // -- Category Cards --
+  function renderCategoryCards() {
+    const container = document.getElementById('categoryCards');
+    const cats = [
+      { key: 'technical',   icon: 'T' },
+      { key: 'ai',          icon: 'AI' },
+      { key: 'content',     icon: 'C' },
+      { key: 'performance', icon: 'P' },
+      { key: 'social',      icon: 'S' }
+    ];
+
+    container.innerHTML = cats.map(c => {
+      const cat = categories[c.key] || { name: c.key, score: 0, issues: 0 };
+      let barColor = 'var(--seo)';
+      if (cat.score < 50) barColor = 'var(--critical)';
+      else if (cat.score < 80) barColor = 'var(--medium)';
+
+      return `<div class="stat-card">
+        <div class="stat-label">${cat.name}</div>
+        <div class="stat-row">
+          <span class="stat-value" style="color:${barColor}">${cat.score}</span>
+          <span class="stat-issues">${cat.issues} issue${cat.issues !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${cat.score}%;background:${barColor}"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // -- Tab Badges --
+  function renderTabBadges() {
+    const all = findings.length;
+    const byCat = {};
+    findings.forEach(f => { byCat[f.category] = (byCat[f.category] || 0) + 1; });
+
+    document.getElementById('badgeAll').textContent = all;
+    document.getElementById('badgeTechnical').textContent = byCat.technical || 0;
+    document.getElementById('badgeAi').textContent = byCat.ai || 0;
+    document.getElementById('badgeContent').textContent = byCat.content || 0;
+    document.getElementById('badgePerformance').textContent = byCat.performance || 0;
+    document.getElementById('badgeSocial').textContent = byCat.social || 0;
+  }
+
+  // -- Tabs --
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tab);
+    });
+    applyFilters();
+  };
+
+  // -- Severity Filter --
+  window.setSeverity = function(sev) {
+    currentSeverity = sev;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.severity === sev);
+    });
+    applyFilters();
+  };
+
+  // -- Sorting --
+  window.sortFindings = function(field) {
+    if (sortField === field) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortField = field;
+      sortDir = field === 'severity' ? 'desc' : 'asc';
+    }
+    // Update arrows
+    document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '');
+    const arrowEl = document.getElementById('sort' + field.charAt(0).toUpperCase() + field.slice(1));
+    if (arrowEl) arrowEl.textContent = sortDir === 'asc' ? '\u25B2' : '\u25BC';
+    renderFindings();
+  };
+
+  // -- Filter + Render Findings --
+  function applyFilters() {
+    renderFindings();
+  }
+
+  function getFiltered() {
+    const query = (document.getElementById('searchBox').value || '').toLowerCase();
+    return findings.filter(f => {
+      if (currentTab !== 'all' && f.category !== currentTab) return false;
+      if (currentSeverity !== 'all' && f.severity !== currentSeverity) return false;
+      if (query) {
+        const hay = (f.id + ' ' + f.title + ' ' + f.category + ' ' + f.file + ' ' + (f.description || '')).toLowerCase();
+        if (!hay.includes(query)) return false;
+      }
+      return true;
+    });
+  }
+
+  function sortList(list) {
+    return list.slice().sort((a, b) => {
+      let av, bv;
+      if (sortField === 'severity') {
+        av = SEVERITY_ORDER[a.severity] ?? 5;
+        bv = SEVERITY_ORDER[b.severity] ?? 5;
+      } else {
+        av = (a[sortField] || '').toString().toLowerCase();
+        bv = (b[sortField] || '').toString().toLowerCase();
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  function renderFindings() {
+    const tbody = document.getElementById('findingsBody');
+    const list = sortList(getFiltered());
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="no-results">No findings match the current filters.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(f => {
+      const sevClass = 'badge-' + f.severity;
+      const statusClass = 'status-' + (f.status || 'open').replace(' ', '-');
+      return `<tr class="finding-row" onclick="toggleDetail('${f.id}')">
+        <td><span class="badge ${sevClass}">${f.severity}</span></td>
+        <td><span class="finding-id">${f.id}</span></td>
+        <td>${esc(f.title)}</td>
+        <td><span class="cat-tag">${esc(f.category)}</span></td>
+        <td class="hide-mobile" style="font-family:var(--mono);font-size:0.72rem;color:var(--text-dim)">${esc(f.file)}</td>
+        <td class="hide-mobile"><span class="effort-tag">${esc(f.effort)}</span></td>
+        <td><span class="status-tag ${statusClass}">${esc(f.status)}</span></td>
+      </tr>
+      <tr class="finding-detail" id="detail-${f.id}">
+        <td colspan="7">
+          <div class="detail-grid">
+            <div class="detail-block">
+              <h4>Description</h4>
+              <p>${esc(f.description || 'No description.')}</p>
+            </div>
+            <div class="detail-block">
+              <h4>Evidence</h4>
+              <pre>${esc(f.evidence || 'N/A')}</pre>
+            </div>
+          </div>
+          <div class="detail-fix">
+            <h4>Suggested Fix</h4>
+            <p>${esc(f.fix || 'No fix suggestion available.')}</p>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.toggleDetail = function(id) {
+    const el = document.getElementById('detail-' + id);
+    if (el) el.classList.toggle('open');
+  };
+
+  // -- Checklist --
+  function renderChecklist() {
+    const container = document.getElementById('checklistItems');
+    let passCount = 0;
+
+    container.innerHTML = checklist.map(item => {
+      let iconClass = 'check-fail';
+      let iconChar = '\u2717';
+      if (item.status === 'pass') { iconClass = 'check-pass'; iconChar = '\u2713'; passCount++; }
+      else if (item.status === 'warn') { iconClass = 'check-warn'; iconChar = '!'; }
+
+      return `<div class="checklist-item ${item.status === 'pass' ? 'pass' : ''}">
+        <span class="check-icon ${iconClass}">${iconChar}</span>
+        <span class="checklist-label">${esc(item.label)}</span>
+      </div>`;
+    }).join('');
+
+    const total = checklist.length || 1;
+    const pct = Math.round((passCount / total) * 100);
+    const scoreEl = document.getElementById('checklistScoreVal');
+    scoreEl.textContent = passCount + '/' + total + ' (' + pct + '%)';
+    scoreEl.style.color = pct >= 80 ? 'var(--seo)' : pct >= 50 ? 'var(--medium)' : 'var(--critical)';
+  }
+
+  // -- Trend Chart --
+  function renderTrend() {
+    const container = document.getElementById('trendChart');
+    if (!trendData.length) {
+      container.innerHTML = '<div class="no-results" style="width:100%">No trend data available.</div>';
+      return;
+    }
+
+    const max = 100;
+    const labels = ['8 ago', '7 ago', '6 ago', '5 ago', '4 ago', '3 ago', '2 ago', 'Latest'];
+
+    container.innerHTML = trendData.map((val, i) => {
+      const height = Math.max(4, (val / max) * 90);
+      let color = 'var(--seo)';
+      if (val < 50) color = 'var(--critical)';
+      else if (val < 80) color = 'var(--medium)';
+
+      return `<div class="trend-bar-wrap">
+        <span class="trend-bar-val">${val}</span>
+        <div class="trend-bar" style="height:${height}px;background:${color}" title="Scan ${labels[i]}: ${val}"></div>
+        <span class="trend-bar-label">${labels[i]}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // -- Auto-refresh --
+  window.toggleAutoRefresh = function() {
+    const checked = document.getElementById('autoRefreshCheck').checked;
+    if (checked) {
+      autoRefreshTimer = setInterval(loadData, 30000);
+    } else {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  };
+
+  // -- Utility --
+  function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // -- Boot --
+  init();
+
+  // Set initial sort indicator
+  document.getElementById('sortSeverity').textContent = '\u25BC';
+})();
+</script>
+
+</body>
+</html>

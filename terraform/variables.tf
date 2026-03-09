@@ -16,7 +16,7 @@ variable "dashboard_domains" {
     domain    = string
     bucket    = string
     cf_id     = string  # Existing CloudFront distribution ID (leave empty to create new)
-    s3_path   = string  # Path in bucket for qa.html (e.g., 'qa.html')
+    s3_path   = string  # Path in bucket for backoffice.html (e.g., 'backoffice.html')
   }))
   default = []
 }

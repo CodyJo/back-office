@@ -115,9 +115,10 @@ Start fixing now. Use parallel worktree agents where possible."
 echo "Launching Claude Code fix agent..."
 echo ""
 
+unset CLAUDECODE 2>/dev/null || true
 claude --print "$FIX_PROMPT" \
   --allowedTools "Read,Glob,Grep,Bash,Write,Edit,Agent" \
-  --additionalDirectories "$TARGET_REPO"
+  --add-dir "$TARGET_REPO"
 
 echo ""
 echo "Fixes complete. Results in: $RESULTS_DIR/"

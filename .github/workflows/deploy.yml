@@ -45,9 +45,9 @@ jobs:
           aws-region: us-west-2
 
       # ── Deploy to codyjo-com-photos bucket ──────────────────────────────
-      - name: Upload qa.html to codyjo bucket
+      - name: Upload backoffice.html to codyjo bucket
         run: |
-          aws s3 cp dashboard/qa.html s3://codyjo-com-photos-7fa5a7d0/qa.html \
+          aws s3 cp dashboard/backoffice.html s3://codyjo-com-photos-7fa5a7d0/backoffice.html \
             --content-type "text/html" \
             --cache-control "no-cache, no-store, must-revalidate"
 
@@ -61,12 +61,12 @@ jobs:
         run: |
           aws cloudfront create-invalidation \
             --distribution-id EW2SF2IXBOKE5 \
-            --paths "/qa.html" "/qa-data.json"
+            --paths "/backoffice.html" "/qa-data.json"
 
       # ── Deploy to thenewbeautifulme bucket ──────────────────────────────
-      - name: Upload qa.html to thenewbeautifulme bucket
+      - name: Upload backoffice.html to thenewbeautifulme bucket
         run: |
-          aws s3 cp dashboard/qa.html s3://thenewbeautifulme-site/qa.html \
+          aws s3 cp dashboard/backoffice.html s3://thenewbeautifulme-site/backoffice.html \
             --content-type "text/html" \
             --cache-control "no-cache, no-store, must-revalidate"
 
@@ -80,4 +80,4 @@ jobs:
         run: |
           aws cloudfront create-invalidation \
             --distribution-id E1I21C6DXV70HC \
-            --paths "/qa.html" "/qa-data.json"
+            --paths "/backoffice.html" "/qa-data.json"

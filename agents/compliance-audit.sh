@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Back Office — Scan Agent
-# Usage: ./agents/qa-scan.sh /path/to/target-repo [--sync]
+# Back Office — Regulatory Compliance Audit Agent
+# Usage: ./agents/compliance-audit.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that scans the target repository
-# for bugs, security issues, and performance problems.
+# Launches a Claude Code session that audits the target repository
+# for GDPR, ISO 27001, and age verification compliance issues.
 #
 # Options:
-#   --sync    Sync results to S3 after scan completes
+#   --sync    Sync results to S3 after audit completes
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 QA_ROOT="$(dirname "$SCRIPT_DIR")"
-PROMPT_FILE="$SCRIPT_DIR/prompts/qa-scan.md"
+PROMPT_FILE="$SCRIPT_DIR/prompts/compliance-audit.md"
 CONFIG_FILE="$QA_ROOT/config/qa-config.yaml"
 
 # ── Args ─────────────────────────────────────────────────────────────────────
 
-TARGET_REPO="${1:?Usage: qa-scan.sh /path/to/target-repo [--sync]}"
+TARGET_REPO="${1:?Usage: compliance-audit.sh /path/to/target-repo [--sync]}"
 SYNC_TO_S3=false
 
 for arg in "$@"; do
@@ -37,18 +37,17 @@ RESULTS_DIR="$QA_ROOT/results/$REPO_NAME"
 mkdir -p "$RESULTS_DIR"
 
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║  Back Office — Scanning: $REPO_NAME"
+echo "║  Back Office — Regulatory Compliance Audit: $REPO_NAME"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
-echo "  Target:  $TARGET_REPO"
-echo "  Results: $RESULTS_DIR"
-echo "  Time:    $(date -Iseconds)"
+echo "  Target:     $TARGET_REPO"
+echo "  Results:    $RESULTS_DIR"
+echo "  Frameworks: GDPR, ISO 27001, Age Verification"
+echo "  Time:       $(date -Iseconds)"
 echo ""
 
-# ── Read config for lint/test commands ────────────────────────────────────────
+# ── Read config for target-specific context ──────────────────────────────────
 
-LINT_CMD=""
-TEST_CMD=""
 CONTEXT=""
 
 if command -v python3 &>/dev/null && [ -f "$QA_ROOT/config/targets.yaml" ]; then
@@ -59,8 +58,6 @@ with open('$QA_ROOT/config/targets.yaml') as f:
     cfg = yaml.safe_load(f)
 for t in cfg.get('targets', []):
     if t['name'] == '$REPO_NAME' or t.get('path','') == '$TARGET_REPO':
-        print(f'LINT_CMD={repr(t.get(\"lint_command\",\"\"))}')
-        print(f'TEST_CMD={repr(t.get(\"test_command\",\"\"))}')
         print(f'CONTEXT={repr(t.get(\"context\",\"\"))}')
         break
 " 2>/dev/null || true)"
@@ -68,7 +65,7 @@ fi
 
 # ── Build the prompt ─────────────────────────────────────────────────────────
 
-SCAN_PROMPT="$(cat "$PROMPT_FILE")
+AUDIT_PROMPT="$(cat "$PROMPT_FILE")
 
 ---
 
@@ -78,11 +75,6 @@ SCAN_PROMPT="$(cat "$PROMPT_FILE")
 - **Name:** $REPO_NAME
 - **Results directory:** $RESULTS_DIR
 
-## Commands
-
-- **Lint:** ${LINT_CMD:-"(auto-detect from project config)"}
-- **Test:** ${TEST_CMD:-"(auto-detect from project config)"}
-
 ## Additional Context
 
 ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE.md for context."}
@@ -90,27 +82,29 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 ## Instructions
 
 1. cd to $TARGET_REPO
-2. Read the project structure and understand the codebase
-3. Run linter and tests, capture output
-4. Perform security audit, input validation check, performance review, and code quality review
-5. Write all findings to: $RESULTS_DIR/findings.json
-6. Write a human-readable summary to: $RESULTS_DIR/scan-summary.md
-7. Generate dashboard data: $RESULTS_DIR/dashboard.json
+2. Read the project structure, README, CLAUDE.md, and understand the codebase
+3. Identify the project type, target audience, and data processing activities
+4. Perform the GDPR compliance audit — check every item listed in the prompt
+5. Perform the ISO 27001 information security audit — check every control area
+6. Perform the age verification audit — determine applicability, then check relevant laws
+7. Calculate compliance scores for each framework and overall
+8. Write all findings to: $RESULTS_DIR/compliance-findings.json
+9. Write a human-readable summary to: $RESULTS_DIR/compliance-summary.md
 
-Start the scan now."
+Start the compliance audit now."
 
 # ── Launch Claude Code ───────────────────────────────────────────────────────
 
-echo "Launching Claude Code scan agent..."
+echo "Launching Claude Code compliance audit agent..."
 echo ""
 
 unset CLAUDECODE 2>/dev/null || true
-claude --print "$SCAN_PROMPT" \
+claude --print "$AUDIT_PROMPT" \
   --allowedTools "Read,Glob,Grep,Bash,Write,Agent" \
   --add-dir "$TARGET_REPO"
 
 echo ""
-echo "Scan complete. Results in: $RESULTS_DIR/"
+echo "Compliance audit complete. Results in: $RESULTS_DIR/"
 
 # ── Sync to S3 if requested ─────────────────────────────────────────────────
 

@@ -4,14 +4,14 @@
 # AWS settings for dashboard hosting
 aws:
   region: us-west-2
-  dashboard_bucket: ""          # S3 bucket for qa.html
+  dashboard_bucket: ""          # S3 bucket for backoffice.html
   cloudfront_distribution: ""   # CloudFront distribution ID (optional)
 
 # Dashboard deployment targets
-# Each target gets qa.html deployed to its S3 bucket
+# Each target gets backoffice.html deployed to its S3 bucket
 dashboard_targets:
   - bucket: "my-website-bucket"
-    path: "qa.html"
+    path: "backoffice.html"
     cloudfront_id: ""           # Optional: invalidate after deploy
 
 # Scan settings

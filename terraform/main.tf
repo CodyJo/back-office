@@ -21,7 +21,7 @@ provider "aws" {
 
 # ── S3 Bucket for Dashboard Data ─────────────────────────────────────────────
 # This bucket stores the aggregated dashboard JSON data.
-# The qa.html itself is deployed to each target domain's existing bucket.
+# The backoffice.html itself is deployed to each target domain's existing bucket.
 
 resource "aws_s3_bucket" "dashboard_data" {
   bucket_prefix = "${var.project_name}-data-"

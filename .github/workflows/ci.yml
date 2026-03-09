@@ -21,8 +21,8 @@ jobs:
       - name: Check required files exist
         run: |
           echo "Checking dashboard files..."
-          test -f dashboard/qa.html || { echo "FAIL: dashboard/qa.html missing"; exit 1; }
-          echo "  dashboard/qa.html OK"
+          test -f dashboard/backoffice.html || { echo "FAIL: dashboard/backoffice.html missing"; exit 1; }
+          echo "  dashboard/backoffice.html OK"
 
           echo "Checking Python scripts..."
           test -f scripts/aggregate-results.py || { echo "FAIL: scripts/aggregate-results.py missing"; exit 1; }
