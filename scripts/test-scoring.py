@@ -350,12 +350,6 @@ def test_precalculated_departments():
             }
 
             # Check score is present and in range
-            score_keys = {
-                "seo": "seo_score",
-                "monetization": "monetization_readiness_score",
-                "product": "product_readiness_score",
-            }
-            score_key = score_keys[dept_name]
             score = next((value for value in score_candidates[dept_name]
                           if isinstance(value, (int, float))), None)
             label = f"{dept_name}_{repo}_score"

@@ -16,7 +16,8 @@ import os
 import subprocess
 import sys
 import threading
-from urllib.parse import parse_qs, urlparse
+import time
+from urllib.parse import urlparse
 
 PORT = 8070
 QA_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -206,7 +207,6 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                         with running_lock:
                             if dept not in running_jobs:
                                 break
-                        import time
                         time.sleep(1)
                 # Finalize
                 subprocess.run(
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     print(f"\nDashboard server: http://localhost:{PORT}/")
     print(f"Jobs dashboard:   http://localhost:{PORT}/jobs.html")
     print(f"HQ dashboard:     http://localhost:{PORT}/index.html")
-    print(f"\nPress Ctrl+C to stop\n")
+    print("\nPress Ctrl+C to stop\n")
 
     server = http.server.HTTPServer(("127.0.0.1", PORT), DashboardHandler)
     try:
