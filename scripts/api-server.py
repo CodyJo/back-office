@@ -11,7 +11,6 @@ Usage:
     systemctl start backoffice-api
 """
 
-import hashlib
 import hmac
 import http.server
 import json
@@ -20,7 +19,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from urllib.parse import urlparse
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
