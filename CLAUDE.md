@@ -1,6 +1,6 @@
-# Back Office — Claude Code Instructions
+# Back Office — Agent Instructions
 
-This is the **BreakPoint Labs Back Office** — a multi-department company of AI agents that audit, scan, and fix codebases. Each department has specialized agents and their own dashboard.
+This is the Cody Jo Method Back Office: a multi-department operating system of AI agents that audit, scan, and fix codebases. Each department has specialized agents and its own dashboard surface.
 
 ## Company Structure
 
@@ -26,7 +26,7 @@ This is the **BreakPoint Labs Back Office** — a multi-department company of AI
 ## Project Structure
 
 ```
-agents/           — Shell scripts that launch Claude Code agents
+agents/           — Shell scripts that launch department agents
 agents/prompts/   — System prompts for each agent type
 config/           — Target repo configuration (gitignored)
 dashboard/        — Static HTML dashboards (one per department + HQ)
@@ -70,7 +70,7 @@ lib/              — Standards references and severity definitions
 
 ## Data Flow
 
-1. Agent scripts launch Claude Code sessions with department-specific prompts
+1. Agent scripts launch the configured coding agent with department-specific prompts
 2. Each agent writes findings to `results/<repo-name>/<department>-findings.json`
 3. Dashboard HTML files read from `<department>-data.json` files
 4. `scripts/sync-dashboard.sh` aggregates results and pushes to S3

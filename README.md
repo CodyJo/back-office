@@ -176,7 +176,7 @@ back-office/
 
 Department scripts in `agents/` call `scripts/run-agent.sh`, which is the runner abstraction layer. That script is where the actual agent implementation is selected.
 
-This is what makes Back Office AI-agnostic: the dashboards and orchestration do not care whether the underlying agent is Claude Code or another compatible runner, as long as the runner can execute the prompt contract and return the expected findings.
+This is what makes Back Office AI-agnostic: the dashboards and orchestration do not care which compatible coding agent sits behind the runner layer, as long as it can execute the prompt contract and return the expected findings.
 
 ### 3. Write findings
 

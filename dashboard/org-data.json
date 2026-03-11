@@ -226,7 +226,7 @@
       "repos": ["thenewbeautifulme", "bible-app", "back-office"],
       "bio": "Elijah owns prompt quality, evaluation loops, agent contracts, and the invisible rails that keep AI features aligned.",
       "resume": "7 years in applied AI systems, prompt testing, RAG evaluation, and productionizing model-powered workflows without overpromising.",
-      "skills": ["Claude", "Prompting", "Evaluation", "Agent Systems", "Guardrails", "Content Safety"],
+      "skills": ["LLM Orchestration", "Prompting", "Evaluation", "Agent Systems", "Guardrails", "Content Safety"],
       "persona": "Makes AI features precise enough to trust and constrained enough to govern.",
       "daily_score": 89,
       "finding_focus": ["AI behavior", "prompt clarity", "model cost and safety"]
