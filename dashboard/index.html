@@ -731,8 +731,11 @@
         const sourceKey = getSourceKeyForDepartment(dept);
         const score = sourceKey ? getDepartmentScore(sourceKey) : Math.round(getEmployeesForSelection().reduce((sum, emp) => sum + emp.daily_score, 0) / Math.max(getEmployeesForSelection().length, 1));
         const findings = sourceKey ? getDepartmentFindingCount(sourceKey) : getEmployeesForSelection().length;
+        const departmentHref = sourceKey
+          ? `${sourceKey}.html${selected.key !== 'all' ? `?product=${encodeURIComponent(selected.key)}` : ''}`
+          : '';
         return `
-          <article class="dept-card">
+          <article class="dept-card"${departmentHref ? ` onclick="window.location.href='${departmentHref}'" style="cursor:pointer;"` : ''}>
             <div class="dept-top">
               <div>
                 <div class="dept-name">${esc(dept.name)}</div>
@@ -742,6 +745,7 @@
             </div>
             <div class="resume">${esc(dept.purpose)}</div>
             <div class="resume" style="margin-top:0.5rem;">Findings / capacity signal: ${findings}</div>
+            ${departmentHref ? `<div class="resume" style="margin-top:0.5rem;"><a href="${departmentHref}" style="color:var(--accent);text-decoration:none;">Open department dashboard</a></div>` : ''}
             <div class="chips">${dept.skills.slice(0, 5).map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
           </article>
         `;

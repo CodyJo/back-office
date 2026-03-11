@@ -117,6 +117,14 @@
       "skills": ["Prioritization", "Roadmapping", "UX Thinking", "Tradeoffs", "Launch Planning"]
     },
     {
+      "key": "monetization",
+      "name": "Monetization",
+      "source_key": "monetization",
+      "purpose": "Offer design, pricing clarity, trial-to-paid pathways, and revenue instrumentation.",
+      "persona": "Finds the cleanest path from product value to sustainable revenue without degrading trust.",
+      "skills": ["Pricing", "Packaging", "Conversion Design", "Retention", "Lifecycle Strategy"]
+    },
+    {
       "key": "hr",
       "name": "HR & People Ops",
       "purpose": "Team roster, role definitions, employee bios, fake resumes, daily ranking, and skills visibility.",
@@ -194,6 +202,20 @@
       "persona": "Assigns the work, defines done, and checks that QA has real test coverage against acceptance criteria before anything is considered ready.",
       "daily_score": 97,
       "finding_focus": ["acceptance criteria", "test coverage", "release readiness"]
+    },
+    {
+      "id": "sloane-bennett",
+      "name": "Sloane Bennett",
+      "title": "Growth Monetization Lead",
+      "department": "monetization",
+      "projects": ["analogify-studio", "chromahaus", "tnbm-tarot", "selah", "back-office"],
+      "repos": ["photo-gallery", "photo-gallery-client-portal", "thenewbeautifulme", "bible-app", "back-office"],
+      "bio": "Sloane focuses on pricing clarity, offer sequencing, and retention loops that feel native to the product instead of bolted on.",
+      "resume": "10 years across consumer subscriptions, creator tools, and conversion programs. Strongest where product trust and monetization need to coexist without cheapening the experience.",
+      "skills": ["Pricing", "Packaging", "Lifecycle Messaging", "Experiment Design", "Revenue Ops", "Retention"],
+      "persona": "Turns monetization findings into shippable offers, better upgrade paths, and revenue discipline that still respects the brand.",
+      "daily_score": 92,
+      "finding_focus": ["pricing clarity", "offer packaging", "retention loops"]
     },
     {
       "id": "elijah-brooks",
