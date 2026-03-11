@@ -17,6 +17,12 @@ This is the **BreakPoint Labs Back Office** — a multi-department company of AI
 ### Regulatory Compliance Department
 - **Compliance Agent** — Audits for GDPR, ISO 27001, and age verification law compliance (US state laws + UK Online Safety Act)
 
+### Monetization Strategy Department
+- **Monetization Agent** — Audits sites for revenue opportunities: display ads, affiliate marketing, premium features, print fulfillment, digital products, client services, and sponsorships
+
+### Product Roadmap Department
+- **Product Agent** — Analyzes codebases for feature gaps, UX improvements, technical debt, growth opportunities, and produces a prioritized product roadmap and backlog
+
 ## Project Structure
 
 ```
@@ -25,10 +31,14 @@ agents/prompts/   — System prompts for each agent type
 config/           — Target repo configuration (gitignored)
 dashboard/        — Static HTML dashboards (one per department + HQ)
   index.html      — Company HQ landing page
-  backoffice.html — QA Department dashboard
+  qa.html         — QA Department dashboard
+  backoffice.html — Public bug report form (legacy)
   seo.html        — SEO Department dashboard
   ada.html        — ADA Compliance dashboard
   compliance.html — Regulatory Compliance dashboard
+  monetization.html — Monetization Strategy dashboard
+  product.html    — Product Roadmap dashboard
+  jobs.html       — Real-time job progress dashboard
 results/          — Findings and fix status (gitignored, synced to S3)
 scripts/          — Setup, deploy, and cron scripts
 terraform/        — AWS infrastructure (S3 + CloudFront)
@@ -42,17 +52,21 @@ lib/              — Standards references and severity definitions
 - `make seo TARGET=/path/to/repo` — Run SEO audit
 - `make ada TARGET=/path/to/repo` — Run ADA compliance audit
 - `make compliance TARGET=/path/to/repo` — Run regulatory compliance audit
+- `make monetization TARGET=/path/to/repo` — Run monetization strategy audit
+- `make product TARGET=/path/to/repo` — Run product roadmap audit
 
 ### Fixing
 - `make fix TARGET=/path/to/repo` — Run fix agent on QA findings
 - `make watch TARGET=/path/to/repo` — Continuous watch + auto-fix mode
 
 ### Company-Wide
-- `make audit-all TARGET=/path/to/repo` — Run ALL department audits
+- `make audit-all TARGET=/path/to/repo` — Run ALL department audits (sequential)
+- `make audit-all-parallel TARGET=/path/to/repo` — Run ALL audits in parallel (2 waves of 3)
 - `make full-scan TARGET=/path/to/repo` — All audits + auto-fix
 
 ### Dashboard
 - `make dashboard` — Deploy all dashboards to S3
+- `make jobs` — Open job progress dashboard (local server on port 8070)
 
 ## Data Flow
 

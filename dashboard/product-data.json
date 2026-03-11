@@ -1,15 +1,147 @@
 {
   "department": "product",
-  "generated_at": "2026-03-10T21:25:32.293159+00:00",
+  "generated_at": "2026-03-11T02:17:22.746214+00:00",
   "totals": {
-    "critical": 3,
-    "high": 10,
-    "medium": 26,
+    "critical": 4,
+    "high": 13,
+    "medium": 29,
     "low": 14,
-    "info": 5,
-    "total_findings": 58
+    "info": 6,
+    "total_findings": 66
   },
   "repos": [
+    {
+      "name": "bible-app",
+      "scanned_at": "2026-03-11T01:11:50.337123+00:00",
+      "summary": {
+        "total": 8,
+        "critical": 1,
+        "high": 3,
+        "medium": 3,
+        "low": 0,
+        "info": 1,
+        "product_readiness_score": 78,
+        "scanned_at": "2026-03-11T01:11:50.337123+00:00"
+      },
+      "findings": [
+        {
+          "id": "PROD-001",
+          "severity": "critical",
+          "category": "feature-gap",
+          "title": "Account flows are presented in the UI, but the API only implements a health check",
+          "file": "lambda/api/index.mjs",
+          "line": 1,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-002",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "The app promises account sync, but study data is stored only in browser localStorage",
+          "file": "src/lib/storage.ts",
+          "line": 1,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-003",
+          "severity": "high",
+          "category": "ux-improvement",
+          "title": "Reading plans are checklists, not launch points into actual reading or study flows",
+          "file": "src/app/plans/page.tsx",
+          "line": 315,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-004",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "Settings does not expose account or trust controls beyond Bible version",
+          "file": "src/app/settings/page.tsx",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-005",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "First-time visitors hit a hard Bible-version gate before they can explore the product",
+          "file": "src/app/page.tsx",
+          "line": 31,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-006",
+          "severity": "medium",
+          "category": "documentation",
+          "title": "README still describes a default Next.js starter instead of the actual Selah product",
+          "file": "README.md",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-007",
+          "severity": "medium",
+          "category": "feature-gap",
+          "title": "Journal, study history, and insights have no export or recovery path",
+          "file": "src/lib/storage.ts",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-008",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "Existing streak and plan data could support reminders and milestone nudges",
+          "file": "src/lib/storage.ts",
+          "line": 137,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        }
+      ],
+      "scores": {
+        "featureCompleteness": 69,
+        "uxPolish": 88,
+        "technicalHealth": 96,
+        "growthPotential": 55
+      },
+      "scoring_breakdown": {
+        "featureCompleteness": {
+          "weight": 0.3,
+          "formula": "100 - 15 (critical feature-gap) - 8 (high feature-gap) - 8 (high feature-gap)",
+          "score": 69
+        },
+        "uxPolish": {
+          "weight": 0.25,
+          "formula": "100 - 8 (high ux-improvement) - 4 (medium ux-improvement)",
+          "score": 88
+        },
+        "technicalHealth": {
+          "weight": 0.25,
+          "formula": "100 - 4 (medium documentation)",
+          "score": 96
+        },
+        "growthPotential": {
+          "weight": 0.2,
+          "formula": "50 + 5 (medium growth-opportunity)",
+          "score": 55
+        }
+      }
+    },
     {
       "name": "codyjo.com",
       "scanned_at": "2026-03-10T18:04:02.372329+00:00",

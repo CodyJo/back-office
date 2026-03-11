@@ -7,6 +7,7 @@ targets:
   - name: my-web-app
     path: /home/user/projects/my-web-app
     language: python
+    default_departments: [qa, seo, ada, compliance, monetization, product]
     # Linter command (run during QA scan)
     lint_command: "ruff check ."
     # Test command (run during QA scan and after fixes)
@@ -22,6 +23,7 @@ targets:
   # - name: another-repo
   #   path: /home/user/projects/another-repo
   #   language: javascript
+  #   default_departments: [qa, product]
   #   lint_command: "npx eslint src/"
   #   test_command: "npm test"
   #   deploy_command: "npm run deploy"

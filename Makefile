@@ -1,6 +1,7 @@
-.PHONY: setup qa fix watch dashboard clean help jobs
+.PHONY: setup qa fix watch dashboard clean help jobs test
 .PHONY: seo ada compliance monetization product audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
+.PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
 
 TARGET ?=
 
@@ -141,6 +142,30 @@ audit-live: ## Run ALL audits with live dashboard refresh after each (make audit
 quick-sync: ## Quick-sync one department's data (make quick-sync DEPT=qa REPO=codyjo.com)
 	bash scripts/quick-sync.sh "$(DEPT)" "$(REPO)"
 
+# ── Tests ─────────────────────────────────────────────────────────────────────
+
+test: ## Run scoring tests (pre-deploy gate)
+	@echo "Running scoring tests..."
+	python3 scripts/test-scoring.py
+	@echo "Running local audit workflow tests..."
+	python3 scripts/test-local-audit-workflow.py
+
+local-targets: ## List configured local audit targets
+	python3 scripts/local_audit_workflow.py list-targets
+
+local-refresh: ## Refresh local dashboard data + audit log from existing results
+	python3 scripts/local_audit_workflow.py refresh
+
+local-audit: ## Run local audit for a configured target (make local-audit TARGET_NAME=bible-app DEPTS=product,qa)
+	@test -n "$(TARGET_NAME)" || (echo "Usage: make local-audit TARGET_NAME=<name> [DEPTS=qa,product]" && exit 1)
+	python3 scripts/local_audit_workflow.py run-target --target "$(TARGET_NAME)" $(if $(DEPTS),--departments "$(DEPTS)",)
+
+local-audit-all: ## Run local audits for all configured targets
+	python3 scripts/local_audit_workflow.py run-all $(if $(TARGETS),--targets "$(TARGETS)",) $(if $(DEPTS),--departments "$(DEPTS)",)
+
+self-audit-local: ## Run the Back Office self-audit and refresh the local dashboard
+	python3 scripts/local_audit_workflow.py run-target --target back-office --departments qa
+
 # ── Dashboard & Infrastructure ────────────────────────────────────────────────
 
 dashboard: ## Deploy all dashboards to S3
@@ -151,7 +176,7 @@ jobs: ## Start dashboard server with scan API (make jobs TARGET=/path/to/repo)
 
 grafana: ## Start Grafana monitoring dashboard
 	cd monitoring && docker compose up -d
-	@echo "Grafana running at http://localhost:3333 (admin / breakpoint)"
+	@echo "Grafana running at http://localhost:3333 (set GRAFANA_ADMIN_PASSWORD env var)"
 
 grafana-stop: ## Stop Grafana
 	cd monitoring && docker compose down

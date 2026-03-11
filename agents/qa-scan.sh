@@ -53,28 +53,10 @@ TEST_CMD=""
 CONTEXT=""
 
 if command -v python3 &>/dev/null && [ -f "$QA_ROOT/config/targets.yaml" ]; then
-  # Extract target-specific config using python
   mapfile -d '' -t _target_cfg < <(
-    QA_ROOT="$QA_ROOT" REPO_NAME="$REPO_NAME" TARGET_REPO="$TARGET_REPO" python3 -c '
-import os
-import sys
-import yaml
-
-with open(os.path.join(os.environ["QA_ROOT"], "config", "targets.yaml")) as f:
-    cfg = yaml.safe_load(f) or {}
-
-values = ["", "", ""]
-for t in cfg.get("targets", []):
-    if t["name"] == os.environ["REPO_NAME"] or t.get("path", "") == os.environ["TARGET_REPO"]:
-        values = [
-            t.get("lint_command", ""),
-            t.get("test_command", ""),
-            t.get("context", ""),
-        ]
-        break
-
-sys.stdout.write("\0".join(values))
-' 2>/dev/null || true
+    python3 "$QA_ROOT/scripts/parse-config.py" \
+      "$QA_ROOT/config/targets.yaml" "$REPO_NAME" "$TARGET_REPO" \
+      lint_command test_command context 2>/dev/null || true
   )
   LINT_CMD="${_target_cfg[0]:-}"
   TEST_CMD="${_target_cfg[1]:-}"

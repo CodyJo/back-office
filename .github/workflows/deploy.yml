@@ -44,40 +44,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
 
-      # ── Deploy to codyjo-com-photos bucket ──────────────────────────────
-      - name: Upload backoffice.html to codyjo bucket
+      # ── Deploy to admin-thenewbeautifulme-site bucket ──────────────────
+      - name: Sync dashboard to admin bucket
         run: |
-          aws s3 cp dashboard/backoffice.html s3://codyjo-com-photos-7fa5a7d0/backoffice.html \
-            --content-type "text/html" \
-            --cache-control "no-cache, no-store, must-revalidate"
+          aws s3 sync dashboard/ s3://admin-thenewbeautifulme-site/ \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --delete
 
-      - name: Upload qa-data.json to codyjo bucket
-        run: |
-          aws s3 cp dashboard/data.json s3://codyjo-com-photos-7fa5a7d0/qa-data.json \
-            --content-type "application/json" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-      - name: Invalidate codyjo CloudFront
+      - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id EW2SF2IXBOKE5 \
-            --paths "/backoffice.html" "/qa-data.json"
-
-      # ── Deploy to thenewbeautifulme bucket ──────────────────────────────
-      - name: Upload backoffice.html to thenewbeautifulme bucket
-        run: |
-          aws s3 cp dashboard/backoffice.html s3://thenewbeautifulme-site/backoffice.html \
-            --content-type "text/html" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-      - name: Upload qa-data.json to thenewbeautifulme bucket
-        run: |
-          aws s3 cp dashboard/data.json s3://thenewbeautifulme-site/qa-data.json \
-            --content-type "application/json" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-      - name: Invalidate thenewbeautifulme CloudFront
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id E1I21C6DXV70HC \
-            --paths "/backoffice.html" "/qa-data.json"
+            --distribution-id E372ZR95FXKVT5 \
+            --paths "/*"

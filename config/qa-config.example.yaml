@@ -8,11 +8,14 @@ aws:
   cloudfront_distribution: ""   # CloudFront distribution ID (optional)
 
 # Dashboard deployment targets
-# Each target gets backoffice.html deployed to its S3 bucket
+# Each target gets all dashboard files deployed to its S3 bucket.
+# Set 'repo' to filter data to only show that repo's findings.
 dashboard_targets:
-  - bucket: "my-website-bucket"
-    path: "backoffice.html"
+  - bucket: "my-admin-bucket"
+    base_path: ""
     cloudfront_id: ""           # Optional: invalidate after deploy
+    subdomain: "admin.example.com"
+    repo: "my-web-app"          # Only show this repo's findings on this target
 
 # Scan settings
 scan:

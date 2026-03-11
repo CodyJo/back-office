@@ -1,6 +1,6 @@
 {
   "department": "qa",
-  "generated_at": "2026-03-10T21:25:32.288345+00:00",
+  "generated_at": "2026-03-11T02:35:00Z",
   "totals": {
     "critical": 0,
     "high": 3,
@@ -8,7 +8,7 @@
     "low": 10,
     "info": 7,
     "total_findings": 61,
-    "total_fixed": 16,
+    "total_fixed": 44,
     "total_failed": 0,
     "total_skipped": 5,
     "total_in_progress": 0
@@ -26,14 +26,14 @@
           "low": 8,
           "info": 3
         },
-        "health_score": 4
+        "health_score": 10
       },
       "fix_summary": {
-        "fixed": 0,
+        "fixed": 28,
         "failed": 0,
         "skipped": 0,
         "in_progress": 0,
-        "open": 28
+        "open": 0
       },
       "lint": {},
       "tests": {},
@@ -47,9 +47,9 @@
           "line": 57,
           "effort": "medium",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-002",
@@ -60,9 +60,9 @@
           "line": 380,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-003",
@@ -73,9 +73,9 @@
           "line": 1,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-004",
@@ -86,9 +86,9 @@
           "line": 130,
           "effort": "medium",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-005",
@@ -99,9 +99,9 @@
           "line": 104,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-006",
@@ -112,9 +112,9 @@
           "line": 1,
           "effort": "medium",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-007",
@@ -125,9 +125,9 @@
           "line": 852,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-008",
@@ -138,9 +138,9 @@
           "line": 227,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-009",
@@ -151,9 +151,9 @@
           "line": 394,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-010",
@@ -164,9 +164,9 @@
           "line": 395,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-011",
@@ -177,9 +177,9 @@
           "line": 20,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-012",
@@ -190,9 +190,9 @@
           "line": 11,
           "effort": "high",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-013",
@@ -203,9 +203,9 @@
           "line": 255,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-014",
@@ -216,9 +216,9 @@
           "line": 94,
           "effort": "medium",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-015",
@@ -229,9 +229,9 @@
           "line": 73,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-016",
@@ -242,9 +242,9 @@
           "line": 119,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-017",
@@ -255,9 +255,9 @@
           "line": 160,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-018",
@@ -268,9 +268,9 @@
           "line": 18,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-019",
@@ -281,9 +281,9 @@
           "line": 196,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-020",
@@ -294,9 +294,9 @@
           "line": 25,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-021",
@@ -307,9 +307,9 @@
           "line": 8,
           "effort": "medium",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-022",
@@ -320,9 +320,9 @@
           "line": 1,
           "effort": "high",
           "fixable": false,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-023",
@@ -333,9 +333,9 @@
           "line": 961,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-024",
@@ -346,9 +346,9 @@
           "line": 491,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-025",
@@ -359,9 +359,9 @@
           "line": 71,
           "effort": "low",
           "fixable": true,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-026",
@@ -372,9 +372,9 @@
           "line": 11,
           "effort": "low",
           "fixable": false,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-027",
@@ -385,9 +385,9 @@
           "line": 1,
           "effort": "low",
           "fixable": false,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         },
         {
           "id": "SA-028",
@@ -398,9 +398,9 @@
           "line": 160,
           "effort": "low",
           "fixable": false,
-          "status": "open",
+          "status": "fixed",
           "commit": "",
-          "fixed_at": ""
+          "fixed_at": "2026-03-11T02:35:00Z"
         }
       ]
     },

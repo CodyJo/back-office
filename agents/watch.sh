@@ -56,13 +56,14 @@ while true; do
       LAST_HASH="$CURRENT_HASH"
       TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-      # Parse summary
+      # Parse summary — use safe file open via sys.argv
       SUMMARY=$(python3 -c "
-import json
-d = json.load(open('$FINDINGS'))
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
 s = d['summary']
 print(f\"{s['total']} findings: {s['critical']} critical, {s['high']} high, {s['medium']} medium, {s['low']} low\")
-" 2>/dev/null || echo "new findings detected")
+" "$FINDINGS" 2>/dev/null || echo "new findings detected")
 
       echo "[$TIMESTAMP] New findings: $SUMMARY"
 

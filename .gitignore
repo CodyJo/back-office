@@ -10,9 +10,10 @@ terraform/terraform.tfvars
 terraform/tfplan
 
 # Config (may contain secrets)
-config/targets.yaml
-config/api-config.yaml
-config/qa-config.yaml
+config/*.yaml
+config/*.yml
+!config/*.example.yaml
+!config/*.example.yml
 
 # Python
 __pycache__/

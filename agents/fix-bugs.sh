@@ -43,9 +43,9 @@ if [ ! -f "$FINDINGS_FILE" ]; then
 fi
 
 # Count findings
-TOTAL=$(python3 -c "import json; d=json.load(open('$FINDINGS_FILE')); print(d['summary']['total'])" 2>/dev/null || echo "?")
-CRITICAL=$(python3 -c "import json; d=json.load(open('$FINDINGS_FILE')); print(d['summary']['critical'])" 2>/dev/null || echo "?")
-HIGH=$(python3 -c "import json; d=json.load(open('$FINDINGS_FILE')); print(d['summary']['high'])" 2>/dev/null || echo "?")
+TOTAL=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['summary']['total'])" "$FINDINGS_FILE" 2>/dev/null || echo "?")
+CRITICAL=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['summary']['critical'])" "$FINDINGS_FILE" 2>/dev/null || echo "?")
+HIGH=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['summary']['high'])" "$FINDINGS_FILE" 2>/dev/null || echo "?")
 
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║  Back Office — Fixing: $REPO_NAME"
@@ -64,26 +64,9 @@ TEST_CMD=""
 
 if command -v python3 &>/dev/null && [ -f "$QA_ROOT/config/targets.yaml" ]; then
   mapfile -d '' -t _target_cfg < <(
-    QA_ROOT="$QA_ROOT" REPO_NAME="$REPO_NAME" TARGET_REPO="$TARGET_REPO" python3 -c '
-import os
-import sys
-import yaml
-
-with open(os.path.join(os.environ["QA_ROOT"], "config", "targets.yaml")) as f:
-    cfg = yaml.safe_load(f) or {}
-
-values = ["", "", ""]
-for t in cfg.get("targets", []):
-    if t["name"] == os.environ["REPO_NAME"] or t.get("path", "") == os.environ["TARGET_REPO"]:
-        values = [
-            t.get("deploy_command", ""),
-            t.get("lint_command", ""),
-            t.get("test_command", ""),
-        ]
-        break
-
-sys.stdout.write("\0".join(values))
-' 2>/dev/null || true
+    python3 "$QA_ROOT/scripts/parse-config.py" \
+      "$QA_ROOT/config/targets.yaml" "$REPO_NAME" "$TARGET_REPO" \
+      deploy_command lint_command test_command 2>/dev/null || true
   )
   DEPLOY_CMD="${_target_cfg[0]:-}"
   LINT_CMD="${_target_cfg[1]:-}"
@@ -140,8 +123,14 @@ echo "Fixes complete. Results in: $RESULTS_DIR/"
 # ── Deploy if requested ──────────────────────────────────────────────────────
 
 if [ "$RUN_DEPLOY" = true ] && [ -n "$DEPLOY_CMD" ]; then
-  echo "Running deploy: $DEPLOY_CMD"
-  (cd "$TARGET_REPO" && bash -lc "$DEPLOY_CMD")
+  # Validate deploy command — only allow simple command names (no shell metacharacters)
+  if [[ "$DEPLOY_CMD" =~ [^a-zA-Z0-9\ _/.\-] ]]; then
+    echo "Error: deploy_command contains unsafe characters, skipping: $DEPLOY_CMD" >&2
+  else
+    echo "Running deploy: $DEPLOY_CMD"
+    # shellcheck disable=SC2086
+    (cd "$TARGET_REPO" && $DEPLOY_CMD)
+  fi
 fi
 
 # ── Sync to S3 if requested ─────────────────────────────────────────────────

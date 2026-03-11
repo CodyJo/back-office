@@ -233,6 +233,18 @@ def write_json(data, path):
         json.dump(data, f, indent=2)
 
 
+def aggregate_self_audit(results_dir, dashboard_dir):
+    """Write the Back Office QA findings as self-audit dashboard data."""
+    source = os.path.join(results_dir, "back-office", "findings.json")
+    payload = load_json(source)
+    if not payload:
+        return None
+
+    output = os.path.join(dashboard_dir, "self-audit-data.json")
+    write_json(payload, output)
+    return payload
+
+
 def aggregate(results_dir, output_path):
     dashboard_dir = os.path.dirname(output_path) or "."
 
@@ -272,6 +284,12 @@ def aggregate(results_dir, output_path):
     write_json(prod_data, os.path.join(dashboard_dir, "product-data.json"))
     print(f"Product: {prod_data['totals']['total_findings']} findings across "
           f"{len(prod_data['repos'])} repos")
+
+    self_audit_data = aggregate_self_audit(results_dir, dashboard_dir)
+    if self_audit_data:
+        summary = self_audit_data.get("summary", {})
+        total = summary.get("total", summary.get("total_findings", len(self_audit_data.get("findings", []))))
+        print(f"Self-Audit: {total} findings for back-office")
 
     # Summary
     total = (qa_data["totals"]["total_findings"] + seo_data["totals"]["total_findings"] +
