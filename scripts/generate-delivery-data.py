@@ -20,6 +20,7 @@ QA_ROOT = Path(
     )
 )
 CONFIG_PATH = Path(os.environ.get("BACK_OFFICE_TARGETS_CONFIG", QA_ROOT / "config" / "targets.yaml"))
+EXAMPLE_CONFIG_PATH = QA_ROOT / "config" / "targets.example.yaml"
 RESULTS_DIR = Path(os.environ.get("BACK_OFFICE_RESULTS_DIR", QA_ROOT / "results"))
 DASHBOARD_DIR = Path(os.environ.get("BACK_OFFICE_DASHBOARD_DIR", QA_ROOT / "dashboard"))
 OUTPUT_PATH = Path(os.environ.get("BACK_OFFICE_DELIVERY_OUTPUT", DASHBOARD_DIR / "automation-data.json"))
@@ -66,6 +67,14 @@ def iso_now() -> str:
 def load_yaml(path: Path):
     with path.open() as handle:
         return yaml.safe_load(handle) or {}
+
+
+def load_targets_config():
+    if CONFIG_PATH.exists():
+        return load_yaml(CONFIG_PATH)
+    if EXAMPLE_CONFIG_PATH.exists():
+        return load_yaml(EXAMPLE_CONFIG_PATH)
+    return {"targets": []}
 
 
 def load_json(path: Path):
@@ -392,7 +401,7 @@ def target_summary(target: dict, products: list[dict]) -> dict:
 
 
 def main() -> int:
-    config = load_yaml(CONFIG_PATH)
+    config = load_targets_config()
     targets = config.get("targets") or []
     org_data = load_json(DASHBOARD_DIR / "org-data.json") or {"products": []}
 
