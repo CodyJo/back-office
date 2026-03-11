@@ -52,9 +52,10 @@ results_dir = '$QA_ROOT/results'
 
 dashboard_files = [
     'index.html', 'qa.html', 'backoffice.html',
-    'seo.html', 'ada.html', 'compliance.html', 'monetization.html', 'product.html',
+    'seo.html', 'ada.html', 'compliance.html', 'privacy.html', 'monetization.html', 'product.html',
     'jobs.html', 'faq.html', 'self-audit.html', 'admin.html',
-    'site-branding.js',
+    'selah.html', 'analogify.html', 'chromahaus.html', 'tnbm-tarot.html', 'back-office-hq.html',
+    'site-branding.js', 'favicon.svg',
 ]
 
 # Maps: raw findings filename -> dashboard data filename
@@ -63,6 +64,7 @@ dept_data_map = [
     ('seo-findings.json', 'seo-data.json'),
     ('ada-findings.json', 'ada-data.json'),
     ('compliance-findings.json', 'compliance-data.json'),
+    ('privacy-findings.json', 'privacy-data.json'),
     ('monetization-findings.json', 'monetization-data.json'),
     ('product-findings.json', 'product-data.json'),
 ]
@@ -76,10 +78,14 @@ agg_data_files = [
     ('seo-data.json', 'seo-data.json'),
     ('ada-data.json', 'ada-data.json'),
     ('compliance-data.json', 'compliance-data.json'),
+    ('privacy-data.json', 'privacy-data.json'),
     ('monetization-data.json', 'monetization-data.json'),
     ('product-data.json', 'product-data.json'),
+    ('org-data.json', 'org-data.json'),
     ('.jobs.json', '.jobs.json'),
     ('.jobs-history.json', '.jobs-history.json'),
+    ('local-audit-log.json', 'local-audit-log.json'),
+    ('local-audit-log.md', 'local-audit-log.md'),
 ]
 
 
@@ -111,7 +117,12 @@ for t in targets:
             print(f'  Skipping {dash_file} (not found)')
             continue
         s3_key = f'{prefix}{dash_file}'
-        content_type = 'application/javascript' if dash_file.endswith('.js') else 'text/html'
+        if dash_file.endswith('.js'):
+            content_type = 'application/javascript'
+        elif dash_file.endswith('.svg'):
+            content_type = 'image/svg+xml'
+        else:
+            content_type = 'text/html'
         upload_file(local_path, bucket, s3_key, content_type)
         invalidation_paths.append(f'/{s3_key}')
 
@@ -145,7 +156,8 @@ for t in targets:
                 print(f'  Skipping {local_name} (not found)')
                 continue
             s3_key = f'{prefix}{s3_name}'
-            upload_file(local_path, bucket, s3_key, 'application/json')
+            content_type = 'text/markdown' if local_name.endswith('.md') else 'application/json'
+            upload_file(local_path, bucket, s3_key, content_type)
             invalidation_paths.append(f'/{s3_key}')
 
     # Invalidate CloudFront cache

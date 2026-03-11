@@ -2,7 +2,7 @@
 # Back Office — Product Roadmap & Backlog Audit Agent
 # Usage: ./agents/product-audit.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that audits the target repository
+# Launches the configured agent runner to audit the target repository
 # for feature gaps, UX issues, technical debt, and growth
 # opportunities, then produces a prioritized product roadmap.
 #
@@ -88,16 +88,16 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 
 Start the product roadmap audit now."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code product roadmap audit agent..."
+echo "Launching product roadmap audit agent..."
 echo ""
 
 job_start "product"
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$SCAN_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Agent" \
-  --add-dir "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$SCAN_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Agent" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
 job_finish "product" "$_EXIT_CODE"
 [ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 

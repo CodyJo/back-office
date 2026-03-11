@@ -1,0 +1,227 @@
+{
+  "generated_at": "2026-03-10T22:45:00Z",
+  "products": [
+    {
+      "key": "all",
+      "name": "All Products",
+      "repos": [],
+      "description": "Every product and supporting repo in the workspace.",
+      "domains": []
+    },
+    {
+      "key": "codyjo-method",
+      "name": "Cody Jo Method",
+      "repos": ["codyjo.com"],
+      "description": "Main brand site, About, Blog, privacy, and studio positioning.",
+      "domains": ["www.codyjo.com"]
+    },
+    {
+      "key": "analogify-studio",
+      "name": "Analogify Studio",
+      "repos": ["photo-gallery", "photo-gallery-client-portal"],
+      "description": "Gallery platform, delivery flows, admin tooling, and client portal work.",
+      "domains": ["galleries.codyjo.com"]
+    },
+    {
+      "key": "chromahaus",
+      "name": "ChromaHaus",
+      "repos": ["photo-gallery"],
+      "description": "Image processing and grading engine represented inside the Analogify platform repo.",
+      "domains": ["www.codyjo.com/chromahaus"]
+    },
+    {
+      "key": "tnbm-tarot",
+      "name": "TNBM Tarot",
+      "repos": ["thenewbeautifulme"],
+      "description": "Tarot, journaling, AI reflection, account trust, and privacy-sensitive reading flows.",
+      "domains": ["thenewbeautifulme.com"]
+    },
+    {
+      "key": "selah",
+      "name": "Selah",
+      "repos": ["bible-app"],
+      "description": "Bible study, journaling, translation fidelity, and AI study workflows.",
+      "domains": ["selah.codyjo.com"]
+    },
+    {
+      "key": "back-office",
+      "name": "Back Office",
+      "repos": ["back-office"],
+      "description": "Internal audit system, dashboards, orchestration, personas, and self-audit.",
+      "domains": ["www.codyjo.com/back-office"]
+    }
+  ],
+  "departments": [
+    {
+      "key": "frontend",
+      "name": "Front End",
+      "source_key": "ada",
+      "purpose": "Design systems, UI architecture, accessibility, interaction quality, and cross-device polish.",
+      "persona": "Owns the customer-facing interface and turns product intent into a usable, fast, legible experience.",
+      "skills": ["Astro", "Next.js", "React 19", "Tailwind", "HTML", "CSS", "Accessibility", "Interaction Design"]
+    },
+    {
+      "key": "backend",
+      "name": "Back End",
+      "source_key": "qa",
+      "purpose": "APIs, auth flows, data modeling, business logic, and service boundaries.",
+      "persona": "Protects data, stabilizes APIs, and keeps product logic coherent under real load and edge cases.",
+      "skills": ["Python", "Node.js", "AWS Lambda", "API Gateway", "Auth", "Data Modeling", "DynamoDB"]
+    },
+    {
+      "key": "platform",
+      "name": "Platform & DevOps",
+      "source_key": "compliance",
+      "purpose": "Terraform, CI/CD, CloudFront, AWS reliability, environments, and deployment safety.",
+      "persona": "Makes delivery repeatable, observable, and low-risk across every repo and environment.",
+      "skills": ["Terraform", "GitHub Actions", "AWS", "CloudFront", "S3", "IAM", "Observability", "Secrets"]
+    },
+    {
+      "key": "ai-systems",
+      "name": "AI Systems",
+      "source_key": "privacy",
+      "purpose": "Prompt contracts, model integrations, agent workflows, AI safety boundaries, and feature quality.",
+      "persona": "Keeps AI useful, scoped, privacy-aware, and aligned with real product behavior.",
+      "skills": ["LLM Platforms", "Prompt Engineering", "Agent Workflows", "Evaluation", "Guardrails"]
+    },
+    {
+      "key": "qa",
+      "name": "Quality Assurance",
+      "source_key": "qa",
+      "purpose": "Regression prevention, test coverage, bug triage, and production confidence.",
+      "persona": "Finds what breaks before customers do and quantifies confidence instead of guessing.",
+      "skills": ["Testing", "Vitest", "Pytest", "Regression Analysis", "Bug Triage", "Risk Review"]
+    },
+    {
+      "key": "privacy",
+      "name": "Privacy Specialist",
+      "source_key": "privacy",
+      "purpose": "Privacy-first reviews, retention/deletion paths, vendor exposure, AI data boundaries, and user trust.",
+      "persona": "Acts as the stop-gate when product or monetization pressure would weaken user privacy.",
+      "skills": ["GDPR", "CCPA", "Privacy by Design", "Retention", "Deletion Workflows", "Vendor Review"]
+    },
+    {
+      "key": "seo",
+      "name": "SEO & Discoverability",
+      "source_key": "seo",
+      "purpose": "Structured data, search quality, AI discoverability, technical SEO, and content clarity.",
+      "persona": "Makes products legible to both search engines and AI systems without turning copy into sludge.",
+      "skills": ["Technical SEO", "Schema", "Metadata", "Content Structure", "AI Discoverability"]
+    },
+    {
+      "key": "product",
+      "name": "Product Strategy",
+      "source_key": "product",
+      "purpose": "Roadmaps, prioritization, workflow design, packaging, and sequencing.",
+      "persona": "Turns findings into decisions, not just backlog piles.",
+      "skills": ["Prioritization", "Roadmapping", "UX Thinking", "Tradeoffs", "Launch Planning"]
+    },
+    {
+      "key": "hr",
+      "name": "HR & People Ops",
+      "purpose": "Team roster, role definitions, employee bios, fake resumes, daily ranking, and skills visibility.",
+      "persona": "Tracks who should own what work, who is strongest today, and where capability gaps exist.",
+      "skills": ["Org Design", "Role Definition", "Skills Inventory", "Performance Signals", "Staffing"]
+    }
+  ],
+  "employees": [
+    {
+      "id": "ava-sterling",
+      "name": "Ava Sterling",
+      "title": "Principal Front End Engineer",
+      "department": "frontend",
+      "projects": ["codyjo-method", "analogify-studio", "tnbm-tarot", "selah"],
+      "repos": ["codyjo.com", "photo-gallery", "thenewbeautifulme", "bible-app"],
+      "bio": "Ava specializes in high-trust interfaces where typography, accessibility, and flow clarity matter more than shiny effects.",
+      "resume": "11 years across editorial product design systems, conversion landing pages, and accessibility-heavy React platforms. Known for turning complex workflows into calm, premium interfaces.",
+      "skills": ["Astro", "Next.js", "React 19", "Accessible UI", "Design Systems", "Form UX"],
+      "persona": "Owns customer-facing polish and keeps the interface calm under complexity.",
+      "daily_score": 93,
+      "finding_focus": ["ADA", "front-end regressions", "navigation clarity"]
+    },
+    {
+      "id": "marcus-hale",
+      "name": "Marcus Hale",
+      "title": "Senior Back End Engineer",
+      "department": "backend",
+      "projects": ["analogify-studio", "tnbm-tarot", "selah"],
+      "repos": ["photo-gallery", "thenewbeautifulme", "bible-app"],
+      "bio": "Marcus owns auth, APIs, persistence, and the kinds of failure modes most users never see because he got there first.",
+      "resume": "10 years in serverless APIs, auth hardening, and DynamoDB-heavy systems. Strongest in Python and Node-based cloud back ends.",
+      "skills": ["Python", "Node.js", "AWS Lambda", "API Gateway", "DynamoDB", "JWT"],
+      "persona": "Protects the data path and removes backend fragility before it becomes customer pain.",
+      "daily_score": 91,
+      "finding_focus": ["auth", "data integrity", "API safety"]
+    },
+    {
+      "id": "iona-rivera",
+      "name": "Iona Rivera",
+      "title": "Platform & CI/CD Engineer",
+      "department": "platform",
+      "projects": ["analogify-studio", "selah", "tnbm-tarot", "back-office"],
+      "repos": ["photo-gallery", "bible-app", "thenewbeautifulme", "back-office"],
+      "bio": "Iona thinks in environments, blast radius, rollback plans, and Terraform drift before most teams even remember to ask.",
+      "resume": "12 years in infrastructure automation, release engineering, observability, and production safety for distributed AWS systems.",
+      "skills": ["Terraform", "GitHub Actions", "CloudFront", "IAM", "AWS", "Release Engineering"],
+      "persona": "Keeps shipping boring in the best possible way.",
+      "daily_score": 95,
+      "finding_focus": ["deploy safety", "infrastructure drift", "CI/CD"]
+    },
+    {
+      "id": "naomi-vale",
+      "name": "Naomi Vale",
+      "title": "Privacy Specialist",
+      "department": "privacy",
+      "projects": ["codyjo-method", "analogify-studio", "tnbm-tarot", "selah", "back-office"],
+      "repos": ["codyjo.com", "photo-gallery", "thenewbeautifulme", "bible-app", "back-office"],
+      "bio": "Naomi specializes in plain-language privacy posture, deletion/retention logic, and keeping AI products from becoming trust liabilities.",
+      "resume": "8 years auditing consumer and enterprise products for privacy-by-design, cross-border vendor exposure, and data-subject rights workflows.",
+      "skills": ["GDPR", "CCPA", "Privacy Policy Design", "Consent", "Retention", "AI Data Boundaries"],
+      "persona": "Says no when the product path would leak more than it needs to.",
+      "daily_score": 98,
+      "finding_focus": ["privacy policy", "vendor exposure", "deletion and retention"]
+    },
+    {
+      "id": "jordan-mercer",
+      "name": "Jordan Mercer",
+      "title": "Studio Product Lead",
+      "department": "product",
+      "projects": ["codyjo-method", "analogify-studio", "chromahaus", "tnbm-tarot", "selah", "back-office"],
+      "repos": ["codyjo.com", "photo-gallery", "photo-gallery-client-portal", "thenewbeautifulme", "bible-app", "back-office"],
+      "bio": "Jordan owns product acceptance criteria, launch sequencing, and the conversion of audit findings into clear work the rest of the org can execute.",
+      "resume": "12 years across B2B SaaS, workflow products, and multi-surface platforms. Strongest at turning ambiguous founder intent into acceptance criteria, release plans, and measurable product outcomes.",
+      "skills": ["Acceptance Criteria", "PRDs", "Roadmapping", "Launch Planning", "Cross-functional Leadership", "Risk Review"],
+      "persona": "Assigns the work, defines done, and checks that QA has real test coverage against acceptance criteria before anything is considered ready.",
+      "daily_score": 97,
+      "finding_focus": ["acceptance criteria", "test coverage", "release readiness"]
+    },
+    {
+      "id": "elijah-brooks",
+      "name": "Elijah Brooks",
+      "title": "AI Systems Engineer",
+      "department": "ai-systems",
+      "projects": ["tnbm-tarot", "selah", "back-office"],
+      "repos": ["thenewbeautifulme", "bible-app", "back-office"],
+      "bio": "Elijah owns prompt quality, evaluation loops, agent contracts, and the invisible rails that keep AI features aligned.",
+      "resume": "7 years in applied AI systems, prompt testing, RAG evaluation, and productionizing model-powered workflows without overpromising.",
+      "skills": ["Claude", "Prompting", "Evaluation", "Agent Systems", "Guardrails", "Content Safety"],
+      "persona": "Makes AI features precise enough to trust and constrained enough to govern.",
+      "daily_score": 89,
+      "finding_focus": ["AI behavior", "prompt clarity", "model cost and safety"]
+    },
+    {
+      "id": "dahlia-cole",
+      "name": "Dahlia Cole",
+      "title": "QA Lead",
+      "department": "qa",
+      "projects": ["analogify-studio", "tnbm-tarot", "selah", "back-office"],
+      "repos": ["photo-gallery", "thenewbeautifulme", "bible-app", "back-office"],
+      "bio": "Dahlia runs structured test discipline across UI, API, and deployment surfaces and hates hand-wavy confidence.",
+      "resume": "9 years in test strategy, regression detection, and release readiness across consumer and internal platforms.",
+      "skills": ["Pytest", "Vitest", "Regression Suites", "Release Gates", "Risk Scoring"],
+      "persona": "Quantifies whether things are actually ready rather than hoping they are.",
+      "daily_score": 87,
+      "finding_focus": ["release risk", "test gaps", "bug reproduction"]
+    }
+  ]
+}

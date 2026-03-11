@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TNBM Tarot — Back Office</title>
+  <style>
+    :root { --bg:#0a0a0f; --surface:#12121a; --border:#2a2a3a; --text:#e4e4ef; --text-dim:#8888a0; --accent:#c4944a; --sans:Inter,sans-serif; }
+    * { box-sizing:border-box; } body { margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); }
+    .shell { display:grid; grid-template-rows:auto 1fr; min-height:100vh; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface); }
+    .title { font-size:1rem; font-weight:600; } .subtitle { font-size:0.78rem; color:var(--text-dim); margin-top:0.2rem; } .link { color:var(--accent); text-decoration:none; font-size:0.82rem; }
+    iframe { width:100%; height:calc(100vh - 72px); border:0; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div><div class="title">TNBM Tarot Back Office</div><div class="subtitle">Direct product dashboard view for TNBM Tarot</div></div>
+      <a class="link" href="index.html?product=tnbm-tarot" target="_top">Open full dashboard view</a>
+    </div>
+    <iframe title="TNBM Tarot Back Office" src="index.html?product=tnbm-tarot"></iframe>
+  </div>
+</body>
+</html>

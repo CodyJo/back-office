@@ -17,7 +17,12 @@ echo ""
 echo "Checking prerequisites..."
 
 missing=()
-command -v claude   &>/dev/null || missing+=("claude (Claude Code CLI)")
+if [ -n "${BACK_OFFICE_AGENT_RUNNER:-}" ]; then
+  agent_bin="${BACK_OFFICE_AGENT_RUNNER%% *}"
+  command -v "$agent_bin" &>/dev/null || missing+=("$agent_bin (configured BACK_OFFICE_AGENT_RUNNER)")
+else
+  command -v claude &>/dev/null || missing+=("an agent CLI via BACK_OFFICE_AGENT_RUNNER or claude")
+fi
 command -v git      &>/dev/null || missing+=("git")
 command -v python3  &>/dev/null || missing+=("python3")
 command -v aws      &>/dev/null || missing+=("aws (AWS CLI)")
@@ -76,8 +81,9 @@ echo "Setup complete! Next steps:"
 echo ""
 echo "  1. Edit config/qa-config.yaml with your AWS settings"
 echo "  2. Edit config/targets.yaml with your target repositories"
-echo "  3. Run: make qa TARGET=/path/to/repo"
-echo "  4. Run: make fix TARGET=/path/to/repo"
+echo "  3. Optionally set BACK_OFFICE_AGENT_RUNNER / BACK_OFFICE_AGENT_MODE"
+echo "  4. Run: make qa TARGET=/path/to/repo"
+echo "  5. Run: make fix TARGET=/path/to/repo"
 echo ""
 echo "For AWS dashboard deployment:"
 echo "  cd terraform && terraform init && terraform apply"

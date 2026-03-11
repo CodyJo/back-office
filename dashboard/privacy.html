@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Specialist Audit - Back Office</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="site-branding.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --surface-3: #22222e;
+      --border: #2a2a3a;
+      --border-glow: #3a3a5a;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --text-muted: #5a5a70;
+      --accent: #ff7aa8;
+      --accent-glow: #ff90b7;
+      --critical: #ff4757;
+      --high: #ff8c42;
+      --medium: #ffd166;
+      --low: #4ecdc4;
+      --info: #74b9ff;
+      --success: #2ed573;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: inherit; }
+    .container { max-width: 1320px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { display: flex; gap: 0.85rem; align-items: center; }
+    .logo-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ff7aa8, #ff90b7);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(255, 122, 168, 0.25);
+    }
+    .logo h1 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; }
+    .logo p { color: var(--text-dim); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }
+    .header-right { text-align: right; font-size: 0.8rem; color: var(--text-dim); }
+    .nav {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .nav a {
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.85rem;
+      font-size: 0.78rem;
+    }
+    .nav a.active {
+      border-color: rgba(255, 122, 168, 0.35);
+      background: rgba(255, 122, 168, 0.12);
+      color: var(--accent);
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+    }
+    .hero h2 {
+      font-size: 2rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.6rem;
+    }
+    .hero p {
+      color: var(--text-dim);
+      font-size: 0.94rem;
+      max-width: 60ch;
+    }
+    .hero .subgrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .mini {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem;
+      background: var(--surface-2);
+    }
+    .mini .label {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .mini .value {
+      font-family: var(--mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .mini .value.critical { color: var(--critical); }
+    .mini .value.accent { color: var(--accent); }
+    .mini .value.success { color: var(--success); }
+    .mini .value.info { color: var(--info); }
+    .side-note h3 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.7rem;
+    }
+    .side-note ul { list-style: none; }
+    .side-note li {
+      padding-left: 1rem;
+      position: relative;
+      color: var(--text-dim);
+      margin-bottom: 0.6rem;
+      font-size: 0.84rem;
+    }
+    .side-note li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+    }
+    .repo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .repo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+    }
+    .repo-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.85rem;
+    }
+    .repo-card h3 { font-size: 1rem; margin-bottom: 0.2rem; }
+    .repo-card .owner {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .score-pill {
+      min-width: 72px;
+      text-align: center;
+      border-radius: 999px;
+      padding: 0.45rem 0.7rem;
+      font-family: var(--mono);
+      font-weight: 700;
+      background: rgba(255, 122, 168, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(255, 122, 168, 0.25);
+    }
+    .repo-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.85rem;
+    }
+    .chip {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .repo-links {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.9rem;
+    }
+    .repo-links a {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .severity-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 0.85rem;
+    }
+    .severity-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem;
+      text-align: center;
+    }
+    .severity-box .n {
+      font-family: var(--mono);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .severity-box .l {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+      letter-spacing: 0.08em;
+    }
+    .findings {
+      display: grid;
+      gap: 0.8rem;
+    }
+    .finding {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem;
+      background: var(--surface-2);
+    }
+    .finding-top {
+      display: flex;
+      gap: 0.7rem;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .severity {
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.18rem 0.45rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .severity.critical { background: rgba(255,71,87,0.12); color: var(--critical); }
+    .severity.high { background: rgba(255,140,66,0.12); color: var(--high); }
+    .severity.medium { background: rgba(255,209,102,0.12); color: var(--medium); }
+    .severity.low { background: rgba(78,205,196,0.12); color: var(--low); }
+    .severity.info { background: rgba(116,185,255,0.12); color: var(--info); }
+    .finding-id {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .finding h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+      line-height: 1.35;
+    }
+    .finding p {
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      margin-bottom: 0.45rem;
+    }
+    .finding .file {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      word-break: break-all;
+    }
+    .finding .fix {
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+    .empty {
+      color: var(--text-dim);
+      font-size: 0.88rem;
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .container { padding: 1.25rem 1rem 3rem; }
+      header { flex-direction: column; }
+      .severity-row { grid-template-columns: repeat(2, 1fr); }
+      .hero .subgrid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">PR</div>
+        <div>
+          <h1>Privacy Specialist Audit</h1>
+          <p>Back Office</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="updatedAt">Loading latest scan...</div>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html">HQ</a>
+      <a href="compliance.html">Compliance</a>
+      <a href="privacy.html" class="active">Privacy</a>
+      <a href="jobs.html">Jobs</a>
+    </nav>
+
+    <section class="hero">
+      <div class="card">
+        <h2>Privacy posture across every active product.</h2>
+        <p>
+          This dashboard cuts the compliance output down to the findings that matter most for privacy:
+          consent, retention, deletion, exports, local storage, AI vendor exposure, third-party transfers,
+          child safety, and privacy-first defaults.
+        </p>
+        <div class="subgrid">
+          <div class="mini">
+            <div class="label">Products Covered</div>
+            <div class="value accent" id="repoCount">0</div>
+          </div>
+          <div class="mini">
+            <div class="label">Privacy Findings</div>
+            <div class="value critical" id="findingCount">0</div>
+          </div>
+          <div class="mini">
+            <div class="label">Average Score</div>
+            <div class="value success" id="avgScore">0</div>
+          </div>
+          <div class="mini">
+            <div class="label">Critical + High</div>
+            <div class="value info" id="urgentCount">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="card side-note">
+        <h3>What this page shows</h3>
+        <ul>
+          <li>Repo-by-repo privacy score derived from privacy-specific findings only.</li>
+          <li>Linked product policy sections so you can jump from findings to live policy text.</li>
+          <li>Processor visibility for AWS, Anthropic, Resend, SES, and Bolls.life where applicable.</li>
+          <li>The highest-signal privacy issues first, not every compliance issue mixed together.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="repo-grid" id="repoGrid"></section>
+  </div>
+
+  <script>
+    const DEMO = {
+      generated_at: new Date().toISOString(),
+      totals: { total_findings: 6, critical: 1, high: 1, medium: 2, low: 1, info: 1 },
+      repos: [{
+        name: 'photo-gallery',
+        label: 'Analogify Studio',
+        owner: 'gallery platform',
+        product_url: 'https://galleries.codyjo.com/',
+        privacy_url: 'https://www.codyjo.com/privacy/#analogify',
+        processors: ['AWS', 'Amazon SES'],
+        scanned_at: new Date().toISOString(),
+        summary: { privacy_score: 64, total: 3, critical: 1, high: 1, medium: 1, low: 0, info: 0 },
+        findings: [{
+          id: 'COMP-001',
+          severity: 'critical',
+          title: 'No storage consent mechanism for viewer persistence',
+          regulation: 'GDPR / ePrivacy',
+          description: 'Viewer email and auth state are stored on-device without a consent gate.',
+          file: 'frontend/gallery.html',
+          line: 1645,
+          fix: 'Add a storage consent path that separates essential access from optional persistence.'
+        }]
+      }]
+    };
+
+    function esc(text) {
+      return String(text ?? '').replace(/[&<>"]/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;'
+      }[ch]));
+    }
+
+    function severityClass(severity) {
+      const s = (severity || 'info').toLowerCase();
+      return ['critical', 'high', 'medium', 'low', 'info'].includes(s) ? s : 'info';
+    }
+
+    async function loadData() {
+      try {
+        const resp = await fetch('privacy-data.json', { cache: 'no-store' });
+        if (!resp.ok) throw new Error('privacy-data.json not found');
+        return await resp.json();
+      } catch (err) {
+        console.warn('Using privacy demo data:', err);
+        return DEMO;
+      }
+    }
+
+    function renderStats(data) {
+      const repos = data.repos || [];
+      const scores = repos.map((repo) => Number(repo.summary?.privacy_score)).filter((value) => !Number.isNaN(value));
+      const avg = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0;
+      const urgent = (data.totals?.critical || 0) + (data.totals?.high || 0);
+
+      document.getElementById('repoCount').textContent = String(repos.length);
+      document.getElementById('findingCount').textContent = String(data.totals?.total_findings || 0);
+      document.getElementById('avgScore').textContent = String(avg);
+      document.getElementById('urgentCount').textContent = String(urgent);
+      document.getElementById('updatedAt').textContent = `Updated ${new Date(data.generated_at).toLocaleString()}`;
+    }
+
+    function renderRepos(data) {
+      const grid = document.getElementById('repoGrid');
+      const repos = [...(data.repos || [])].sort((a, b) => (a.summary?.privacy_score ?? 999) - (b.summary?.privacy_score ?? 999));
+
+      if (!repos.length) {
+        grid.innerHTML = '<div class="card empty">No privacy audit data is available yet.</div>';
+        return;
+      }
+
+      grid.innerHTML = repos.map((repo) => {
+        const summary = repo.summary || {};
+        const findings = (repo.findings || []).slice(0, 5);
+        const processors = (repo.processors || []).map((p) => `<span class="chip">${esc(p)}</span>`).join('');
+        const links = [
+          repo.product_url ? `<a href="${esc(repo.product_url)}" target="_blank" rel="noopener">Open product</a>` : '',
+          repo.privacy_url ? `<a href="${esc(repo.privacy_url)}" target="_blank" rel="noopener">Open privacy section</a>` : '',
+        ].filter(Boolean).join('');
+
+        return `
+          <article class="repo-card">
+            <div class="repo-top">
+              <div>
+                <div class="owner">${esc(repo.owner || repo.name)}</div>
+                <h3>${esc(repo.label || repo.name)}</h3>
+              </div>
+              <div class="score-pill">${esc(summary.privacy_score ?? 'n/a')}</div>
+            </div>
+
+            <div class="repo-links">${links}</div>
+            <div class="repo-meta">${processors || '<span class="chip">No processors listed</span>'}</div>
+
+            <div class="severity-row">
+              <div class="severity-box"><div class="n">${summary.critical || 0}</div><div class="l">Critical</div></div>
+              <div class="severity-box"><div class="n">${summary.high || 0}</div><div class="l">High</div></div>
+              <div class="severity-box"><div class="n">${summary.medium || 0}</div><div class="l">Medium</div></div>
+              <div class="severity-box"><div class="n">${summary.low || 0}</div><div class="l">Low</div></div>
+              <div class="severity-box"><div class="n">${summary.info || 0}</div><div class="l">Info</div></div>
+            </div>
+
+            <div class="findings">
+              ${findings.length ? findings.map((finding) => `
+                <div class="finding">
+                  <div class="finding-top">
+                    <span class="severity ${severityClass(finding.severity)}">${esc(finding.severity)}</span>
+                    <span class="finding-id">${esc(finding.id)}</span>
+                  </div>
+                  <h4>${esc(finding.title)}</h4>
+                  <div class="file">${esc(finding.file || '')}${finding.line ? ':' + esc(finding.line) : ''}</div>
+                  <p>${esc(finding.description || '')}</p>
+                  ${finding.fix ? `<div class="fix"><strong>Fix:</strong> ${esc(finding.fix)}</div>` : ''}
+                </div>
+              `).join('') : '<div class="empty">No privacy-specific findings for this repo.</div>'}
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    loadData().then((data) => {
+      renderStats(data);
+      renderRepos(data);
+    });
+  </script>
+</body>
+</html>

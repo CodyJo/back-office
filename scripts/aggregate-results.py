@@ -6,6 +6,72 @@ import os
 import sys
 from datetime import datetime, timezone
 
+PRIVACY_KEYWORDS = (
+    "privacy",
+    "consent",
+    "cookie",
+    "localstorage",
+    "sessionstorage",
+    "retention",
+    "delete",
+    "deletion",
+    "erase",
+    "erasure",
+    "export",
+    "subject access",
+    "data transfer",
+    "international transfer",
+    "third-party",
+    "third party",
+    "tracking",
+    "profil",
+    "ai",
+    "anthropic",
+    "claude",
+    "minor",
+    "child",
+    "children",
+    "geolocation",
+)
+
+PRIVACY_REPO_META = {
+    "codyjo.com": {
+        "label": "Cody Jo Method",
+        "product_url": "https://www.codyjo.com/",
+        "privacy_url": "https://www.codyjo.com/privacy/#codyjo-com",
+        "owner": "marketing site",
+        "processors": ["AWS"],
+    },
+    "photo-gallery": {
+        "label": "Analogify Studio",
+        "product_url": "https://galleries.codyjo.com/",
+        "privacy_url": "https://www.codyjo.com/privacy/#analogify",
+        "owner": "gallery platform",
+        "processors": ["AWS", "Amazon SES"],
+    },
+    "thenewbeautifulme": {
+        "label": "The New Beautiful Me",
+        "product_url": "https://thenewbeautifulme.com/",
+        "privacy_url": "https://www.codyjo.com/privacy/#tnbm",
+        "owner": "tarot + journaling app",
+        "processors": ["AWS", "Anthropic", "Resend"],
+    },
+    "bible-app": {
+        "label": "Selah",
+        "product_url": "https://selah.codyjo.com/",
+        "privacy_url": "https://www.codyjo.com/privacy/#selah",
+        "owner": "Bible study app",
+        "processors": ["AWS", "Anthropic", "Resend", "Bolls.life"],
+    },
+    "back-office": {
+        "label": "Back Office",
+        "product_url": "https://www.codyjo.com/back-office/",
+        "privacy_url": "https://www.codyjo.com/privacy/#back-office",
+        "owner": "internal audit system",
+        "processors": ["AWS", "Anthropic"],
+    },
+}
+
 
 def load_json(path):
     try:
@@ -227,6 +293,105 @@ def aggregate_department(results_dir, findings_filename, department_name):
     }
 
 
+def is_privacy_finding(finding):
+    haystack = " ".join(
+        str(finding.get(field, ""))
+        for field in ("title", "description", "regulation", "legal_risk", "evidence", "fix_suggestion", "category")
+    ).lower()
+    return any(keyword in haystack for keyword in PRIVACY_KEYWORDS)
+
+
+def privacy_score(findings):
+    counts = count_severities(findings)
+    return max(
+        0,
+        100
+        - counts["critical"] * 18
+        - counts["high"] * 10
+        - counts["medium"] * 4
+        - counts["low"] * 2
+        - counts["info"],
+    )
+
+
+def aggregate_privacy(results_dir):
+    repos = []
+    totals = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0, "total_findings": 0}
+
+    for repo_name in sorted(os.listdir(results_dir)):
+        repo_dir = os.path.join(results_dir, repo_name)
+        if not os.path.isdir(repo_dir):
+            continue
+
+        compliance = load_json(os.path.join(repo_dir, "compliance-findings.json"))
+        if not compliance:
+            continue
+
+        source_findings = compliance.get("findings", [])
+        findings = [finding for finding in source_findings if is_privacy_finding(finding)]
+        counts = count_severities(findings)
+
+        for key, value in counts.items():
+            totals[key] += value
+        totals["total_findings"] += len(findings)
+
+        meta = PRIVACY_REPO_META.get(
+            repo_name,
+            {
+                "label": repo_name,
+                "product_url": "",
+                "privacy_url": "",
+                "owner": "",
+                "processors": [],
+            },
+        )
+
+        frameworks = compliance.get("frameworks", {})
+        repo_entry = {
+            "name": repo_name,
+            "label": meta["label"],
+            "product_url": meta["product_url"],
+            "privacy_url": meta["privacy_url"],
+            "owner": meta["owner"],
+            "processors": meta["processors"],
+            "scanned_at": compliance.get("scanned_at", ""),
+            "summary": {
+                "total": len(findings),
+                **counts,
+                "privacy_score": privacy_score(findings),
+                "gdpr_score": (frameworks.get("gdpr") or {}).get("score"),
+                "age_score": (frameworks.get("age_verification") or {}).get("score"),
+                "compliance_score": ((compliance.get("summary") or {}).get("compliance_score")),
+            },
+            "findings": [
+                {
+                    "id": finding["id"],
+                    "severity": finding.get("severity", "info"),
+                    "category": finding.get("category", ""),
+                    "title": finding.get("title", ""),
+                    "file": finding.get("file") or finding.get("location", ""),
+                    "line": finding.get("line"),
+                    "regulation": finding.get("regulation", ""),
+                    "description": finding.get("description", ""),
+                    "evidence": finding.get("evidence", ""),
+                    "fix": finding.get("fix_suggestion", ""),
+                    "effort": finding.get("effort", "unknown"),
+                    "fixable": finding.get("fixable_by_agent", False),
+                }
+                for finding in findings
+            ],
+        }
+        repos.append(repo_entry)
+        write_json(repo_entry, os.path.join(repo_dir, "privacy-findings.json"))
+
+    return {
+        "department": "privacy",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "totals": totals,
+        "repos": repos,
+    }
+
+
 def write_json(data, path):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w") as f:
@@ -273,6 +438,11 @@ def aggregate(results_dir, output_path):
     print(f"Compliance: {comp_data['totals']['total_findings']} findings across "
           f"{len(comp_data['repos'])} repos")
 
+    privacy_data = aggregate_privacy(results_dir)
+    write_json(privacy_data, os.path.join(dashboard_dir, "privacy-data.json"))
+    print(f"Privacy: {privacy_data['totals']['total_findings']} findings across "
+          f"{len(privacy_data['repos'])} repos")
+
     # Monetization department
     mon_data = aggregate_department(results_dir, "monetization-findings.json", "monetization")
     write_json(mon_data, os.path.join(dashboard_dir, "monetization-data.json"))
@@ -294,6 +464,7 @@ def aggregate(results_dir, output_path):
     # Summary
     total = (qa_data["totals"]["total_findings"] + seo_data["totals"]["total_findings"] +
              ada_data["totals"]["total_findings"] + comp_data["totals"]["total_findings"] +
+             privacy_data["totals"]["total_findings"] +
              mon_data["totals"]["total_findings"] + prod_data["totals"]["total_findings"])
     print(f"\nTotal across all departments: {total} findings")
 

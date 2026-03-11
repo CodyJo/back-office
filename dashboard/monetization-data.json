@@ -1,15 +1,263 @@
 {
   "department": "monetization",
-  "generated_at": "2026-03-11T02:17:22.745310+00:00",
+  "generated_at": "2026-03-11T07:37:52.391450+00:00",
   "totals": {
     "critical": 0,
     "high": 0,
     "medium": 0,
     "low": 0,
-    "info": 47,
-    "total_findings": 47
+    "info": 62,
+    "total_findings": 62
   },
   "repos": [
+    {
+      "name": "bible-app",
+      "scanned_at": "2026-03-11T12:00:00Z",
+      "summary": {
+        "total_opportunities": 15,
+        "high_value": 2,
+        "medium_value": 6,
+        "low_value": 7,
+        "quick_wins": 4,
+        "estimated_monthly_revenue_low": 150,
+        "estimated_monthly_revenue_high": 2800,
+        "monetization_readiness_score": 54,
+        "total": 15,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 15,
+        "scanned_at": "2026-03-11T12:00:00Z"
+      },
+      "findings": [
+        {
+          "id": "MON-001",
+          "severity": "high",
+          "category": "premium-features",
+          "title": "Premium AI Study Subscription",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$200-1500/month (at 40-200 subscribers)",
+          "phase": 2
+        },
+        {
+          "id": "MON-002",
+          "severity": "high",
+          "category": "premium-features",
+          "title": "AI Credit Pack (Pay-As-You-Go Alternative)",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-300/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-003",
+          "severity": "medium",
+          "category": "premium-features",
+          "title": "Cloud Sync & Backup as Premium Feature",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-200/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-004",
+          "severity": "medium",
+          "category": "digital-products",
+          "title": "Premium & AI-Generated Reading Plans",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$30-150/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-005",
+          "severity": "medium",
+          "category": "digital-products",
+          "title": "PDF Export of Journals, Studies & Bookmarks",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$20-80/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-006",
+          "severity": "low",
+          "category": "digital-products",
+          "title": "Premium Verse Wallpaper Themes",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$10-50/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-007",
+          "severity": "medium",
+          "category": "affiliate-marketing",
+          "title": "Study Bible & Book Affiliate Links",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$20-150/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-008",
+          "severity": "low",
+          "category": "affiliate-marketing",
+          "title": "Journaling & Devotional Supply Affiliates",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$5-30/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-009",
+          "severity": "low",
+          "category": "print-fulfillment",
+          "title": "Verse Art Print-on-Demand",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$10-80/month",
+          "phase": 4
+        },
+        {
+          "id": "MON-010",
+          "severity": "low",
+          "category": "print-fulfillment",
+          "title": "Printed Prayer Journal Book",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$5-40/month",
+          "phase": 4
+        },
+        {
+          "id": "MON-011",
+          "severity": "medium",
+          "category": "client-services",
+          "title": "Church & Small Group Licenses",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-500/month",
+          "phase": 4
+        },
+        {
+          "id": "MON-012",
+          "severity": "medium",
+          "category": "client-services",
+          "title": "Donation / Tip Jar (Support the Developer)",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$20-200/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-013",
+          "severity": "medium",
+          "category": "sponsorships",
+          "title": "Bible Publisher Translation Partnerships",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-500/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-014",
+          "severity": "low",
+          "category": "sponsorships",
+          "title": "Christian Ministry & Nonprofit Sponsorships",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$25-200/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-015",
+          "severity": "low",
+          "category": "display-advertising",
+          "title": "Tasteful Display Ads (Not Recommended at Current Scale)",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$0-50/month (at current scale, likely $0)",
+          "phase": 4
+        }
+      ],
+      "categories": {
+        "display_advertising": {
+          "score": 1,
+          "opportunities": 1
+        },
+        "affiliate_marketing": {
+          "score": 4,
+          "opportunities": 2
+        },
+        "premium_features": {
+          "score": 9,
+          "opportunities": 3
+        },
+        "print_fulfillment": {
+          "score": 2,
+          "opportunities": 2
+        },
+        "digital_products": {
+          "score": 5,
+          "opportunities": 3
+        },
+        "client_services": {
+          "score": 3,
+          "opportunities": 2
+        },
+        "sponsorships": {
+          "score": 3,
+          "opportunities": 2
+        }
+      }
+    },
     {
       "name": "codyjo.com",
       "scanned_at": "2026-03-10T18:04:51.949733+00:00",

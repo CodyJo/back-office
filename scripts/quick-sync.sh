@@ -2,7 +2,7 @@
 # Quick sync — Upload a single department's data to all dashboard targets
 #
 # Usage: ./scripts/quick-sync.sh <department> <repo-name>
-#   department: qa|seo|ada|compliance|monetization|product|all
+#   department: qa|seo|ada|compliance|privacy|monetization|product|all
 #   repo-name:  e.g., "codyjo.com" or "thenewbeautifulme"
 #
 # This is much faster than the full sync-dashboard.sh because it:
@@ -32,6 +32,7 @@ declare -A DEPT_MAP=(
   [seo]="seo-findings.json:seo-data.json"
   [ada]="ada-findings.json:ada-data.json"
   [compliance]="compliance-findings.json:compliance-data.json"
+  [privacy]="privacy-findings.json:privacy-data.json"
   [monetization]="monetization-findings.json:monetization-data.json"
   [product]="product-findings.json:product-data.json"
   [self-audit]="findings.json:self-audit-data.json"
@@ -100,13 +101,44 @@ upload_jobs_data() {
   fi
 }
 
+upload_shared_data() {
+  local bucket="$1"
+  local cf_id="$2"
+  local prefix="$3"
+
+  local dashboard_dir="$QA_ROOT/dashboard"
+  local shared_files=(org-data.json local-audit-log.json local-audit-log.md)
+  local invalidation_paths=()
+
+  for f in "${shared_files[@]}"; do
+    local local_path="$dashboard_dir/$f"
+    [ -f "$local_path" ] || continue
+    local content_type="application/json"
+    [[ "$f" == *.md ]] && content_type="text/markdown"
+    local s3_key="${prefix}${f}"
+    echo "  [shared] Uploading $f -> s3://$bucket/$s3_key"
+    aws s3 cp "$local_path" "s3://$bucket/$s3_key" \
+      --content-type "$content_type" \
+      --cache-control "no-cache, no-store, must-revalidate" \
+      --quiet
+    invalidation_paths+=("/$s3_key")
+  done
+
+  if [ -n "$cf_id" ] && [ ${#invalidation_paths[@]} -gt 0 ]; then
+    aws cloudfront create-invalidation \
+      --distribution-id "$cf_id" \
+      --paths "${invalidation_paths[@]}" \
+      --output text --query 'Invalidation.Id' 2>/dev/null || true
+  fi
+}
+
 upload_html() {
   local bucket="$1"
   local cf_id="$2"
   local prefix="$3"
 
   local dashboard_dir="$QA_ROOT/dashboard"
-  local html_files=(index.html qa.html seo.html ada.html compliance.html monetization.html product.html jobs.html faq.html self-audit.html admin.html site-branding.js)
+  local html_files=(index.html qa.html seo.html ada.html compliance.html privacy.html monetization.html product.html jobs.html faq.html self-audit.html admin.html selah.html analogify.html chromahaus.html tnbm-tarot.html back-office-hq.html site-branding.js favicon.svg)
   local invalidation_paths=()
 
   for f in "${html_files[@]}"; do
@@ -114,6 +146,7 @@ upload_html() {
     [ -f "$local_path" ] || continue
     local content_type="text/html"
     [[ "$f" == *.js ]] && content_type="application/javascript"
+    [[ "$f" == *.svg ]] && content_type="image/svg+xml"
     local s3_key="${prefix}${f}"
     aws s3 cp "$local_path" "s3://$bucket/$s3_key" \
       --content-type "$content_type" \
@@ -158,7 +191,7 @@ for t in targets:
   echo "Target: $bucket (repo: $repo)"
 
   if [ "$DEPT" = "all" ]; then
-    for d in qa seo ada compliance monetization product; do
+    for d in qa seo ada compliance privacy monetization product; do
       upload_dept "$d" "$bucket" "$cf_id" "$repo" "$prefix" || true
     done
   else
@@ -167,6 +200,7 @@ for t in targets:
 
   # Always upload job status and history files
   upload_jobs_data "$bucket" "$cf_id" "$prefix"
+  upload_shared_data "$bucket" "$cf_id" "$prefix"
 done
 
 echo ""

@@ -1,15 +1,327 @@
 {
   "department": "ada",
-  "generated_at": "2026-03-11T02:17:22.743603+00:00",
+  "generated_at": "2026-03-11T07:37:52.386194+00:00",
   "totals": {
-    "critical": 3,
-    "high": 10,
-    "medium": 23,
-    "low": 14,
-    "info": 10,
-    "total_findings": 60
+    "critical": 4,
+    "high": 14,
+    "medium": 35,
+    "low": 19,
+    "info": 13,
+    "total_findings": 85
   },
   "repos": [
+    {
+      "name": "bible-app",
+      "scanned_at": "2026-03-11T07:23:11.519421+00:00",
+      "summary": {
+        "total": 25,
+        "critical": 1,
+        "high": 4,
+        "medium": 12,
+        "low": 5,
+        "info": 3,
+        "wcag_level": "non-compliant",
+        "compliance_score": 12,
+        "scanned_at": "2026-03-11T07:23:11.519421+00:00"
+      },
+      "findings": [
+        {
+          "id": "ADA-001",
+          "severity": "critical",
+          "category": "robust",
+          "title": "StudyChat send button has no accessible name",
+          "file": "src/components/StudyChat.tsx",
+          "line": 102,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-002",
+          "severity": "high",
+          "category": "perceivable",
+          "title": "White text on accent-blue buttons fails AA contrast in dark mode",
+          "file": "src/app/globals.css",
+          "line": 8,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "ADA-003",
+          "severity": "high",
+          "category": "perceivable",
+          "title": "Search placeholder text at 40% opacity fails contrast requirements",
+          "file": "src/app/reflections/page.tsx",
+          "line": 238,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-004",
+          "severity": "high",
+          "category": "understandable",
+          "title": "StudyChat text input has no visible label",
+          "file": "src/components/StudyChat.tsx",
+          "line": 95,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-005",
+          "severity": "high",
+          "category": "perceivable",
+          "title": "Custom checkbox border is invisible against background",
+          "file": "src/app/plans/page.tsx",
+          "line": 298,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-006",
+          "severity": "medium",
+          "category": "operable",
+          "title": "Most pages share the same browser title",
+          "file": "src/app/layout.tsx",
+          "line": 10,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-007",
+          "severity": "medium",
+          "category": "perceivable",
+          "title": "Login form inputs missing autocomplete attributes",
+          "file": "src/app/login/page.tsx",
+          "line": 77,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-008",
+          "severity": "medium",
+          "category": "perceivable",
+          "title": "Registration form inputs missing autocomplete attributes",
+          "file": "src/app/register/page.tsx",
+          "line": 97,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-009",
+          "severity": "medium",
+          "category": "perceivable",
+          "title": "Forgot password email input missing autocomplete attribute",
+          "file": "src/app/forgot-password/page.tsx",
+          "line": 70,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-010",
+          "severity": "medium",
+          "category": "operable",
+          "title": "Study page book dropdown lacks Escape key dismissal",
+          "file": "src/app/study/page.tsx",
+          "line": 437,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-011",
+          "severity": "medium",
+          "category": "robust",
+          "title": "Version selector buttons lack radio group ARIA roles",
+          "file": "src/components/VersionSelector.tsx",
+          "line": 21,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-012",
+          "severity": "medium",
+          "category": "robust",
+          "title": "Mood selector buttons lack aria-pressed toggle state",
+          "file": "src/app/journal/page.tsx",
+          "line": 243,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-013",
+          "severity": "medium",
+          "category": "robust",
+          "title": "Loading states not announced to screen readers",
+          "file": "src/app/daily/page.tsx",
+          "line": 151,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-014",
+          "severity": "medium",
+          "category": "robust",
+          "title": "Form error messages not in aria-live regions",
+          "file": "src/app/login/page.tsx",
+          "line": 70,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-015",
+          "severity": "medium",
+          "category": "understandable",
+          "title": "Search inputs missing visible labels",
+          "file": "src/app/reflections/page.tsx",
+          "line": 234,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-016",
+          "severity": "medium",
+          "category": "robust",
+          "title": "Settings toggle buttons lack switch/pressed ARIA semantics",
+          "file": "src/app/settings/page.tsx",
+          "line": 286,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-017",
+          "severity": "medium",
+          "category": "robust",
+          "title": "Study page book dropdown lacks listbox ARIA semantics",
+          "file": "src/app/study/page.tsx",
+          "line": 419,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-018",
+          "severity": "low",
+          "category": "operable",
+          "title": "Plans page 'Read' and 'Study' links lack descriptive context",
+          "file": "src/app/plans/page.tsx",
+          "line": 344,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-019",
+          "severity": "low",
+          "category": "operable",
+          "title": "Navigation menu panel lacks Escape key to close",
+          "file": "src/components/Navigation.tsx",
+          "line": 104,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-020",
+          "severity": "low",
+          "category": "perceivable",
+          "title": "Version badge uses title attribute for essential information",
+          "file": "src/components/Navigation.tsx",
+          "line": 68,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-021",
+          "severity": "low",
+          "category": "robust",
+          "title": "Copy and save confirmations not announced via aria-live",
+          "file": "src/app/daily/page.tsx",
+          "line": 219,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-022",
+          "severity": "low",
+          "category": "perceivable",
+          "title": "Feature card emojis rendered via dangerouslySetInnerHTML lack aria-hidden",
+          "file": "src/app/page.tsx",
+          "line": 192,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "ADA-023",
+          "severity": "info",
+          "category": "perceivable",
+          "title": "Enhanced contrast (7:1) not met on some text-accent combinations",
+          "file": "src/app/globals.css",
+          "line": 8,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "ADA-024",
+          "severity": "info",
+          "category": "operable",
+          "title": "No breadcrumb navigation for wayfinding",
+          "file": "src/components/Navigation.tsx",
+          "line": 56,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "ADA-025",
+          "severity": "info",
+          "category": "understandable",
+          "title": "Text blocks may exceed 80 character line width on wide screens",
+          "file": "src/app/privacy/page.tsx",
+          "line": 14,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        }
+      ],
+      "categories": {
+        "perceivable": {
+          "score": 65,
+          "issues": 9
+        },
+        "operable": {
+          "score": 92,
+          "issues": 5
+        },
+        "understandable": {
+          "score": 86,
+          "issues": 4
+        },
+        "robust": {
+          "score": 69,
+          "issues": 7
+        }
+      },
+      "compliance_score": 12,
+      "wcag_level": "non-compliant"
+    },
     {
       "name": "codyjo.com",
       "scanned_at": "2026-03-10T17:59:55.600747+00:00",

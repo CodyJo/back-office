@@ -65,7 +65,7 @@ product: ## Run product roadmap audit on TARGET (make product TARGET=/path/to/re
 audit-all: ## Run ALL audits sequentially on TARGET repo
 	@test -n "$(TARGET)" || (echo "Usage: make audit-all TARGET=/path/to/repo" && exit 1)
 	@echo "╔══════════════════════════════════════════════════════════╗"
-	@echo "║  BreakPoint Labs — Full Company Audit                    ║"
+	@echo "║  Cody Jo Method — Full Company Audit                    ║"
 	@echo "╚══════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Running all department audits on: $(TARGET)"
@@ -86,7 +86,7 @@ audit-all: ## Run ALL audits sequentially on TARGET repo
 audit-all-parallel: ## Run ALL audits in parallel (2 waves of 3)
 	@test -n "$(TARGET)" || (echo "Usage: make audit-all-parallel TARGET=/path/to/repo" && exit 1)
 	@echo "╔══════════════════════════════════════════════════════════╗"
-	@echo "║  BreakPoint Labs — Full Company Audit (Parallel)         ║"
+	@echo "║  Cody Jo Method — Full Company Audit (Parallel)         ║"
 	@echo "╚══════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Running all department audits in parallel on: $(TARGET)"
@@ -115,7 +115,7 @@ audit-live: ## Run ALL audits with live dashboard refresh after each (make audit
 	@test -n "$(TARGET)" || (echo "Usage: make audit-live TARGET=/path/to/repo" && exit 1)
 	@REPO_NAME=$$(basename "$(TARGET)") && \
 	echo "╔══════════════════════════════════════════════════════════╗" && \
-	echo "║  BreakPoint Labs — Live Audit (auto-refresh dashboard)  ║" && \
+	echo "║  Cody Jo Method — Live Audit (auto-refresh dashboard)  ║" && \
 	echo "╚══════════════════════════════════════════════════════════╝" && \
 	echo "" && \
 	echo "Target: $(TARGET)" && \

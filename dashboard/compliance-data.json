@@ -1,15 +1,225 @@
 {
   "department": "compliance",
-  "generated_at": "2026-03-11T02:17:22.744365+00:00",
+  "generated_at": "2026-03-11T07:37:52.387170+00:00",
   "totals": {
     "critical": 2,
-    "high": 9,
-    "medium": 27,
-    "low": 12,
-    "info": 6,
-    "total_findings": 56
+    "high": 13,
+    "medium": 34,
+    "low": 16,
+    "info": 7,
+    "total_findings": 72
   },
   "repos": [
+    {
+      "name": "bible-app",
+      "scanned_at": "2026-03-11T07:29:51.116474+00:00",
+      "summary": {
+        "total": 16,
+        "critical": 0,
+        "high": 4,
+        "medium": 7,
+        "low": 4,
+        "info": 1,
+        "compliance_score": 72,
+        "scanned_at": "2026-03-11T07:29:51.116474+00:00"
+      },
+      "findings": [
+        {
+          "id": "COMP-001",
+          "severity": "high",
+          "category": "gdpr",
+          "title": "No account deletion UI despite backend support",
+          "file": "src/app/settings/page.tsx",
+          "line": 106,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-002",
+          "severity": "high",
+          "category": "gdpr",
+          "title": "Privacy policy is externally hosted with incomplete disclosures on-site",
+          "file": "src/app/privacy/page.tsx",
+          "line": 10,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "COMP-003",
+          "severity": "high",
+          "category": "gdpr",
+          "title": "No data retention policy or automatic purge for user data",
+          "file": "terraform/dynamodb.tf",
+          "line": 38,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "COMP-004",
+          "severity": "high",
+          "category": "iso27001",
+          "title": "Content Security Policy allows unsafe-inline and unsafe-eval",
+          "file": "terraform/cloudfront.tf",
+          "line": 191,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-005",
+          "severity": "medium",
+          "category": "iso27001",
+          "title": "JWT token stored in localStorage is vulnerable to XSS exfiltration",
+          "file": "src/lib/auth-context.tsx",
+          "line": 13,
+          "effort": "large",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-006",
+          "severity": "medium",
+          "category": "gdpr",
+          "title": "No server-side data export or access request mechanism",
+          "file": "src/app/settings/page.tsx",
+          "line": 49,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-007",
+          "severity": "medium",
+          "category": "gdpr",
+          "title": "AI-powered study features lack transparency about automated processing",
+          "file": "lambda/interpret/index.mjs",
+          "line": 1,
+          "effort": "small",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "COMP-008",
+          "severity": "medium",
+          "category": "gdpr",
+          "title": "No disclosure of international data transfer mechanisms",
+          "file": "terraform/main.tf",
+          "line": 1,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "COMP-009",
+          "severity": "medium",
+          "category": "iso27001",
+          "title": "JWT tokens have 30-day expiry with no refresh rotation",
+          "file": "lambda/api/index.mjs",
+          "line": 108,
+          "effort": "large",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-010",
+          "severity": "medium",
+          "category": "iso27001",
+          "title": "No structured logging retention policy for Lambda logs",
+          "file": "terraform/api_gateway.tf",
+          "line": 44,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-011",
+          "severity": "medium",
+          "category": "iso27001",
+          "title": "No incident response documentation or breach notification procedure",
+          "file": "lambda/api/index.mjs",
+          "line": 1,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "COMP-012",
+          "severity": "low",
+          "category": "gdpr",
+          "title": "No granular consent management or withdrawal mechanism",
+          "file": "src/app/register/page.tsx",
+          "line": 148,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "COMP-013",
+          "severity": "low",
+          "category": "iso27001",
+          "title": "No Cache-Control headers for authenticated API responses",
+          "file": "lambda/api/index.mjs",
+          "line": 90,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-014",
+          "severity": "low",
+          "category": "iso27001",
+          "title": "RESEND_API_KEY stored as plaintext Lambda environment variable",
+          "file": "lambda/api/index.mjs",
+          "line": 7,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-015",
+          "severity": "low",
+          "category": "gdpr",
+          "title": "Study rhythm notification preferences default to ON",
+          "file": "src/lib/storage.ts",
+          "line": 1,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "COMP-016",
+          "severity": "info",
+          "category": "gdpr",
+          "title": "Consider DPIA for AI-powered Bible study features",
+          "file": "lambda/interpret/index.mjs",
+          "line": 1,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        }
+      ],
+      "frameworks": {
+        "gdpr": {
+          "score": 68,
+          "issues": 7,
+          "status": "partial"
+        },
+        "iso27001": {
+          "score": 78,
+          "issues": 6,
+          "status": "partial"
+        },
+        "age_verification": {
+          "score": 100,
+          "issues": 0,
+          "status": "not-applicable"
+        }
+      },
+      "compliance_score": 72
+    },
     {
       "name": "codyjo.com",
       "scanned_at": "2026-03-10T17:55:19.733770+00:00",

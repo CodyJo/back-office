@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BreakPoint Labs — Back Office</title>
+  <title>Cody Jo Method — Back Office</title>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="site-branding.js"></script>
@@ -15,922 +16,930 @@
       --surface-2: #1a1a26;
       --surface-3: #22222e;
       --border: #2a2a3a;
-      --border-glow: #3a3a5a;
       --text: #e4e4ef;
       --text-dim: #8888a0;
-      --text-muted: #5a5a70;
-      --accent: #6c5ce7;
-      --accent-glow: #7c6cf7;
+      --text-muted: #8888a0;
+      --accent: #c4944a;
+      --accent-2: #6c5ce7;
       --critical: #ff4757;
-      --critical-bg: rgba(255,71,87,0.1);
       --high: #ff8c42;
-      --high-bg: rgba(255,140,66,0.1);
       --medium: #ffd166;
-      --medium-bg: rgba(255,209,102,0.1);
       --low: #4ecdc4;
-      --low-bg: rgba(78,205,196,0.1);
       --info: #74b9ff;
-      --info-bg: rgba(116,185,255,0.1);
       --success: #2ed573;
-      --success-bg: rgba(46,213,115,0.1);
-      --radius: 12px;
-      --radius-sm: 8px;
+      --radius: 14px;
+      --radius-sm: 10px;
       --mono: 'JetBrains Mono', monospace;
       --sans: 'Inter', -apple-system, sans-serif;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: var(--sans);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: inherit; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .skip-link {
+      position: absolute; left: 1rem; top: -3rem; z-index: 999;
+      background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.65rem 0.9rem; text-decoration: none;
     }
-
-    /* ── Layout ──────────────────────────────────────────── */
-
-    .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
-
+    .skip-link:focus { top: 1rem; }
     header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 2.5rem; padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+      margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border);
     }
-
-    .logo { display: flex; align-items: center; gap: 0.75rem; }
-
-    .logo-icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, #6c5ce7, #7c6cf7);
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; font-weight: 700; color: white;
-      box-shadow: 0 0 20px rgba(108,92,231,0.3);
-      letter-spacing: -0.03em;
-      font-family: var(--mono);
+    .brand { display: flex; align-items: center; gap: 0.9rem; }
+    .brand-mark {
+      width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, #c4944a, #6c5ce7);
+      box-shadow: 0 0 22px rgba(196, 148, 74, 0.16);
     }
-
-    .logo-text h1 {
-      font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2;
+    .brand h1 { font-size: 1.45rem; letter-spacing: -0.03em; }
+    .brand p { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .updated { color: var(--text-dim); font-size: 0.82rem; text-align: right; }
+    .nav { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .nav a {
+      text-decoration: none; padding: 0.52rem 0.85rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface-2); font-size: 0.78rem;
     }
-
-    .logo-text .subtitle {
-      font-size: 0.75rem; color: var(--text-muted); font-weight: 400;
-      letter-spacing: 0.06em; text-transform: uppercase;
-    }
-
-    .header-right { display: flex; align-items: center; gap: 1.25rem; }
-
-    .header-meta { text-align: right; font-size: 0.78rem; color: var(--text-dim); }
-
-    .live-indicator {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      font-size: 0.75rem; font-weight: 500; color: var(--success);
-      background: var(--success-bg); padding: 0.3rem 0.75rem;
-      border-radius: 20px; border: 1px solid rgba(46,213,115,0.15);
-    }
-
-    .live-dot {
-      width: 7px; height: 7px; background: var(--success);
-      border-radius: 50%; animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46,213,115,0.4); }
-      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(46,213,115,0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Stats Grid ──────────────────────────────────────── */
-
-    .stats-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 1rem; margin-bottom: 2rem;
-    }
-
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.25rem 1.4rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      animation: fadeIn 0.4s ease both;
-    }
-
-    .stat-card:nth-child(1) { animation-delay: 0.05s; }
-    .stat-card:nth-child(2) { animation-delay: 0.1s; }
-    .stat-card:nth-child(3) { animation-delay: 0.15s; }
-    .stat-card:nth-child(4) { animation-delay: 0.2s; }
-
-    .stat-card:hover {
-      border-color: var(--border-glow);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-    }
-
-    .stat-label {
-      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 500;
-    }
-
-    .stat-value {
-      font-size: 2rem; font-weight: 700; font-family: var(--mono);
-      letter-spacing: -0.02em; line-height: 1.1;
-    }
-
-    .stat-sub {
-      font-size: 0.7rem; color: var(--text-dim); margin-top: 0.35rem;
-      display: flex; align-items: center; gap: 0.3rem;
-    }
-
-    .stat-value.accent { color: var(--accent); }
-    .stat-value.success { color: var(--success); }
-    .stat-value.info { color: var(--info); }
-
-    /* ── Section Headers ─────────────────────────────────── */
-
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1.25rem;
-    }
-
-    .section-title {
-      font-size: 1rem; font-weight: 600; letter-spacing: -0.01em;
-    }
-
-    .section-badge {
-      font-family: var(--mono); font-size: 0.65rem; font-weight: 500;
-      padding: 0.2rem 0.6rem; border-radius: 10px;
-      background: var(--surface-3); color: var(--text-muted);
-    }
-
-    /* ── Department Cards Grid ───────────────────────────── */
-
-    .dept-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem; margin-bottom: 2.5rem;
-    }
-
-    .dept-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.5rem 1.6rem;
-      transition: border-color 0.2s, box-shadow 0.3s, transform 0.2s;
-      position: relative; overflow: hidden;
-      animation: fadeIn 0.5s ease both;
-    }
-
-    .dept-card:nth-child(1) { animation-delay: 0.1s; }
-    .dept-card:nth-child(2) { animation-delay: 0.15s; }
-    .dept-card:nth-child(3) { animation-delay: 0.2s; }
-    .dept-card:nth-child(4) { animation-delay: 0.25s; }
-    .dept-card:nth-child(5) { animation-delay: 0.3s; }
-
-    .dept-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 8px 32px rgba(108,92,231,0.12);
-      transform: translateY(-2px);
-    }
-
-    .dept-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      border-radius: var(--radius) var(--radius) 0 0;
-      opacity: 0; transition: opacity 0.2s;
-    }
-
-    .dept-card:hover::before { opacity: 1; }
-    .dept-card[data-status="healthy"]::before { background: var(--success); }
-    .dept-card[data-status="warning"]::before { background: var(--medium); }
-    .dept-card[data-status="critical"]::before { background: var(--critical); }
-    .dept-card[data-status="inactive"]::before { background: var(--text-muted); }
-
-    .dept-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
+    .nav a.active { border-color: rgba(196, 148, 74, 0.35); color: var(--accent); background: rgba(196, 148, 74, 0.08); }
+    .toolbar {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 400px); gap: 1rem;
       margin-bottom: 1rem;
     }
-
-    .dept-header-left { display: flex; align-items: center; gap: 0.75rem; }
-
-    .dept-icon {
-      width: 42px; height: 42px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.25rem; flex-shrink: 0;
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; }
+    .toolbar h2 { font-size: 1.35rem; letter-spacing: -0.03em; margin-bottom: 0.35rem; }
+    .toolbar p { color: var(--text-dim); font-size: 0.9rem; max-width: 62ch; }
+    .select-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    select {
+      width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.85rem 0.9rem; font-family: var(--sans); font-size: 0.92rem;
     }
-
-    .dept-icon.qa { background: rgba(108,92,231,0.15); }
-    .dept-icon.seo { background: rgba(116,185,255,0.15); }
-    .dept-icon.ada { background: rgba(46,213,115,0.15); }
-    .dept-icon.compliance { background: rgba(255,140,66,0.15); }
-    .dept-icon.monetization { background: rgba(240,180,41,0.15); }
-    .dept-icon.product { background: rgba(0,206,201,0.15); }
-
-    .dept-name { font-size: 1rem; font-weight: 600; line-height: 1.2; }
-
-    .dept-desc {
-      font-size: 0.75rem; color: var(--text-dim); margin-top: 0.15rem;
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 1.5rem;
     }
-
-    .dept-status {
-      display: inline-flex; align-items: center; gap: 0.35rem;
-      font-size: 0.68rem; font-weight: 500; padding: 0.25rem 0.65rem;
-      border-radius: 20px; flex-shrink: 0; margin-top: 0.1rem;
+    .stat .label { color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.45rem; }
+    .stat .value { font-family: var(--mono); font-size: 1.8rem; font-weight: 700; }
+    .stat .sub { color: var(--text-dim); font-size: 0.75rem; margin-top: 0.25rem; }
+    .sections { display: grid; gap: 1.25rem; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.85rem; }
+    .section-header h3 { font-size: 1rem; }
+    .badge { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .grid-2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: 1.1fr 1.2fr 1fr; gap: 1rem; }
+    .dept-grid, .employee-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
     }
-
-    .dept-status.healthy {
-      color: var(--success); background: var(--success-bg);
-      border: 1px solid rgba(46,213,115,0.15);
+    .dept-card, .employee-card, .finding-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem;
     }
-
-    .dept-status.warning {
-      color: var(--medium); background: var(--medium-bg);
-      border: 1px solid rgba(255,209,102,0.15);
+    .dept-top, .employee-top { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.7rem; }
+    .dept-name, .employee-name { font-weight: 600; font-size: 0.95rem; }
+    .dept-purpose, .employee-bio { color: var(--text-dim); font-size: 0.82rem; line-height: 1.5; }
+    .score-pill {
+      min-width: 72px; text-align: center; padding: 0.42rem 0.6rem; border-radius: 999px;
+      font-family: var(--mono); font-size: 0.84rem; font-weight: 700; background: var(--surface-3);
     }
-
-    .dept-status.critical {
-      color: var(--critical); background: var(--critical-bg);
-      border: 1px solid rgba(255,71,87,0.15);
+    .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.8rem; }
+    .chip {
+      font-size: 0.68rem; color: var(--text-dim); padding: 0.2rem 0.45rem; border-radius: 999px;
+      background: var(--surface-2); border: 1px solid var(--border);
     }
-
-    .dept-status.inactive {
-      color: var(--text-muted); background: var(--surface-3);
-      border: 1px solid var(--border);
+    .employee-title { color: var(--accent); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+    .resume { color: var(--text-dim); font-size: 0.8rem; line-height: 1.5; margin-top: 0.55rem; }
+    .employee-day {
+      border: 1px solid rgba(196, 148, 74, 0.3);
+      background: linear-gradient(135deg, rgba(196, 148, 74, 0.08), rgba(108, 92, 231, 0.08));
     }
-
-    .dept-status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor;
+    .employee-day .headline { font-size: 0.72rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+    .finding-list { display: grid; gap: 0.75rem; }
+    .finding-top { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+    .severity { font-size: 0.64rem; padding: 0.18rem 0.45rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+    .severity.critical { background: rgba(255,71,87,0.12); color: var(--critical); }
+    .severity.high { background: rgba(255,140,66,0.12); color: var(--high); }
+    .severity.medium { background: rgba(255,209,102,0.12); color: var(--medium); }
+    .severity.low { background: rgba(78,205,196,0.12); color: var(--low); }
+    .severity.info { background: rgba(116,185,255,0.12); color: var(--info); }
+    .finding-id { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); }
+    .finding-card h4 { font-size: 0.92rem; margin-bottom: 0.25rem; line-height: 1.35; }
+    .finding-meta, .finding-desc { color: var(--text-dim); font-size: 0.8rem; line-height: 1.5; }
+    .finding-meta { margin-bottom: 0.4rem; }
+    .task-list, .criteria-list { display: grid; gap: 0.8rem; }
+    .task-card, .criteria-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem;
     }
-
-    .dept-metrics {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem; margin: 1rem 0 1.25rem;
-      padding: 0.85rem 0; border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
+    .task-top, .criteria-top { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.45rem; align-items: flex-start; }
+    .task-owner, .criteria-owner { color: var(--accent); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .task-meta, .criteria-meta { color: var(--text-dim); font-size: 0.76rem; line-height: 1.5; margin-top: 0.35rem; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 999px;
+      border: 1px solid var(--border); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+      background: var(--surface-2); color: var(--text-dim);
     }
-
-    .dept-metric-label {
-      font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em;
-      color: var(--text-muted); margin-bottom: 0.2rem;
+    .status-pill.good { color: var(--success); border-color: rgba(46, 213, 115, 0.3); background: rgba(46, 213, 115, 0.08); }
+    .status-pill.warn { color: var(--medium); border-color: rgba(255, 209, 102, 0.3); background: rgba(255, 209, 102, 0.08); }
+    .status-pill.bad { color: var(--critical); border-color: rgba(255, 71, 87, 0.3); background: rgba(255, 71, 87, 0.08); }
+    .status-pill.info { color: var(--info); border-color: rgba(116, 185, 255, 0.3); background: rgba(116, 185, 255, 0.08); }
+    .mini-list { margin-top: 0.55rem; color: var(--text-dim); font-size: 0.78rem; line-height: 1.55; }
+    .foot { text-align: center; color: var(--text-muted); font-size: 0.72rem; margin-top: 2rem; }
+    @media (max-width: 1080px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
     }
-
-    .dept-metric-value {
-      font-family: var(--mono); font-size: 1.1rem; font-weight: 600;
-    }
-
-    .dept-footer {
-      display: flex; align-items: center; justify-content: space-between;
-    }
-
-    .dept-last-scan {
-      font-size: 0.7rem; color: var(--text-muted);
-    }
-
-    .dept-link {
-      font-size: 0.78rem; font-weight: 500; color: var(--accent);
-      text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;
-      padding: 0.35rem 0.85rem; border-radius: var(--radius-sm);
-      border: 1px solid transparent; transition: all 0.15s;
-    }
-
-    .dept-link:hover {
-      background: rgba(108,92,231,0.1); border-color: rgba(108,92,231,0.2);
-    }
-
-    /* ── Activity Feed ───────────────────────────────────── */
-
-    .activity-section {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.5rem;
-      animation: fadeIn 0.5s ease 0.3s both;
-    }
-
-    .activity-list { list-style: none; }
-
-    .activity-item {
-      display: flex; align-items: flex-start; gap: 0.85rem;
-      padding: 0.85rem 0; border-bottom: 1px solid var(--border);
-    }
-
-    .activity-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .activity-item:first-child { padding-top: 0; }
-
-    .activity-time {
-      font-family: var(--mono); font-size: 0.68rem; color: var(--text-muted);
-      white-space: nowrap; min-width: 52px; padding-top: 0.15rem;
-    }
-
-    .activity-badge {
-      font-size: 0.6rem; font-weight: 600; padding: 0.2rem 0.55rem;
-      border-radius: 4px; white-space: nowrap; text-transform: uppercase;
-      letter-spacing: 0.04em; flex-shrink: 0;
-    }
-
-    .activity-badge.qa { background: rgba(108,92,231,0.15); color: var(--accent); }
-    .activity-badge.seo { background: rgba(116,185,255,0.15); color: var(--info); }
-    .activity-badge.ada { background: rgba(46,213,115,0.15); color: var(--success); }
-    .activity-badge.compliance { background: rgba(255,140,66,0.15); color: var(--high); }
-    .activity-badge.monetization { background: rgba(240,180,41,0.15); color: #f0b429; }
-    .activity-badge.product { background: rgba(0,206,201,0.15); color: #00cec9; }
-
-    .activity-content { flex: 1; min-width: 0; }
-
-    .activity-title {
-      font-size: 0.8rem; font-weight: 500; line-height: 1.3;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .activity-meta {
-      font-size: 0.68rem; color: var(--text-dim); margin-top: 0.15rem;
-    }
-
-    .severity-dot {
-      display: inline-block; width: 7px; height: 7px;
-      border-radius: 50%; margin-right: 0.3rem; vertical-align: middle;
-    }
-
-    .severity-dot.critical { background: var(--critical); }
-    .severity-dot.high { background: var(--high); }
-    .severity-dot.medium { background: var(--medium); }
-    .severity-dot.low { background: var(--low); }
-    .severity-dot.info { background: var(--info); }
-
-    /* ── Demo Banner ─────────────────────────────────────── */
-
-    .demo-banner {
-      display: none; background: var(--info-bg);
-      border: 1px solid rgba(116,185,255,0.2); border-radius: var(--radius-sm);
-      padding: 0.7rem 1.1rem; margin-bottom: 1.5rem;
-      font-size: 0.78rem; color: var(--info);
-      align-items: center; gap: 0.5rem;
-    }
-
-    .demo-banner.show { display: flex; }
-
-    /* ── Footer ──────────────────────────────────────────── */
-
-    .dashboard-footer {
-      text-align: center; padding: 2rem 0 1rem;
-      font-size: 0.7rem; color: var(--text-muted);
-    }
-
-    /* ── Responsive ──────────────────────────────────────── */
-
     @media (max-width: 900px) {
-      .dept-grid { grid-template-columns: 1fr; }
+      .stats, .dept-grid, .employee-grid { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { grid-template-columns: 1fr; }
     }
-
-    @media (max-width: 700px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      header { flex-direction: column; gap: 1rem; align-items: flex-start; }
-      .header-right { width: 100%; justify-content: space-between; }
-    }
-
-    @media (max-width: 480px) {
-      .stats-grid { grid-template-columns: 1fr; }
-      .container { padding: 1.25rem 1rem; }
+    @media (max-width: 640px) {
+      .container { padding: 1.25rem 1rem 3rem; }
+      header { flex-direction: column; }
+      .stats, .dept-grid, .employee-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-
-    <!-- ── Header ─────────────────────────────────────── -->
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <main class="container" id="main-content">
     <header>
-      <div class="logo">
-        <div class="logo-icon" id="logo-icon">BP</div>
-        <div class="logo-text">
-          <h1 id="logo-title">BreakPoint Labs</h1>
-          <div class="subtitle">Back Office</div>
+      <div class="brand">
+        <div class="brand-mark" id="logo-icon">CJ</div>
+        <div>
+          <h1 id="logo-title">Cody Jo Method</h1>
+          <p>Back Office</p>
         </div>
       </div>
-      <div class="header-right">
-        <a href="jobs.html" style="font-size:0.78rem;font-weight:500;color:var(--accent);text-decoration:none;padding:0.35rem 0.85rem;border-radius:var(--radius-sm);border:1px solid rgba(108,92,231,0.2);background:rgba(108,92,231,0.1);display:inline-flex;align-items:center;gap:0.4rem;transition:all 0.15s;">&#9654; Jobs</a>
-        <div class="live-indicator">
-          <span class="live-dot"></span>
-          Live
-        </div>
-        <div class="header-meta">
-          <div id="last-updated">Updated just now</div>
-        </div>
-      </div>
+      <div class="updated" id="updatedAt">Loading dashboard...</div>
     </header>
 
-    <!-- ── Demo Banner ────────────────────────────────── -->
-    <div class="demo-banner" id="demo-banner">
-      <span>&#9432;</span>
-      <span>Showing placeholder data. Department data files not yet available.</span>
+    <nav class="nav">
+      <a href="index.html" class="active">HQ</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="faq.html">Scoring</a>
+    </nav>
+
+    <section class="toolbar">
+      <div class="card">
+        <h2>One Back Office for the whole estate.</h2>
+        <p>
+          This admin surface reports by product, not by random repo. Choose a product below to see the
+          matching repos, department signals, active findings, engineering coverage, and HR view.
+        </p>
+      </div>
+      <div class="card">
+        <div class="select-label">Reporting On</div>
+        <select id="productSelect" aria-label="Select product"></select>
+        <div class="resume" id="productSummary" style="margin-top:0.7rem;"></div>
+      </div>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <div class="sections">
+      <section class="grid-2">
+        <div class="card">
+          <div class="section-header">
+            <h3>Departments</h3>
+            <div class="badge" id="repoBadge">Loading repos...</div>
+          </div>
+          <div class="dept-grid" id="departmentGrid"></div>
+        </div>
+        <div class="card employee-day" id="employeeOfDay"></div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card">
+          <div class="section-header">
+            <h3>Recent Findings</h3>
+            <div class="badge" id="findingBadge">0 items</div>
+          </div>
+          <div class="finding-list" id="findingList"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <h3>HR Department</h3>
+            <div class="badge">Employee roster</div>
+          </div>
+          <div class="employee-grid" id="employeeGrid"></div>
+        </div>
+      </section>
+
+      <section class="grid-3">
+        <div class="card">
+          <div class="section-header">
+            <h3>Studio Product Lead</h3>
+            <div class="badge">Acceptance and handoff</div>
+          </div>
+          <div id="productLeadBrief"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <h3>Assigned Work</h3>
+            <div class="badge" id="assignmentBadge">0 assignments</div>
+          </div>
+          <div class="task-list" id="assignmentList"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <h3>Acceptance Checks</h3>
+            <div class="badge" id="criteriaBadge">0 checks</div>
+          </div>
+          <div class="criteria-list" id="criteriaList"></div>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card">
+          <div class="section-header">
+            <h3>Recently Fixed</h3>
+            <div class="badge" id="fixedBadge">0 fixes</div>
+          </div>
+          <div class="task-list" id="fixedList"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <h3>Sprint Plan</h3>
+            <div class="badge" id="sprintBadge">0 lanes</div>
+          </div>
+          <div class="criteria-list" id="sprintList"></div>
+        </div>
+      </section>
     </div>
 
-    <!-- ── Stats Overview ─────────────────────────────── -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Departments</div>
-        <div class="stat-value accent" id="stat-depts">6</div>
-        <div class="stat-sub">Active monitoring</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Active Agents</div>
-        <div class="stat-value info" id="stat-agents">--</div>
-        <div class="stat-sub" id="stat-agents-sub">Scanning &amp; fixing</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Findings</div>
-        <div class="stat-value" id="stat-findings" style="color: var(--text)">--</div>
-        <div class="stat-sub" id="stat-findings-sub">Across all departments</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Health Score</div>
-        <div class="stat-value success" id="stat-health">--</div>
-        <div class="stat-sub" id="stat-health-sub">Overall system health</div>
-      </div>
-    </div>
-
-    <!-- ── Department Cards ───────────────────────────── -->
-    <div class="section-header">
-      <div class="section-title">Departments</div>
-      <div class="section-badge" id="dept-count-badge">6 departments</div>
-    </div>
-    <div class="dept-grid" id="dept-grid"></div>
-
-    <!-- ── Recent Activity ────────────────────────────── -->
-    <div class="section-header">
-      <div class="section-title">Recent Activity</div>
-      <div class="section-badge" id="activity-count-badge">--</div>
-    </div>
-    <div class="activity-section">
-      <ul class="activity-list" id="activity-list"></ul>
-    </div>
-
-    <div class="dashboard-footer">
-      <span id="footer-brand">BreakPoint Labs</span> Back Office &middot; <a href="faq.html" style="color:#8888a0;text-decoration:none;">How Scores Work</a> &middot; Auto-refreshes every 60s
-    </div>
-  </div>
+    <div class="foot"><span id="footer-brand">Cody Jo Method</span> Back Office</div>
+  </main>
 
   <script>
-    // ── Department Definitions ──────────────────────────
-    const DEPARTMENTS = [
-      {
-        key: 'qa',
-        name: 'QA Department',
-        desc: 'Automated bug scanning and fixing',
-        icon: '\uD83D\uDD0D',
-        link: 'qa.html',
-        dataFile: 'qa-data.json',
-        legacyDataFile: 'data.json',
-      },
-      {
-        key: 'seo',
-        name: 'SEO & AI Optimization',
-        desc: 'Search engine and AI visibility',
-        icon: '\uD83D\uDCC8',
-        link: 'seo.html',
-        dataFile: 'seo-data.json',
-      },
-      {
-        key: 'ada',
-        name: 'ADA Compliance',
-        desc: 'WCAG 2.1 accessibility standards',
-        icon: '\u267F',
-        link: 'ada.html',
-        dataFile: 'ada-data.json',
-      },
-      {
-        key: 'compliance',
-        name: 'Regulatory Compliance',
-        desc: 'GDPR, ISO 27001, Age Verification',
-        icon: '\uD83D\uDEE1\uFE0F',
-        link: 'compliance.html',
-        dataFile: 'compliance-data.json',
-      },
-      {
-        key: 'monetization',
-        name: 'Monetization Strategy',
-        desc: 'Revenue opportunities & growth',
-        icon: '\uD83D\uDCB0',
-        link: 'monetization.html',
-        dataFile: 'monetization-data.json',
-      },
-      {
-        key: 'product',
-        name: 'Product Roadmap',
-        desc: 'Backlog & feature planning',
-        icon: '\uD83D\uDDFA\uFE0F',
-        link: 'product.html',
-        dataFile: 'product-data.json',
-      },
-      {
-        key: 'self-audit',
-        name: 'Self-Audit',
-        desc: 'Physician, heal thyself',
-        icon: '\uD83D\uDD0D',
-        link: 'self-audit.html',
-        dataFile: 'self-audit-data.json',
-      },
+    const DEPARTMENT_SOURCES = [
+      { key: 'qa', name: 'Quality Assurance', file: 'qa-data.json' },
+      { key: 'seo', name: 'SEO & Discoverability', file: 'seo-data.json' },
+      { key: 'ada', name: 'ADA Compliance', file: 'ada-data.json' },
+      { key: 'compliance', name: 'Regulatory Compliance', file: 'compliance-data.json' },
+      { key: 'privacy', name: 'Privacy Specialist', file: 'privacy-data.json' },
+      { key: 'monetization', name: 'Monetization', file: 'monetization-data.json' },
+      { key: 'product', name: 'Product Roadmap', file: 'product-data.json' },
+      { key: 'self-audit', name: 'Self-Audit', file: 'self-audit-data.json' }
     ];
 
-    // ── Placeholder / Demo Data ─────────────────────────
-    const DEMO_DATA = {
-      qa: {
-        generated_at: new Date().toISOString(),
-        totals: { total_findings: 80, critical: 6, high: 27, medium: 34, low: 13, total_fixed: 49 },
-        repos: [{
-          name: 'photo-gallery', scanned_at: new Date(Date.now() - 3600000).toISOString(),
-          findings: [
-            { id: 'QA-001', severity: 'critical', title: 'Cross-Service Privilege Escalation via JWT', category: 'security', found_at: new Date(Date.now() - 7200000).toISOString() },
-            { id: 'QA-002', severity: 'high', title: 'SQL injection in search endpoint', category: 'security', found_at: new Date(Date.now() - 10800000).toISOString() },
-            { id: 'QA-003', severity: 'medium', title: 'Missing error boundary in upload flow', category: 'reliability', found_at: new Date(Date.now() - 14400000).toISOString() },
-            { id: 'QA-004', severity: 'high', title: 'Unvalidated redirect in OAuth callback', category: 'security', found_at: new Date(Date.now() - 18000000).toISOString() },
-          ]
-        }]
-      },
-      seo: {
-        generated_at: new Date().toISOString(),
-        totals: { total_findings: 23, critical: 0, high: 5, medium: 12, low: 6, total_fixed: 14 },
-        repos: [{
-          name: 'photo-gallery', scanned_at: new Date(Date.now() - 7200000).toISOString(),
-          findings: [
-            { id: 'SEO-001', severity: 'high', title: 'Missing structured data for image galleries', category: 'seo', found_at: new Date(Date.now() - 5400000).toISOString() },
-            { id: 'SEO-002', severity: 'medium', title: 'Duplicate meta descriptions on paginated pages', category: 'seo', found_at: new Date(Date.now() - 9000000).toISOString() },
-          ]
-        }]
-      },
-      ada: {
-        generated_at: new Date().toISOString(),
-        totals: { total_findings: 37, critical: 2, high: 10, medium: 18, low: 7, total_fixed: 22 },
-        repos: [{
-          name: 'photo-gallery', scanned_at: new Date(Date.now() - 5400000).toISOString(),
-          findings: [
-            { id: 'ADA-001', severity: 'critical', title: 'Images missing alt text in gallery grid', category: 'accessibility', found_at: new Date(Date.now() - 3600000).toISOString() },
-            { id: 'ADA-002', severity: 'high', title: 'Insufficient color contrast on navigation links', category: 'accessibility', found_at: new Date(Date.now() - 7200000).toISOString() },
-          ]
-        }]
-      },
-      compliance: {
-        generated_at: new Date().toISOString(),
-        totals: { total_findings: 15, critical: 1, high: 4, medium: 7, low: 3, total_fixed: 8 },
-        repos: [{
-          name: 'photo-gallery', scanned_at: new Date(Date.now() - 9000000).toISOString(),
-          findings: [
-            { id: 'REG-001', severity: 'critical', title: 'Cookie consent banner not GDPR compliant', category: 'compliance', found_at: new Date(Date.now() - 4500000).toISOString() },
-            { id: 'REG-002', severity: 'high', title: 'Missing data retention policy documentation', category: 'compliance', found_at: new Date(Date.now() - 12600000).toISOString() },
-          ]
-        }]
-      },
-      monetization: {
-        generated_at: new Date().toISOString(),
-        totals: { total_findings: 24, critical: 0, high: 6, medium: 12, low: 6, total_fixed: 0 },
-        repos: [{
-          name: 'photo-gallery', scanned_at: new Date(Date.now() - 1800000).toISOString(),
-          findings: [
-            { id: 'MON-001', severity: 'high', title: 'No print fulfillment integration — missed revenue', category: 'monetization', found_at: new Date(Date.now() - 2700000).toISOString() },
-            { id: 'MON-002', severity: 'high', title: 'Paid digital downloads not offered', category: 'monetization', found_at: new Date(Date.now() - 5400000).toISOString() },
-          ]
-        }]
-      },
-      product: {
-        generated_at: new Date().toISOString(),
-        totals: { total_findings: 18, critical: 1, high: 4, medium: 8, low: 3, info: 2, total_fixed: 0 },
-        repos: [{
-          name: 'photo-gallery', scanned_at: new Date(Date.now() - 900000).toISOString(),
-          summary: { product_readiness_score: 58 },
-          findings: [
-            { id: 'PROD-001', severity: 'critical', title: 'No onboarding flow for new users', category: 'ux-improvement', found_at: new Date(Date.now() - 1800000).toISOString() },
-            { id: 'PROD-002', severity: 'high', title: 'Missing search functionality', category: 'feature-gap', found_at: new Date(Date.now() - 3600000).toISOString() },
-          ]
-        }]
-      },
-    };
+    let orgData = null;
+    let deptData = {};
+    let selectedProductKey = 'all';
+    const SEVERITY_WEIGHT = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
-    // ── State ───────────────────────────────────────────
-    let departmentData = {};
-    let usingDemo = false;
-
-    // ── Data Loading ────────────────────────────────────
-
-    // Normalize raw agent output or aggregate format into a consistent shape
-    function normalizeData(raw) {
-      if (!raw) return null;
-      // Already in aggregate format (has totals)
-      if (raw.totals) return raw;
-      // Raw agent format — convert to aggregate shape
-      const findings = raw.findings || [];
-      const summary = raw.summary || {};
-      const bySev = summary.by_severity || summary;
-      const totals = {
-        total_findings: summary.total_findings || summary.total || findings.length,
-        critical: bySev.critical || 0,
-        high: bySev.high || 0,
-        medium: bySev.medium || 0,
-        low: bySev.low || 0,
-        info: bySev.info || 0,
-        total_fixed: findings.filter(f => f.status === 'fixed').length,
-      };
-      return {
-        department: raw.department || '',
-        generated_at: raw.scanned_at || raw.timestamp || raw.generated_at || new Date().toISOString(),
-        totals,
-        summary,
-        repos: [{
-          name: raw.repo_name || raw.repo || '',
-          scanned_at: raw.scanned_at || raw.timestamp || '',
-          summary,
-          findings,
-        }],
-      };
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
     }
 
-    async function loadDepartmentData(dept) {
+    function scoreClass(value) {
+      if (value >= 85) return 'var(--success)';
+      if (value >= 65) return 'var(--medium)';
+      if (value > 0) return 'var(--high)';
+      return 'var(--text-dim)';
+    }
+
+    async function loadJson(file) {
       try {
-        const resp = await fetch(dept.dataFile);
-        if (resp.ok) return normalizeData(await resp.json());
-      } catch (e) { /* ignore */ }
-
-      // Try legacy data file for QA
-      if (dept.legacyDataFile) {
-        try {
-          const resp = await fetch(dept.legacyDataFile);
-          if (resp.ok) return normalizeData(await resp.json());
-        } catch (e) { /* ignore */ }
+        const resp = await fetch(file, { cache: 'no-store' });
+        if (!resp.ok) return null;
+        return await resp.json();
+      } catch {
+        return null;
       }
-
-      return null;
     }
 
-    async function loadAllData() {
-      const results = await Promise.all(DEPARTMENTS.map(d => loadDepartmentData(d)));
-      let anyLoaded = false;
+    async function boot() {
+      const [org, ...rest] = await Promise.all([
+        loadJson('org-data.json'),
+        ...DEPARTMENT_SOURCES.map(source => loadJson(source.file))
+      ]);
 
-      DEPARTMENTS.forEach((dept, i) => {
-        if (results[i]) {
-          departmentData[dept.key] = results[i];
-          anyLoaded = true;
-        }
+      orgData = org;
+      selectedProductKey = getInitialProductKey();
+      DEPARTMENT_SOURCES.forEach((source, index) => {
+        deptData[source.key] = rest[index];
       });
 
-      if (!anyLoaded) {
-        usingDemo = true;
-        departmentData = { ...DEMO_DATA };
-        document.getElementById('demo-banner').classList.add('show');
-      } else {
-        // Fill in demo data only for departments with no data
-        DEPARTMENTS.forEach(dept => {
-          if (!departmentData[dept.key]) {
-            departmentData[dept.key] = DEMO_DATA[dept.key];
-          }
-        });
-        document.getElementById('demo-banner').classList.remove('show');
-      }
+      initProductSelect();
+      render();
+      setInterval(refreshDepartments, 60000);
+    }
 
+    async function refreshDepartments() {
+      const refreshed = await Promise.all(DEPARTMENT_SOURCES.map(source => loadJson(source.file)));
+      DEPARTMENT_SOURCES.forEach((source, index) => {
+        if (refreshed[index]) deptData[source.key] = refreshed[index];
+      });
       render();
     }
 
-    // ── Helpers ─────────────────────────────────────────
-    function timeAgo(dateStr) {
-      if (!dateStr) return 'N/A';
-      const diff = Date.now() - new Date(dateStr).getTime();
-      const mins = Math.floor(diff / 60000);
-      if (mins < 1) return 'Just now';
-      if (mins < 60) return mins + 'm ago';
-      const hrs = Math.floor(mins / 60);
-      if (hrs < 24) return hrs + 'h ago';
-      const days = Math.floor(hrs / 24);
-      return days + 'd ago';
+    function initProductSelect() {
+      const select = document.getElementById('productSelect');
+      select.innerHTML = orgData.products.map(product => `<option value="${product.key}">${product.name}</option>`).join('');
+      select.addEventListener('change', (event) => {
+        selectedProductKey = event.target.value;
+        syncProductInUrl();
+        render();
+      });
     }
 
-    function formatTime(dateStr) {
-      if (!dateStr) return '--:--';
-      const d = new Date(dateStr);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    function getInitialProductKey() {
+      const params = new URLSearchParams(window.location.search);
+      const requestedKey = (params.get('product') || '').trim().toLowerCase();
+      if (!requestedKey) return 'all';
+
+      const aliases = {
+        analogify: 'analogify-studio'
+      };
+      const normalizedKey = aliases[requestedKey] || requestedKey;
+      const match = (orgData?.products || []).find(product => product.key === normalizedKey);
+      return match ? match.key : 'all';
     }
 
-    function getDeptTotals(key) {
-      const data = departmentData[key];
-      if (!data) return { total_findings: 0, critical: 0, high: 0, medium: 0, low: 0, total_fixed: 0 };
-      return data.totals || { total_findings: 0, critical: 0, high: 0, medium: 0, low: 0, total_fixed: 0 };
-    }
-
-    function getDeptHealthScore(key) {
-      const data = departmentData[key];
-      if (!data) return 0;
-
-      // Use actual audit scores from the data when available
-      const t = getDeptTotals(key);
-      const summary = (data.repos && data.repos[0] && data.repos[0].summary) || data.summary || t;
-
-      // SEO: seo_score
-      if (key === 'seo') {
-        const s = summary.seo_score ?? data.seo_score ?? (data.repos?.[0]?.seo_score);
-        if (s != null) return s;
+    function syncProductInUrl() {
+      const url = new URL(window.location.href);
+      if (selectedProductKey === 'all') {
+        url.searchParams.delete('product');
+      } else {
+        url.searchParams.set('product', selectedProductKey);
       }
-
-      // ADA: compliance_score or score
-      if (key === 'ada') {
-        const s = summary.compliance_score ?? summary.score;
-        if (s != null) return s;
-      }
-
-      // Compliance: compliance_score
-      if (key === 'compliance') {
-        const s = summary.compliance_score;
-        if (s != null) return s;
-      }
-
-      // Monetization: monetization_readiness_score
-      if (key === 'monetization') {
-        const s = summary.monetization_readiness_score;
-        if (s != null) return s;
-      }
-
-      // Product: product_readiness_score
-      if (key === 'product') {
-        const s = summary.product_readiness_score;
-        if (s != null) return s;
-      }
-
-      // QA or fallback: calculate from severity distribution
-      if (t.total_findings === 0) return 100;
-      const score = Math.max(0, 100
-        - (t.critical || 0) * 15
-        - (t.high || 0) * 8
-        - (t.medium || 0) * 3
-        - (t.low || 0) * 1);
-      return Math.round(score);
+      window.history.replaceState({}, '', url);
     }
 
-    function getHealthStatus(score) {
-      if (score >= 75) return 'healthy';
-      if (score >= 50) return 'warning';
-      return 'critical';
+    function getSelectedProduct() {
+      return orgData.products.find(product => product.key === selectedProductKey) || orgData.products[0];
     }
 
-    function getLatestScan(key) {
-      const data = departmentData[key];
-      if (!data) return null;
-      if (data.generated_at) return data.generated_at;
-      if (data.repos && data.repos[0]) return data.repos[0].scanned_at;
-      return null;
+    function repoMatches(repoName) {
+      const product = getSelectedProduct();
+      if (product.key === 'all') return true;
+      return product.repos.includes(repoName);
     }
 
-    function getAllFindings() {
-      const all = [];
-      DEPARTMENTS.forEach(dept => {
-        const data = departmentData[dept.key];
-        if (!data || !data.repos) return;
-        data.repos.forEach(repo => {
-          if (!repo.findings) return;
-          repo.findings.forEach(f => {
-            all.push({ ...f, department: dept.key, deptName: dept.name });
+    function normalizeSelfAudit(data) {
+      if (!data || data.repo !== 'back-office') return [];
+      return [{
+        name: data.repo,
+        findings: data.findings || [],
+        summary: {
+          total: data.summary?.total_findings || 0,
+          total_findings: data.summary?.total_findings || 0,
+          critical: data.summary?.by_severity?.critical || 0,
+          high: data.summary?.by_severity?.high || 0,
+          medium: data.summary?.by_severity?.medium || 0,
+          low: data.summary?.by_severity?.low || 0,
+          info: data.summary?.by_severity?.info || 0,
+          score: data.summary?.health_score || 0
+        }
+      }];
+    }
+
+    function getReposForDepartment(sourceKey) {
+      const data = deptData[sourceKey];
+      if (!data) return [];
+      if (Array.isArray(data.repos)) return data.repos.filter(repo => repoMatches(repo.name));
+      if (sourceKey === 'self-audit') return normalizeSelfAudit(data).filter(repo => repoMatches(repo.name));
+      return [];
+    }
+
+    function getDepartmentScore(sourceKey) {
+      const repos = getReposForDepartment(sourceKey);
+      if (!repos.length) return 0;
+
+      const vals = repos.map(repo => {
+        const summary = repo.summary || {};
+        if (sourceKey === 'seo') return summary.seo_score;
+        if (sourceKey === 'ada') return summary.compliance_score || summary.score;
+        if (sourceKey === 'compliance') return summary.compliance_score;
+        if (sourceKey === 'privacy') return summary.privacy_score;
+        if (sourceKey === 'monetization') return summary.monetization_readiness_score;
+        if (sourceKey === 'product') return summary.product_readiness_score;
+        if (sourceKey === 'qa' || sourceKey === 'self-audit') {
+          const total = summary.total || summary.total_findings || (repo.findings || []).length || 0;
+          const critical = summary.critical || 0;
+          const high = summary.high || 0;
+          const medium = summary.medium || 0;
+          const low = summary.low || 0;
+          if (!total) return 100;
+          return Math.max(0, 100 - critical * 15 - high * 8 - medium * 3 - low);
+        }
+        return null;
+      }).filter(v => v != null);
+
+      return vals.length ? Math.round(vals.reduce((sum, value) => sum + value, 0) / vals.length) : 0;
+    }
+
+    function getDepartmentFindingCount(sourceKey) {
+      return getReposForDepartment(sourceKey).reduce((sum, repo) => sum + ((repo.summary?.total || repo.summary?.total_findings || (repo.findings || []).length || 0)), 0);
+    }
+
+    function collectFindings() {
+      const findings = [];
+      DEPARTMENT_SOURCES.forEach(source => {
+        getReposForDepartment(source.key).forEach(repo => {
+          (repo.findings || []).forEach(finding => {
+            findings.push({
+              ...finding,
+              department: source.name,
+              repo: repo.name
+            });
           });
         });
       });
-      // Sort by found_at or id descending
-      all.sort((a, b) => {
-        const da = a.found_at ? new Date(a.found_at).getTime() : 0;
-        const db = b.found_at ? new Date(b.found_at).getTime() : 0;
-        return db - da;
+      return findings.sort((left, right) => {
+        const sevDelta = (SEVERITY_WEIGHT[(left.severity || 'info').toLowerCase()] ?? 99) - (SEVERITY_WEIGHT[(right.severity || 'info').toLowerCase()] ?? 99);
+        if (sevDelta !== 0) return sevDelta;
+        return String(left.id || '').localeCompare(String(right.id || ''));
       });
-      return all;
     }
 
-    // ── Rendering ───────────────────────────────────────
-    function render() {
-      renderStats();
-      renderDepartments();
-      renderActivity();
-      updateTimestamp();
+    function getEmployeesForSelection() {
+      const product = getSelectedProduct();
+      return orgData.employees
+        .filter(employee => product.key === 'all' || employee.projects.includes(product.key) || employee.repos.some(repo => product.repos.includes(repo)))
+        .sort((a, b) => b.daily_score - a.daily_score);
+    }
+
+    function getSourceKeyForDepartment(department) {
+      return department.source_key || null;
+    }
+
+    function getEmployeeFindingCount(employee) {
+      const sourceKey = getSourceKeyForDepartment(orgData.departments.find(dept => dept.key === employee.department) || {});
+      if (!sourceKey) return 0;
+      return getReposForDepartment(sourceKey)
+        .filter(repo => employee.repos.includes(repo.name))
+        .reduce((sum, repo) => sum + ((repo.findings || []).length), 0);
+    }
+
+    function findEmployeeByDepartment(departmentKey) {
+      return (orgData.employees || []).find(employee => employee.department === departmentKey);
+    }
+
+    function getRepoNamesForSelection() {
+      const product = getSelectedProduct();
+      if (product.key === 'all') {
+        return Array.from(new Set(orgData.products.flatMap(item => item.repos))).filter(Boolean);
+      }
+      return [...product.repos];
+    }
+
+    function getQaRepoMap() {
+      const map = new Map();
+      getReposForDepartment('qa').forEach(repo => map.set(repo.name, repo));
+      return map;
+    }
+
+    function collectDocsSignals(repoName) {
+      const docFindings = [];
+      ['qa', 'product', 'self-audit'].forEach(sourceKey => {
+        getReposForDepartment(sourceKey)
+          .filter(repo => repo.name === repoName)
+          .forEach(repo => {
+            (repo.findings || []).forEach(finding => {
+              const haystack = `${finding.category || ''} ${finding.title || ''} ${finding.description || ''}`.toLowerCase();
+              if (haystack.includes('doc') || haystack.includes('readme') || haystack.includes('jsdoc') || haystack.includes('setup')) {
+                docFindings.push({ ...finding, department: sourceKey });
+              }
+            });
+          });
+      });
+      return docFindings;
+    }
+
+    function evaluateAcceptance(repoName) {
+      const qaRepo = getQaRepoMap().get(repoName);
+      const tests = qaRepo?.tests || {};
+      const lint = qaRepo?.lint || {};
+      const findings = qaRepo?.findings || [];
+      const openCritical = findings.filter(finding => ['critical', 'high'].includes((finding.severity || '').toLowerCase()) && finding.status !== 'fixed').length;
+      const testingFindings = findings.filter(finding => String(finding.category || '').toLowerCase().includes('testing')).length;
+      const docsFindings = collectDocsSignals(repoName);
+      const hasTests = Number(tests.total || 0) > 0;
+      const testsPassing = !!tests.passed && Number(tests.failed || 0) === 0 && Number(tests.errors || 0) === 0;
+      const hasLintSignal = Object.keys(lint || {}).length > 0;
+      const lintPassing = !hasLintSignal || !!lint.passed;
+
+      const checks = [
+        {
+          label: 'Acceptance criteria defined',
+          status: openCritical === 0 ? 'good' : 'warn',
+          summary: openCritical === 0 ? 'No critical blockers on the current acceptance path.' : `${openCritical} critical or high blockers still open.`,
+        },
+        {
+          label: 'QA test cases exist',
+          status: hasTests ? 'good' : 'bad',
+          summary: hasTests ? `${tests.total} automated tests are on record.` : 'No automated tests were recorded for this repo.',
+        },
+        {
+          label: 'QA test run is green',
+          status: hasTests ? (testsPassing ? 'good' : 'bad') : 'warn',
+          summary: hasTests ? `${tests.failed || 0} failed, ${tests.errors || 0} errors.` : 'Build-only verification is acting as a proxy right now.',
+        },
+        {
+          label: 'Lint and build checks exist',
+          status: hasLintSignal ? (lintPassing ? 'good' : 'bad') : 'warn',
+          summary: hasLintSignal ? `${lint.errors || 0} errors, ${lint.warnings || 0} warnings.` : 'No lint/typecheck signal was captured yet.',
+        },
+        {
+          label: 'Documentation path exists',
+          status: docsFindings.length === 0 ? 'good' : (docsFindings.length > 2 ? 'bad' : 'warn'),
+          summary: docsFindings.length === 0 ? 'No active README/docs gaps detected in the current findings.' : `${docsFindings.length} documentation-related findings still need work.`,
+        },
+        {
+          label: 'Privacy gate respected',
+          status: getDepartmentFindingCount('privacy') > 0 ? 'info' : 'good',
+          summary: 'Product and monetization changes should remain gated by privacy review findings.',
+        }
+      ];
+
+      const readiness = Math.max(0, 100
+        - (hasTests ? 0 : 25)
+        - (testsPassing || !hasTests ? 0 : 20)
+        - (lintPassing ? 0 : 10)
+        - (openCritical * 10)
+        - (docsFindings.length * 4)
+        - (testingFindings * 4));
+
+      return {
+        repoName,
+        qaRepo,
+        tests,
+        lint,
+        checks,
+        docsFindings,
+        testingFindings,
+        openCritical,
+        readiness: Math.max(0, Math.min(100, readiness))
+      };
+    }
+
+    function buildAssignments() {
+      const repoNames = getRepoNamesForSelection();
+      const assignments = [];
+      const ownerBySource = {
+        qa: findEmployeeByDepartment('qa'),
+        ada: findEmployeeByDepartment('frontend'),
+        seo: findEmployeeByDepartment('seo'),
+        compliance: findEmployeeByDepartment('platform'),
+        privacy: findEmployeeByDepartment('privacy'),
+        monetization: findEmployeeByDepartment('product'),
+        product: findEmployeeByDepartment('product'),
+        'self-audit': findEmployeeByDepartment('platform')
+      };
+
+      DEPARTMENT_SOURCES.forEach(source => {
+        getReposForDepartment(source.key)
+          .filter(repo => repoNames.includes(repo.name))
+          .forEach(repo => {
+            const topFinding = [...(repo.findings || [])]
+              .sort((left, right) => (SEVERITY_WEIGHT[(left.severity || 'info').toLowerCase()] ?? 99) - (SEVERITY_WEIGHT[(right.severity || 'info').toLowerCase()] ?? 99))[0];
+            if (!topFinding) return;
+            assignments.push({
+              repo: repo.name,
+              product: getSelectedProduct().name,
+              department: source.name,
+              owner: ownerBySource[source.key]?.name || 'Unassigned',
+              ownerTitle: ownerBySource[source.key]?.title || 'Department Owner Needed',
+              title: topFinding.title || `Review ${source.name}`,
+              severity: (topFinding.severity || 'info').toLowerCase(),
+              details: topFinding.description || topFinding.fix || 'No details available.',
+              file: topFinding.file || 'n/a'
+            });
+          });
+      });
+
+      return assignments.sort((left, right) => (SEVERITY_WEIGHT[left.severity] ?? 99) - (SEVERITY_WEIGHT[right.severity] ?? 99)).slice(0, 12);
+    }
+
+    function getSprintLane(finding) {
+      const phase = String(finding.priority_phase || '').toLowerCase();
+      if (phase === 'must-have') return 'Sprint 1';
+      if (phase === 'should-have') return 'Sprint 2';
+      if (phase === 'nice-to-have') return 'Sprint 3';
+      if (phase === 'future') return 'Backlog';
+      return 'Ideas';
+    }
+
+    function getSprintOwner(finding) {
+      const haystack = `${finding.file || ''} ${finding.category || ''} ${finding.title || ''} ${finding.description || ''}`.toLowerCase();
+      if (haystack.includes('privacy') || haystack.includes('consent') || haystack.includes('retention')) {
+        return findEmployeeByDepartment('privacy');
+      }
+      if (haystack.includes('lambda') || haystack.includes('api') || haystack.includes('auth') || haystack.includes('dynamo')) {
+        return findEmployeeByDepartment('backend');
+      }
+      if (haystack.includes('terraform') || haystack.includes('cloudfront') || haystack.includes('deploy')) {
+        return findEmployeeByDepartment('platform');
+      }
+      if (haystack.includes('readme') || haystack.includes('roadmap') || haystack.includes('growth') || haystack.includes('pricing')) {
+        return findEmployeeByDepartment('product');
+      }
+      return findEmployeeByDepartment('frontend');
+    }
+
+    function buildSprintPlan() {
+      const repos = getReposForDepartment('product');
+      const sprintMap = new Map();
+
+      repos.forEach(repo => {
+        (repo.findings || []).forEach(finding => {
+          const lane = getSprintLane(finding);
+          const owner = getSprintOwner(finding);
+          const items = sprintMap.get(lane) || [];
+          items.push({
+            repo: repo.name,
+            title: finding.title || 'Untitled finding',
+            severity: (finding.severity || 'info').toLowerCase(),
+            effort: finding.effort || 'unknown',
+            owner: owner?.name || 'Unassigned',
+            ownerTitle: owner?.title || 'Owner needed',
+            summary: finding.fix || finding.description || 'No details available.',
+          });
+          sprintMap.set(lane, items);
+        });
+      });
+
+      const ordered = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog', 'Ideas'];
+      return ordered
+        .filter(lane => sprintMap.has(lane))
+        .map(lane => ({
+          lane,
+          items: sprintMap.get(lane)
+            .sort((left, right) => (SEVERITY_WEIGHT[left.severity] ?? 99) - (SEVERITY_WEIGHT[right.severity] ?? 99))
+            .slice(0, lane === 'Ideas' ? 3 : 5),
+        }));
+    }
+
+    function collectFixedItems() {
+      const repos = getReposForDepartment('qa');
+      const items = [];
+      repos.forEach(repo => {
+        (repo.findings || [])
+          .filter(finding => finding.status === 'fixed')
+          .forEach(finding => {
+            items.push({
+              repo: repo.name,
+              id: finding.id,
+              title: finding.title || 'Untitled fix',
+              commit: finding.commit || '',
+              fixedAt: finding.fixed_at || '',
+              file: finding.file || 'n/a',
+            });
+          });
+      });
+      return items
+        .sort((left, right) => String(right.fixedAt || '').localeCompare(String(left.fixedAt || '')))
+        .slice(0, 10);
     }
 
     function renderStats() {
-      let totalFindings = 0, totalFixed = 0, totalCritical = 0;
-      let activeAgents = 0;
-      let healthSum = 0;
+      const product = getSelectedProduct();
+      const repos = product.key === 'all' ? new Set(orgData.products.flatMap(item => item.repos)) : new Set(product.repos);
+      const findings = collectFindings();
+      const scores = DEPARTMENT_SOURCES.map(source => getDepartmentScore(source.key)).filter(value => value > 0);
+      const avgScore = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0;
+      const urgent = findings.filter(finding => ['critical', 'high'].includes((finding.severity || '').toLowerCase())).length;
 
-      DEPARTMENTS.forEach(dept => {
-        const t = getDeptTotals(dept.key);
-        totalFindings += t.total_findings || 0;
-        totalFixed += t.total_fixed || 0;
-        totalCritical += t.critical || 0;
-        healthSum += getDeptHealthScore(dept.key);
-        if (departmentData[dept.key]) activeAgents++;
-      });
-
-      const overallHealth = Math.round(healthSum / DEPARTMENTS.length);
-
-      document.getElementById('stat-agents').textContent = activeAgents;
-      document.getElementById('stat-agents-sub').textContent =
-        activeAgents === DEPARTMENTS.length ? 'All departments active' : activeAgents + ' of ' + DEPARTMENTS.length + ' active';
-
-      document.getElementById('stat-findings').textContent = totalFindings;
-      const findingsEl = document.getElementById('stat-findings');
-      findingsEl.style.color = totalCritical > 0 ? 'var(--critical)' : totalFindings > 50 ? 'var(--high)' : 'var(--text)';
-      document.getElementById('stat-findings-sub').innerHTML =
-        '<span class="severity-dot critical"></span>' + totalCritical + ' critical &middot; ' + totalFixed + ' fixed';
-
-      document.getElementById('stat-health').textContent = overallHealth + '%';
-      const healthEl = document.getElementById('stat-health');
-      healthEl.className = 'stat-value ' + getHealthStatus(overallHealth);
-      if (getHealthStatus(overallHealth) === 'warning') healthEl.style.color = 'var(--medium)';
-      document.getElementById('stat-health-sub').textContent =
-        getHealthStatus(overallHealth) === 'healthy' ? 'Systems nominal' :
-        getHealthStatus(overallHealth) === 'warning' ? 'Needs attention' : 'Action required';
+      document.getElementById('stats').innerHTML = `
+        <div class="card stat">
+          <div class="label">Repos in Scope</div>
+          <div class="value" style="color:var(--accent)">${repos.size}</div>
+          <div class="sub">${product.key === 'all' ? 'Across the workspace' : product.repos.join(', ')}</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Departments Reporting</div>
+          <div class="value" style="color:var(--info)">${DEPARTMENT_SOURCES.filter(source => getReposForDepartment(source.key).length > 0).length}</div>
+          <div class="sub">Filtered to the selected product</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Visible Findings</div>
+          <div class="value" style="color:${urgent ? 'var(--critical)' : 'var(--text)'}">${findings.length}</div>
+          <div class="sub">${urgent} urgent today</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Average Health</div>
+          <div class="value" style="color:${scoreClass(avgScore)}">${avgScore}%</div>
+          <div class="sub">Across active departments</div>
+        </div>
+      `;
     }
 
     function renderDepartments() {
-      const grid = document.getElementById('dept-grid');
-      grid.innerHTML = '';
+      const repoBadge = document.getElementById('repoBadge');
+      const selected = getSelectedProduct();
+      repoBadge.textContent = selected.key === 'all' ? 'All repos' : selected.repos.join(', ');
 
-      DEPARTMENTS.forEach(dept => {
-        const t = getDeptTotals(dept.key);
-        const health = getDeptHealthScore(dept.key);
-        const status = departmentData[dept.key] ? getHealthStatus(health) : 'inactive';
-        const lastScan = getLatestScan(dept.key);
-        const statusLabels = { healthy: 'Healthy', warning: 'Warning', critical: 'Critical', inactive: 'No Data' };
-
-        const card = document.createElement('div');
-        card.className = 'dept-card';
-        card.setAttribute('data-status', status);
-        card.innerHTML = `
-          <div class="dept-header">
-            <div class="dept-header-left">
-              <div class="dept-icon ${dept.key}">${dept.icon}</div>
+      document.getElementById('departmentGrid').innerHTML = orgData.departments.map(dept => {
+        const sourceKey = getSourceKeyForDepartment(dept);
+        const score = sourceKey ? getDepartmentScore(sourceKey) : Math.round(getEmployeesForSelection().reduce((sum, emp) => sum + emp.daily_score, 0) / Math.max(getEmployeesForSelection().length, 1));
+        const findings = sourceKey ? getDepartmentFindingCount(sourceKey) : getEmployeesForSelection().length;
+        return `
+          <article class="dept-card">
+            <div class="dept-top">
               <div>
-                <div class="dept-name">${dept.name}</div>
-                <div class="dept-desc">${dept.desc}</div>
+                <div class="dept-name">${esc(dept.name)}</div>
+                <div class="dept-purpose">${esc(dept.persona)}</div>
               </div>
+              <div class="score-pill" style="color:${scoreClass(score)}">${score || 'n/a'}</div>
             </div>
-            <div class="dept-status ${status}">
-              <span class="dept-status-dot"></span>
-              ${statusLabels[status]}
-            </div>
-          </div>
-          <div class="dept-metrics">
-            <div>
-              <div class="dept-metric-label">Findings</div>
-              <div class="dept-metric-value" style="color: ${t.total_findings > 0 ? 'var(--text)' : 'var(--text-muted)'}">${t.total_findings}</div>
-            </div>
-            <div>
-              <div class="dept-metric-label">Health</div>
-              <div class="dept-metric-value" style="color: var(--${status === 'healthy' ? 'success' : status === 'warning' ? 'medium' : status === 'critical' ? 'critical' : 'text-muted'})">${health}%</div>
-            </div>
-            <div>
-              <div class="dept-metric-label">Last Scan</div>
-              <div class="dept-metric-value" style="font-size: 0.85rem; color: var(--text-dim)">${lastScan ? timeAgo(lastScan) : '--'}</div>
-            </div>
-          </div>
-          <div class="dept-footer">
-            <div class="dept-last-scan">${(t.critical || 0) > 0 ? '<span class="severity-dot critical"></span>' + t.critical + ' critical' : (t.high || 0) > 0 ? '<span class="severity-dot high"></span>' + t.high + ' high severity' : '<span class="severity-dot low"></span>No critical issues'}</div>
-            <a href="${dept.link}" class="dept-link">Open Dashboard &rarr;</a>
-          </div>
+            <div class="resume">${esc(dept.purpose)}</div>
+            <div class="resume" style="margin-top:0.5rem;">Findings / capacity signal: ${findings}</div>
+            <div class="chips">${dept.skills.slice(0, 5).map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
+          </article>
         `;
-        grid.appendChild(card);
-      });
+      }).join('');
     }
 
-    function renderActivity() {
-      const list = document.getElementById('activity-list');
-      const findings = getAllFindings().slice(0, 12);
-
-      document.getElementById('activity-count-badge').textContent = findings.length + ' recent';
-
-      if (findings.length === 0) {
-        list.innerHTML = '<li style="padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.82rem;">No activity recorded yet</li>';
+    function renderEmployeeOfDay() {
+      const employees = getEmployeesForSelection();
+      const employee = employees[0];
+      const host = document.getElementById('employeeOfDay');
+      if (!employee) {
+        host.innerHTML = '<div class="headline">Employee of the Day</div><div class="resume">No employee matches this product yet.</div>';
         return;
       }
-
-      list.innerHTML = findings.map(f => `
-        <li class="activity-item">
-          <span class="activity-time">${f.found_at ? formatTime(f.found_at) : '--:--'}</span>
-          <span class="activity-badge ${f.department}">${f.department.toUpperCase()}</span>
-          <div class="activity-content">
-            <div class="activity-title"><span class="severity-dot ${f.severity}"></span>${escapeHtml(f.title)}</div>
-            <div class="activity-meta">${f.id} &middot; ${capitalize(f.severity)} &middot; ${f.category || 'general'}</div>
+      host.innerHTML = `
+        <div class="headline">Employee of the Day</div>
+        <div class="employee-top">
+          <div>
+            <div class="employee-name">${esc(employee.name)}</div>
+            <div class="employee-title">${esc(employee.title)}</div>
           </div>
-        </li>
+          <div class="score-pill" style="color:${scoreClass(employee.daily_score)}">${employee.daily_score}</div>
+        </div>
+        <div class="employee-bio">${esc(employee.bio)}</div>
+        <div class="resume"><strong>Why today:</strong> ${esc(employee.persona)}</div>
+        <div class="resume"><strong>Fake resume:</strong> ${esc(employee.resume)}</div>
+        <div class="resume"><strong>Open findings in lane:</strong> ${getEmployeeFindingCount(employee)}</div>
+        <div class="chips">${employee.skills.map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
+      `;
+    }
+
+    function renderEmployees() {
+      const employees = getEmployeesForSelection();
+      document.getElementById('employeeGrid').innerHTML = employees.map(employee => `
+        <article class="employee-card">
+          <div class="employee-top">
+            <div>
+              <div class="employee-name">${esc(employee.name)}</div>
+              <div class="employee-title">${esc(employee.title)}</div>
+            </div>
+            <div class="score-pill" style="color:${scoreClass(employee.daily_score)}">${employee.daily_score}</div>
+          </div>
+          <div class="employee-bio">${esc(employee.bio)}</div>
+          <div class="resume"><strong>Resume:</strong> ${esc(employee.resume)}</div>
+          <div class="resume"><strong>Active findings:</strong> ${getEmployeeFindingCount(employee)}</div>
+          <div class="resume"><strong>Findings focus:</strong> ${esc(employee.finding_focus.join(', '))}</div>
+          <div class="chips">${employee.skills.slice(0, 6).map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
+        </article>
       `).join('');
     }
 
-    function updateTimestamp() {
-      const now = new Date();
-      document.getElementById('last-updated').textContent =
-        'Updated ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    function renderFindings() {
+      const findings = collectFindings();
+      document.getElementById('findingBadge').textContent = `${findings.length} visible`;
+      document.getElementById('findingList').innerHTML = findings.length ? findings.slice(0, 10).map(finding => `
+        <article class="finding-card">
+          <div class="finding-top">
+            <span class="severity ${esc((finding.severity || 'info').toLowerCase())}">${esc(finding.severity || 'info')}</span>
+            <span class="finding-id">${esc(finding.id || '')}</span>
+          </div>
+          <h4>${esc(finding.title || 'Untitled finding')}</h4>
+          <div class="finding-meta">${esc(finding.department)} · ${esc(finding.repo)} · ${esc(finding.file || 'no file')}</div>
+          <div class="finding-desc">${esc(finding.description || finding.fix || 'No description available.')}</div>
+        </article>
+      `).join('') : '<div class="resume">No findings match this product yet.</div>';
     }
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
+    function renderProductLead() {
+      const lead = (orgData.employees || []).find(employee => employee.id === 'jordan-mercer') || findEmployeeByDepartment('product');
+      const repoChecks = getRepoNamesForSelection().map(evaluateAcceptance);
+      const avgReadiness = repoChecks.length ? Math.round(repoChecks.reduce((sum, item) => sum + item.readiness, 0) / repoChecks.length) : 0;
+      const missingTests = repoChecks.filter(item => !Number(item.tests?.total || 0)).length;
+      const openBlockers = repoChecks.reduce((sum, item) => sum + item.openCritical, 0);
+
+      document.getElementById('productLeadBrief').innerHTML = lead ? `
+        <div class="employee-top">
+          <div>
+            <div class="employee-name">${esc(lead.name)}</div>
+            <div class="employee-title">${esc(lead.title)}</div>
+          </div>
+          <div class="score-pill" style="color:${scoreClass(lead.daily_score)}">${lead.daily_score}</div>
+        </div>
+        <div class="employee-bio">${esc(lead.bio)}</div>
+        <div class="resume"><strong>Operating rule:</strong> ${esc(lead.persona)}</div>
+        <div class="mini-list">
+          <div>Average readiness: <strong>${avgReadiness}%</strong></div>
+          <div>Repos missing automated tests: <strong>${missingTests}</strong></div>
+          <div>Critical / high blockers in scope: <strong>${openBlockers}</strong></div>
+        </div>
+        <div class="chips">${lead.skills.map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
+      ` : '<div class="resume">No product lead is configured yet.</div>';
     }
 
-    function capitalize(str) {
-      return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+    function renderAssignments() {
+      const assignments = buildAssignments();
+      document.getElementById('assignmentBadge').textContent = `${assignments.length} assignments`;
+      document.getElementById('assignmentList').innerHTML = assignments.length ? assignments.map(task => `
+        <article class="task-card">
+          <div class="task-top">
+            <div>
+              <div class="employee-name">${esc(task.title)}</div>
+              <div class="task-owner">${esc(task.owner)} · ${esc(task.ownerTitle)}</div>
+            </div>
+            <span class="status-pill ${task.severity === 'critical' || task.severity === 'high' ? 'bad' : task.severity === 'medium' ? 'warn' : 'info'}">${esc(task.severity)}</span>
+          </div>
+          <div class="finding-meta">${esc(task.department)} · ${esc(task.repo)} · ${esc(task.file)}</div>
+          <div class="finding-desc">${esc(task.details)}</div>
+        </article>
+      `).join('') : '<div class="resume">No assignments are in scope for this product yet.</div>';
     }
 
-    // Branding handled by site-branding.js
+    function renderCriteria() {
+      const checks = getRepoNamesForSelection().map(evaluateAcceptance);
+      document.getElementById('criteriaBadge').textContent = `${checks.length} repos`;
+      document.getElementById('criteriaList').innerHTML = checks.length ? checks.map(item => `
+        <article class="criteria-card">
+          <div class="criteria-top">
+            <div>
+              <div class="employee-name">${esc(item.repoName)}</div>
+              <div class="criteria-owner">Readiness ${item.readiness}%</div>
+            </div>
+            <span class="status-pill ${item.readiness >= 85 ? 'good' : item.readiness >= 65 ? 'warn' : 'bad'}">${item.readiness >= 85 ? 'ready-ish' : item.readiness >= 65 ? 'needs work' : 'blocked'}</span>
+          </div>
+          <div class="mini-list">
+            ${item.checks.map(check => `<div><span class="status-pill ${check.status}">${esc(check.label)}</span> ${esc(check.summary)}</div>`).join('')}
+          </div>
+        </article>
+      `).join('') : '<div class="resume">No repo coverage is mapped to this selection yet.</div>';
+    }
 
-    // ── Init & Auto-Refresh ─────────────────────────────
-    loadAllData();
-    setInterval(loadAllData, 60000);
+    function renderFixedItems() {
+      const items = collectFixedItems();
+      document.getElementById('fixedBadge').textContent = `${items.length} fixes`;
+      document.getElementById('fixedList').innerHTML = items.length ? items.map(item => `
+        <article class="task-card">
+          <div class="task-top">
+            <div>
+              <div class="employee-name">${esc(item.title)}</div>
+              <div class="task-owner">${esc(item.repo)} · ${esc(item.file)}</div>
+            </div>
+            <span class="status-pill good">fixed</span>
+          </div>
+          <div class="task-meta">
+            ${item.commit ? `<div>Commit: <strong>${esc(item.commit)}</strong></div>` : ''}
+            ${item.fixedAt ? `<div>Fixed at: <strong>${esc(item.fixedAt)}</strong></div>` : '<div>Fix timestamp not recorded yet.</div>'}
+          </div>
+        </article>
+      `).join('') : '<div class="resume">No fixed QA items are visible for this selection yet.</div>';
+    }
+
+    function renderSprintPlan() {
+      const lanes = buildSprintPlan();
+      document.getElementById('sprintBadge').textContent = `${lanes.length} lanes`;
+      document.getElementById('sprintList').innerHTML = lanes.length ? lanes.map(lane => `
+        <article class="criteria-card">
+          <div class="criteria-top">
+            <div>
+              <div class="employee-name">${esc(lane.lane)}</div>
+              <div class="criteria-owner">${lane.items.length} priorities</div>
+            </div>
+            <span class="status-pill ${lane.lane === 'Sprint 1' ? 'bad' : lane.lane === 'Sprint 2' ? 'warn' : 'info'}">${esc(lane.lane)}</span>
+          </div>
+          <div class="mini-list">
+            ${lane.items.map(item => `
+              <div>
+                <strong>${esc(item.title)}</strong><br>
+                ${esc(item.repo)} · ${esc(item.owner)} · ${esc(item.ownerTitle)} · ${esc(item.effort)}
+              </div>
+            `).join('')}
+          </div>
+        </article>
+      `).join('') : '<div class="resume">No sprint priorities are in scope for this product yet.</div>';
+    }
+
+    function renderProductSummary() {
+      const product = getSelectedProduct();
+      const domains = product.domains.length ? ` Domains: ${product.domains.join(', ')}.` : '';
+      const repoText = product.key === 'all' ? 'Repos: all tracked repos.' : `Repos: ${product.repos.join(', ')}.`;
+      document.getElementById('productSummary').textContent = `${product.description}${domains} ${repoText}`;
+      document.getElementById('updatedAt').textContent = `Reporting on ${product.name}`;
+      document.getElementById('productSelect').value = product.key;
+    }
+
+    function render() {
+      renderProductSummary();
+      renderStats();
+      renderDepartments();
+      renderEmployeeOfDay();
+      renderEmployees();
+      renderFindings();
+      renderProductLead();
+      renderAssignments();
+      renderCriteria();
+      renderFixedItems();
+      renderSprintPlan();
+    }
+
+    boot();
   </script>
 </body>
 </html>

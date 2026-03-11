@@ -2,7 +2,7 @@
 # Back Office — Regulatory Compliance Audit Agent
 # Usage: ./agents/compliance-audit.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that audits the target repository
+# Launches the configured agent runner to audit the target repository
 # for GDPR, ISO 27001, and age verification compliance issues.
 #
 # Options:
@@ -90,16 +90,16 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 
 Start the compliance audit now."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code compliance audit agent..."
+echo "Launching compliance audit agent..."
 echo ""
 
 job_start "compliance"
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$AUDIT_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Agent" \
-  --add-dir "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$AUDIT_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Agent" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
 job_finish "compliance" "$_EXIT_CODE"
 [ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 

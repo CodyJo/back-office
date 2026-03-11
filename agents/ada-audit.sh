@@ -2,7 +2,7 @@
 # Back Office — ADA Compliance Audit Agent
 # Usage: ./agents/ada-audit.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that scans the target repository
+# Launches the configured agent runner to scan the target repository
 # for ADA / WCAG 2.1 accessibility compliance issues.
 #
 # Options:
@@ -89,16 +89,16 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 
 Start the audit now."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code ADA compliance audit agent..."
+echo "Launching ADA compliance audit agent..."
 echo ""
 
 job_start "ada"
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$SCAN_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Agent" \
-  --add-dir "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$SCAN_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Agent" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
 job_finish "ada" "$_EXIT_CODE"
 [ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 

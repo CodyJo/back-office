@@ -16,7 +16,7 @@ dashboard_targets:
     base_path: ""
     cloudfront_id: "E30Z8D5XMDR1A9"
     subdomain: "admin.codyjo.com"
-    repo: "codyjo.com"
+    repo: ""
   # Back Office self-audit dashboard at www.codyjo.com/back-office/
   - bucket: "www.codyjo.com"
     base_path: "back-office"

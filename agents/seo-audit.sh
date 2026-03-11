@@ -2,7 +2,7 @@
 # Back Office — SEO & AI Engine Audit Agent
 # Usage: ./agents/seo-audit.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that audits the target repository
+# Launches the configured agent runner to audit the target repository
 # for SEO issues, AI search engine optimization gaps, and content
 # discoverability problems.
 #
@@ -88,16 +88,16 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 
 Start the SEO audit now."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code SEO audit agent..."
+echo "Launching SEO audit agent..."
 echo ""
 
 job_start "seo"
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$SCAN_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Agent" \
-  --add-dir "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$SCAN_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Agent" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
 job_finish "seo" "$_EXIT_CODE"
 [ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 

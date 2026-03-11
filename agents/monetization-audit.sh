@@ -2,7 +2,7 @@
 # Back Office — Monetization Strategy Agent
 # Usage: ./agents/monetization-audit.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that audits the target repository
+# Launches the configured agent runner to audit the target repository
 # for revenue opportunities, ad placement potential, premium feature
 # upsells, and other monetization strategies.
 #
@@ -91,16 +91,16 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 
 Start the monetization audit now."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code monetization strategy agent..."
+echo "Launching monetization strategy agent..."
 echo ""
 
 job_start "monetization"
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$SCAN_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Agent,WebSearch,WebFetch" \
-  --add-dir "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$SCAN_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Agent,WebSearch,WebFetch" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
 job_finish "monetization" "$_EXIT_CODE"
 [ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 

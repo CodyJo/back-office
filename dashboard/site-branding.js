@@ -41,8 +41,8 @@
   // ── Site Configurations ──────────────────────────────────────────────────
   var SITE_CONFIGS = {
     'codyjo.com': {
-      name: 'Analogify Studio',
-      logoMark: 'A',
+      name: 'Cody Jo Method',
+      logoMark: 'CJ',
       logoFont: "'Playfair Display', Georgia, serif",
       fontUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap',
       accent: '#c4944a',
@@ -276,7 +276,7 @@
     if (iconEl) iconEl.textContent = initials;
     if (titleEl) titleEl.textContent = domain;
     if (footerEl) footerEl.textContent = domain;
-    document.title = document.title.replace('BreakPoint Labs', domain);
+    document.title = rewriteTitle(document.title, domain);
   }
 
   function applyBasicBranding(domain) {
@@ -297,8 +297,16 @@
       if (iconEl) iconEl.textContent = initials;
       if (titleEl) titleEl.textContent = domain;
       if (footerEl) footerEl.textContent = domain;
-      document.title = document.title.replace('BreakPoint Labs', domain);
+      document.title = rewriteTitle(document.title, domain);
     });
+  }
+
+  function rewriteTitle(title, domain) {
+    if (!title) return domain + ' — Back Office';
+    if (/^(BreakPoint Labs|Cody Jo Method)\b/.test(title)) {
+      return title.replace(/^(BreakPoint Labs|Cody Jo Method)\b/, domain);
+    }
+    return title.indexOf(domain) === -1 ? domain + ' — ' + title : title;
   }
 })();
 

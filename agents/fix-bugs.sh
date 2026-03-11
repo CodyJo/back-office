@@ -2,7 +2,7 @@
 # Back Office — Fix Agent
 # Usage: ./agents/fix-bugs.sh /path/to/target-repo [--sync] [--deploy]
 #
-# Launches a Claude Code session that reads findings and fixes them
+# Launches the configured agent runner that reads findings and fixes them
 # using isolated git worktrees for safe parallel development.
 #
 # Options:
@@ -13,6 +13,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 QA_ROOT="$(dirname "$SCRIPT_DIR")"
+source "$QA_ROOT/scripts/job-status.sh"
 PROMPT_FILE="$SCRIPT_DIR/prompts/fix-bugs.md"
 
 # ── Args ─────────────────────────────────────────────────────────────────────
@@ -107,15 +108,18 @@ FIX_PROMPT="$(cat "$PROMPT_FILE")
 
 Start fixing now. Use parallel worktree agents where possible."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code fix agent..."
+echo "Launching fix agent..."
 echo ""
 
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$FIX_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Edit,Agent" \
-  --add-dir "$TARGET_REPO"
+job_start "fix"
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$FIX_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Edit,Agent" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+job_finish "fix" "$_EXIT_CODE"
+[ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 
 echo ""
 echo "Fixes complete. Results in: $RESULTS_DIR/"

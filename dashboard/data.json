@@ -1,13 +1,13 @@
 {
   "department": "qa",
-  "generated_at": "2026-03-11T02:17:22.741249+00:00",
+  "generated_at": "2026-03-11T07:37:52.383475+00:00",
   "totals": {
     "critical": 0,
-    "high": 3,
-    "medium": 13,
-    "low": 10,
-    "info": 7,
-    "total_findings": 61,
+    "high": 4,
+    "medium": 17,
+    "low": 13,
+    "info": 8,
+    "total_findings": 70,
     "total_fixed": 16,
     "total_failed": 0,
     "total_skipped": 5,
@@ -405,8 +405,160 @@
       ]
     },
     {
+      "name": "bible-app",
+      "scanned_at": "2026-03-11T07:04:56.018864+00:00",
+      "summary": {
+        "total": 9,
+        "critical": 0,
+        "high": 1,
+        "medium": 4,
+        "low": 3,
+        "info": 1,
+        "scanned_at": "2026-03-11T07:04:56.018864+00:00"
+      },
+      "fix_summary": {
+        "fixed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "in_progress": 0,
+        "open": 9
+      },
+      "lint": {
+        "passed": true,
+        "errors": 0,
+        "warnings": 0,
+        "output": "ESLint passed with no errors or warnings."
+      },
+      "tests": {
+        "passed": true,
+        "total": 43,
+        "failed": 0,
+        "errors": 0,
+        "output": "8 test files, 43 tests passed in 1.86s"
+      },
+      "findings": [
+        {
+          "id": "FIND-001",
+          "severity": "high",
+          "category": "security",
+          "title": "Interpret Lambda allows localhost CORS origin in production",
+          "file": "lambda/interpret/index.mjs",
+          "line": 28,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-002",
+          "severity": "medium",
+          "category": "security",
+          "title": "Reset and verification codes compared with timing-unsafe string equality",
+          "file": "lambda/api/index.mjs",
+          "line": 544,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-003",
+          "severity": "medium",
+          "category": "performance",
+          "title": "Account backup fires unlimited parallel HTTP requests",
+          "file": "src/lib/account-sync.ts",
+          "line": 74,
+          "effort": "small",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-004",
+          "severity": "medium",
+          "category": "performance",
+          "title": "DynamoDB list queries lack pagination for large datasets",
+          "file": "lambda/api/index.mjs",
+          "line": 818,
+          "effort": "small",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-005",
+          "severity": "medium",
+          "category": "security",
+          "title": "No password maximum length allows potential CPU exhaustion",
+          "file": "lambda/api/index.mjs",
+          "line": 308,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-006",
+          "severity": "low",
+          "category": "security",
+          "title": "dangerouslySetInnerHTML used for static emoji rendering on homepage",
+          "file": "src/app/page.tsx",
+          "line": 192,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-007",
+          "severity": "low",
+          "category": "code-quality",
+          "title": "generateId() uses non-cryptographic weak randomness",
+          "file": "src/lib/storage.ts",
+          "line": 207,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-008",
+          "severity": "low",
+          "category": "input-validation",
+          "title": "User-supplied IDs used as DynamoDB sort keys without format validation",
+          "file": "lambda/api/index.mjs",
+          "line": 859,
+          "effort": "small",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        },
+        {
+          "id": "FIND-009",
+          "severity": "info",
+          "category": "input-validation",
+          "title": "Daily verse date accepts future dates enabling streak manipulation",
+          "file": "lambda/api/index.mjs",
+          "line": 1096,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open",
+          "commit": "",
+          "fixed_at": ""
+        }
+      ]
+    },
+    {
       "name": "codyjo.com",
-      "scanned_at": "2026-03-10T21:04:47.996904+00:00",
+      "scanned_at": "2026-03-11T02:35:00Z",
       "summary": {
         "total": 9,
         "critical": 0,
@@ -414,7 +566,7 @@
         "medium": 3,
         "low": 3,
         "info": 3,
-        "scanned_at": "2026-03-10T21:04:47.996904+00:00"
+        "scanned_at": "2026-03-11T02:35:00Z"
       },
       "fix_summary": {
         "fixed": 6,

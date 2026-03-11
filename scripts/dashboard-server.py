@@ -240,7 +240,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         # Suppress noisy polling logs for .jobs.json
-        if ".jobs.json" in (args[0] if args else ""):
+        first_arg = str(args[0]) if args else ""
+        if ".jobs.json" in first_arg:
             return
         super().log_message(format, *args)
 

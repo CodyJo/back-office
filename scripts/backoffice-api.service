@@ -1,0 +1,16 @@
+[Unit]
+Description=Back Office API Server
+After=network.target
+
+[Service]
+Type=simple
+User=merm
+WorkingDirectory=/home/merm/projects/back-office
+ExecStart=/usr/bin/python3 /home/merm/projects/back-office/scripts/api-server.py --config /home/merm/projects/back-office/config/api-config.yaml
+Restart=always
+RestartSec=5
+Environment=HOME=/home/merm
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

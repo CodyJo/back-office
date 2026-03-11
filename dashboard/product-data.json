@@ -1,34 +1,34 @@
 {
   "department": "product",
-  "generated_at": "2026-03-11T02:17:22.746214+00:00",
+  "generated_at": "2026-03-11T07:37:52.392365+00:00",
   "totals": {
     "critical": 4,
-    "high": 13,
-    "medium": 29,
-    "low": 14,
-    "info": 6,
-    "total_findings": 66
+    "high": 15,
+    "medium": 41,
+    "low": 22,
+    "info": 8,
+    "total_findings": 90
   },
   "repos": [
     {
       "name": "bible-app",
-      "scanned_at": "2026-03-11T01:11:50.337123+00:00",
+      "scanned_at": "2026-03-11T06:41:50.255844+00:00",
       "summary": {
-        "total": 8,
+        "total": 32,
         "critical": 1,
-        "high": 3,
-        "medium": 3,
-        "low": 0,
-        "info": 1,
-        "product_readiness_score": 78,
-        "scanned_at": "2026-03-11T01:11:50.337123+00:00"
+        "high": 5,
+        "medium": 15,
+        "low": 8,
+        "info": 3,
+        "product_readiness_score": 68,
+        "scanned_at": "2026-03-11T06:41:50.255844+00:00"
       },
       "findings": [
         {
           "id": "PROD-001",
           "severity": "critical",
           "category": "feature-gap",
-          "title": "Account flows are presented in the UI, but the API only implements a health check",
+          "title": "Auth API is a stub \u2014 login, register, and forgot-password flows are non-functional",
           "file": "lambda/api/index.mjs",
           "line": 1,
           "effort": "large",
@@ -39,20 +39,20 @@
           "id": "PROD-002",
           "severity": "high",
           "category": "feature-gap",
-          "title": "The app promises account sync, but study data is stored only in browser localStorage",
-          "file": "src/lib/storage.ts",
-          "line": 1,
-          "effort": "large",
-          "fixable": false,
+          "title": "No in-context bookmark button during Bible study or reading",
+          "file": "src/app/study/page.tsx",
+          "line": 674,
+          "effort": "medium",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-003",
           "severity": "high",
-          "category": "ux-improvement",
-          "title": "Reading plans are checklists, not launch points into actual reading or study flows",
-          "file": "src/app/plans/page.tsx",
-          "line": 315,
+          "category": "feature-gap",
+          "title": "No verse search functionality despite API support",
+          "file": "src/lib/bible-api.ts",
+          "line": 3,
           "effort": "medium",
           "fixable": true,
           "status": "open"
@@ -61,31 +61,31 @@
           "id": "PROD-004",
           "severity": "high",
           "category": "feature-gap",
-          "title": "Settings does not expose account or trust controls beyond Bible version",
-          "file": "src/app/settings/page.tsx",
-          "line": 1,
+          "title": "No verse comparison or parallel translations UI",
+          "file": "src/lib/bible-api.ts",
+          "line": 3,
           "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-005",
-          "severity": "medium",
+          "severity": "high",
           "category": "ux-improvement",
-          "title": "First-time visitors hit a hard Bible-version gate before they can explore the product",
-          "file": "src/app/page.tsx",
-          "line": 31,
-          "effort": "medium",
+          "title": "Reading plan passages are not linked to reading or study flows",
+          "file": "src/app/plans/page.tsx",
+          "line": 315,
+          "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-006",
           "severity": "medium",
-          "category": "documentation",
-          "title": "README still describes a default Next.js starter instead of the actual Selah product",
-          "file": "README.md",
-          "line": 1,
+          "category": "feature-gap",
+          "title": "Limited verse of the day pool \u2014 only 30 hardcoded references",
+          "file": "src/app/daily/page.tsx",
+          "line": 92,
           "effort": "small",
           "fixable": true,
           "status": "open"
@@ -94,51 +94,313 @@
           "id": "PROD-007",
           "severity": "medium",
           "category": "feature-gap",
-          "title": "Journal, study history, and insights have no export or recovery path",
+          "title": "No notification or reminder system for daily reading habits",
           "file": "src/lib/storage.ts",
+          "line": 6,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-008",
+          "severity": "medium",
+          "category": "feature-gap",
+          "title": "No verse highlighting or annotation during reading",
+          "file": "src/app/study/page.tsx",
+          "line": 680,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-009",
+          "severity": "low",
+          "category": "feature-gap",
+          "title": "No community or social features for group Bible study",
+          "file": "src/app/study/page.tsx",
+          "line": 1,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-010",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "Clipboard copy fails silently with no user feedback",
+          "file": "src/app/bookmarks/page.tsx",
+          "line": 52,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-011",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "No offline indicator despite PWA architecture",
+          "file": "src/components/ServiceWorker.tsx",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-012",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "No quick-study shortcut for returning users",
+          "file": "src/app/study/page.tsx",
+          "line": 131,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-013",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "First-time visitors hit a version selection gate before seeing the product",
+          "file": "src/app/page.tsx",
+          "line": 31,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-014",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "Journal tag input is basic \u2014 no typeahead or tag management",
+          "file": "src/app/journal/page.tsx",
           "line": 1,
           "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
-          "id": "PROD-008",
+          "id": "PROD-015",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "Wallpaper generation limited to Daily Verse only",
+          "file": "src/app/daily/page.tsx",
+          "line": 92,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-016",
+          "severity": "medium",
+          "category": "technical-debt",
+          "title": "Bookmarks storage inconsistency \u2014 bypasses storage abstraction",
+          "file": "src/app/bookmarks/page.tsx",
+          "line": 96,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-017",
+          "severity": "low",
+          "category": "technical-debt",
+          "title": "Unused Compass import in home page",
+          "file": "src/app/page.tsx",
+          "line": 5,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-018",
+          "severity": "medium",
+          "category": "technical-debt",
+          "title": "No React Error Boundary for crash recovery",
+          "file": "src/app/layout.tsx",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-019",
+          "severity": "low",
+          "category": "technical-debt",
+          "title": "Bolls.Life API base URL is hardcoded",
+          "file": "src/lib/bible-api.ts",
+          "line": 3,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-020",
+          "severity": "medium",
+          "category": "technical-debt",
+          "title": "No caching strategy for Bible text \u2014 fresh fetch on every load",
+          "file": "src/lib/bible-api.ts",
+          "line": 3,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-021",
+          "severity": "low",
+          "category": "technical-debt",
+          "title": "Service worker is minimal \u2014 no asset or API caching",
+          "file": "public/sw.js",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-022",
+          "severity": "medium",
+          "category": "technical-debt",
+          "title": "API URL falls back to empty string causing silent failures",
+          "file": "src/app/login/page.tsx",
+          "line": 36,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-023",
+          "severity": "high",
+          "category": "growth-opportunity",
+          "title": "Backend data sync for cross-device access \u2014 infrastructure is ready",
+          "file": "terraform/dynamodb.tf",
+          "line": 1,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-024",
+          "severity": "medium",
+          "category": "growth-opportunity",
+          "title": "Verse-of-the-day email digest for retention",
+          "file": "terraform/lambda.tf",
+          "line": 1,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-025",
+          "severity": "medium",
+          "category": "growth-opportunity",
+          "title": "User-created and shared reading plans",
+          "file": "src/data/reading-plans.ts",
+          "line": 1,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-026",
+          "severity": "medium",
+          "category": "growth-opportunity",
+          "title": "AI study features could be significantly expanded",
+          "file": "src/components/StudyChat.tsx",
+          "line": 114,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-027",
           "severity": "info",
           "category": "growth-opportunity",
-          "title": "Existing streak and plan data could support reminders and milestone nudges",
-          "file": "src/lib/storage.ts",
-          "line": 137,
+          "title": "No analytics or usage tracking for product decisions",
+          "file": "src/app/layout.tsx",
+          "line": 1,
+          "effort": "small",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-028",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "Data import functionality \u2014 export exists but no restore",
+          "file": "src/app/settings/page.tsx",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-029",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "Prayer request tracking with answered/ongoing status",
+          "file": "src/app/journal/page.tsx",
+          "line": 1,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-030",
+          "severity": "low",
+          "category": "documentation",
+          "title": "README is default Next.js boilerplate, not Selah product documentation",
+          "file": "README.md",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-031",
+          "severity": "medium",
+          "category": "infrastructure",
+          "title": "No monitoring or alerting for production services",
+          "file": "terraform/lambda.tf",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-032",
+          "severity": "low",
+          "category": "infrastructure",
+          "title": "No staging or preview environment",
+          "file": ".github/workflows/cd.yml",
+          "line": 1,
           "effort": "medium",
           "fixable": false,
           "status": "open"
         }
       ],
-      "scores": {
-        "featureCompleteness": 69,
-        "uxPolish": 88,
-        "technicalHealth": 96,
-        "growthPotential": 55
-      },
-      "scoring_breakdown": {
-        "featureCompleteness": {
-          "weight": 0.3,
-          "formula": "100 - 15 (critical feature-gap) - 8 (high feature-gap) - 8 (high feature-gap)",
-          "score": 69
+      "categories": {
+        "feature_gap": {
+          "score": 55,
+          "issues": 8
         },
-        "uxPolish": {
-          "weight": 0.25,
-          "formula": "100 - 8 (high ux-improvement) - 4 (medium ux-improvement)",
-          "score": 88
+        "ux_improvement": {
+          "score": 76,
+          "issues": 6
         },
-        "technicalHealth": {
-          "weight": 0.25,
-          "formula": "100 - 4 (medium documentation)",
-          "score": 96
+        "technical_debt": {
+          "score": 70,
+          "issues": 7
         },
-        "growthPotential": {
-          "weight": 0.2,
-          "formula": "50 + 5 (medium growth-opportunity)",
-          "score": 55
+        "growth_opportunity": {
+          "score": 81,
+          "issues": 7
+        },
+        "documentation": {
+          "score": 70,
+          "issues": 2
+        },
+        "infrastructure": {
+          "score": 70,
+          "issues": 2
         }
       }
     },

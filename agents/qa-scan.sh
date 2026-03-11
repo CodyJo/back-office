@@ -2,7 +2,7 @@
 # Back Office — Scan Agent
 # Usage: ./agents/qa-scan.sh /path/to/target-repo [--sync]
 #
-# Launches a Claude Code session that scans the target repository
+# Launches the configured agent runner to scan the target repository
 # for bugs, security issues, and performance problems.
 #
 # Options:
@@ -96,16 +96,16 @@ ${CONTEXT:-"No additional context provided. Read the project's README and CLAUDE
 
 Start the scan now."
 
-# ── Launch Claude Code ───────────────────────────────────────────────────────
+# ── Launch agent runner ──────────────────────────────────────────────────────
 
-echo "Launching Claude Code scan agent..."
+echo "Launching scan agent..."
 echo ""
 
 job_start "qa"
-unset CLAUDECODE 2>/dev/null || true
-claude --print "$SCAN_PROMPT" \
-  --allowedTools "Read,Glob,Grep,Bash,Write,Agent" \
-  --add-dir "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
+bash "$QA_ROOT/scripts/run-agent.sh" \
+  --prompt "$SCAN_PROMPT" \
+  --tools "Read,Glob,Grep,Bash,Write,Agent" \
+  --repo "$TARGET_REPO" && _EXIT_CODE=0 || _EXIT_CODE=$?
 job_finish "qa" "$_EXIT_CODE"
 [ "$_EXIT_CODE" -ne 0 ] && exit "$_EXIT_CODE"
 

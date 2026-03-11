@@ -1,7 +1,7 @@
 {
   "scan_id": "SELF-AUDIT-001",
   "repo": "back-office",
-  "timestamp": "2026-03-11T02:35:00Z",
+  "timestamp": "2026-03-10T12:00:00Z",
   "scanner": "self-audit-agent",
   "summary": {
     "total_findings": 28,
@@ -12,7 +12,7 @@
       "low": 8,
       "info": 3
     },
-    "health_score": 10
+    "health_score": 4
   },
   "findings": [
     {
@@ -28,7 +28,7 @@
       "fix_suggestion": "Replace the eval+python3 pattern with a safer approach: use python3 to write values to a temp file, then source that file, or use python3 -c to print env-safe export statements that are validated before eval. Alternatively, parse YAML with a dedicated script that outputs shell-safe assignments: python3 scripts/parse-config.py --repo \"$REPO_NAME\" --field lint_command, and capture via command substitution without eval.",
       "effort": "medium",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -44,7 +44,7 @@
       "fix_suggestion": "Bind to 127.0.0.1 by default instead of 0.0.0.0. Add a --bind flag for explicit override. Require api_key to be non-empty when binding to non-loopback addresses. Print a prominent warning if no API key is set.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -60,7 +60,7 @@
       "fix_suggestion": "Add 'config/api-config.yaml' to .gitignore. The example file (api-config.example.yaml) already exists and is sufficient for documentation.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -76,7 +76,7 @@
       "fix_suggestion": "Instead of eval, use bash -c \"$DEPLOY_CMD\" for a single level of shell interpretation, or better yet, validate DEPLOY_CMD against an allowlist of known safe commands. Consider running deploy commands in a restricted shell or container.",
       "effort": "medium",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -92,7 +92,7 @@
       "fix_suggestion": "Restrict CORS to specific allowed origins. At minimum, only allow localhost and the configured admin subdomains. Apply the same CORS restriction pattern used in api-server.py, which reads allowed_origins from config.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -108,7 +108,7 @@
       "fix_suggestion": "Add a CSP meta tag to each dashboard HTML file. Start with a permissive policy that covers current usage: <meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self';\">. Then tighten incrementally.",
       "effort": "medium",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -124,7 +124,7 @@
       "fix_suggestion": "Add the escapeHtml() function (already used in index.html) to all dashboard files and apply it to all user/agent-derived text rendered via innerHTML: f.title, f.description, f.file, f.evidence, f.fix_suggestion.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -140,7 +140,7 @@
       "fix_suggestion": "Replace 'outline: none' with a visible focus indicator: use 'outline: 2px solid var(--accent); outline-offset: 2px;' or add a focus-visible polyfill that only suppresses outlines for mouse users: ':focus:not(:focus-visible) { outline: none; } :focus-visible { outline: 2px solid var(--accent); }'",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -156,7 +156,7 @@
       "fix_suggestion": "Add a skip-to-content link as the first child of <body>: <a href=\"#main-content\" class=\"skip-link\">Skip to content</a>, with CSS: .skip-link { position: absolute; top: -40px; left: 0; z-index: 1000; } .skip-link:focus { top: 0; }. Wrap main content in <main id=\"main-content\">.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -172,7 +172,7 @@
       "fix_suggestion": "Wrap main content in <main role=\"main\">. Use <nav> for navigation sections. Use <section> with aria-label for major content areas (stats, department grid, activity feed). Use <footer> for the footer.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -188,7 +188,7 @@
       "fix_suggestion": "Increase the lightness of --text-muted to at least #7a7a94 (approximately 4.5:1 contrast ratio against #0a0a0f) or #8888a0 (already used as --text-dim, which passes). Review all uses of --text-muted and consider whether --text-dim should be used instead.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -204,7 +204,7 @@
       "fix_suggestion": "Extract common CSS into a shared dashboard.css file. Extract common JS utilities (escapeHtml, timeAgo, formatTime, data loading, rendering helpers) into a shared dashboard.js file. This reduces each dashboard file to only its unique content.",
       "effort": "high",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -220,7 +220,7 @@
       "fix_suggestion": "Move the variable assignments before the case statement so they are set once and shared across all branches.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -236,7 +236,7 @@
       "fix_suggestion": "Pass file paths as arguments to the Python script instead of interpolating them into the code string. Use sys.argv or environment variables: JOBS_FILE=\"$_JOBS_FILE\" python3 -c \"import os; path = os.environ['JOBS_FILE']; ...\"",
       "effort": "medium",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -252,7 +252,7 @@
       "fix_suggestion": "Use an array for arguments: local args=(\"$TARGET_REPO\"); [ \"$SYNC\" = true ] && args+=(--sync); bash \"$SCRIPT_DIR/fix-bugs.sh\" \"${args[@]}\"",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -268,7 +268,7 @@
       "fix_suggestion": "Add job_start/job_finish tracking, and capture the exit code: source \"$QA_ROOT/scripts/job-status.sh\"; job_start \"fix\"; claude --print ... && _EXIT_CODE=0 || _EXIT_CODE=$?; job_finish \"fix\" \"$_EXIT_CODE\"; [ \"$_EXIT_CODE\" -ne 0 ] && exit \"$_EXIT_CODE\"",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -284,7 +284,7 @@
       "fix_suggestion": "Document the default credentials in a separate file that is gitignored, or prompt the user to set credentials during setup. At minimum, add a comment encouraging the user to change the default password after first login.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -300,7 +300,7 @@
       "fix_suggestion": "Remove the unused CONFIG_FILE assignment from the 5 scripts that do not use it, or actually read relevant config from it.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -316,7 +316,7 @@
       "fix_suggestion": "Move 'import time' to the top of the file with the other imports.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -332,7 +332,7 @@
       "fix_suggestion": "Add a check at the start of aggregate(): if not os.path.isdir(results_dir): print(f'Results directory not found: {results_dir}', file=sys.stderr); sys.exit(1)",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -348,7 +348,7 @@
       "fix_suggestion": "Self-host the font files using @font-face declarations in the shared CSS file. Download Inter and JetBrains Mono woff2 files and serve them from the same S3 bucket. This eliminates the external dependency on Google Fonts CDN.",
       "effort": "medium",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -364,7 +364,7 @@
       "fix_suggestion": "Extract shared CSS and JS into separate cacheable files. Consider a lightweight build step that minifies the inline CSS and JS. Even just extracting common code would reduce individual page sizes by ~40%.",
       "effort": "high",
       "fixable_by_agent": false,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -380,7 +380,7 @@
       "fix_suggestion": "Add scope='col' to all <th> elements in thead. Add <caption class='sr-only'>QA Findings Table</caption> to each table. The sr-only class (visually hidden but screen-reader accessible) is a standard pattern.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -396,7 +396,7 @@
       "fix_suggestion": "Instead of os.chdir, compute PROJECT_ROOT once and use os.path.join(PROJECT_ROOT, 'results', repo, fname) for all file access.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -412,7 +412,7 @@
       "fix_suggestion": "Use 'pip3 install --user --quiet pyyaml' for user-local install, or create a project venv: python3 -m venv \"$QA_ROOT/.venv\" && source \"$QA_ROOT/.venv/bin/activate\" && pip install pyyaml.",
       "effort": "low",
       "fixable_by_agent": true,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -428,7 +428,7 @@
       "fix_suggestion": "No action required since the file is gitignored. Ensure Terraform outputs do not log these values in CI/CD pipelines.",
       "effort": "low",
       "fixable_by_agent": false,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -444,7 +444,7 @@
       "fix_suggestion": "Consider deprecating and removing backoffice.html if its functionality has been fully replaced by the department-specific dashboards. If it still serves a purpose, update CLAUDE.md to clarify its role.",
       "effort": "low",
       "fixable_by_agent": false,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     },
     {
@@ -460,7 +460,7 @@
       "fix_suggestion": "No immediate action needed. Add a note in the monitoring README to change credentials if deploying beyond localhost.",
       "effort": "low",
       "fixable_by_agent": false,
-      "status": "fixed",
+      "status": "open",
       "found_at": "2026-03-10T12:00:00Z"
     }
   ]
