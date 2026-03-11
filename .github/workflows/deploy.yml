@@ -6,7 +6,7 @@ on:
     paths:
       - 'dashboard/**'
       - 'results/**'
-      - 'scripts/aggregate-results.py'
+      - 'scripts/**'
       - '.github/workflows/deploy.yml'
 
 permissions:
