@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Back Office Documentation - CI/CD</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="site-branding.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --border: #2a2a3a;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --accent: #c4944a;
+      --radius: 14px;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, rgba(196, 148, 74, 0.14), transparent 28%),
+        linear-gradient(180deg, #09090d 0%, #0f1017 100%);
+    }
+    .container { max-width: 1040px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .subnav {
+      display: flex; flex-wrap: wrap; gap: 0.85rem; margin-bottom: 1rem;
+      padding: 0.35rem; border-radius: 999px; width: fit-content; max-width: 100%;
+      background: rgba(18, 18, 26, 0.7); border: 1px solid var(--border);
+    }
+    .subnav a {
+      text-decoration: none; color: var(--text-dim); padding: 0.65rem 0.95rem; border-radius: 999px;
+    }
+    .subnav a.active { color: var(--text); background: rgba(196, 148, 74, 0.12); border: 1px solid rgba(196, 148, 74, 0.28); }
+    .hero, .section {
+      background: rgba(18, 18, 26, 0.94);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+    .hero { padding: 1.6rem; margin-bottom: 1rem; }
+    .eyebrow {
+      color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.76rem; margin-bottom: 0.75rem;
+    }
+    h1 { font-size: clamp(2rem, 4vw, 2.9rem); letter-spacing: -0.04em; margin-bottom: 0.75rem; }
+    h2 { font-size: 1.25rem; margin-bottom: 0.8rem; }
+    p, li { color: var(--text-dim); line-height: 1.7; }
+    .hero-actions { display: flex; gap: 0.85rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+      border-radius: 999px; padding: 0.78rem 1rem; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text);
+    }
+    .btn-solid { border-color: rgba(196, 148, 74, 0.5); background: rgba(196, 148, 74, 0.12); color: var(--accent); }
+    .stack { display: grid; gap: 1rem; }
+    .section { padding: 1.35rem; }
+    .section ul { padding-left: 1rem; display: grid; gap: 0.5rem; }
+    code, pre {
+      font-family: var(--mono);
+      color: #f3d6a4;
+    }
+    pre {
+      margin-top: 1rem; padding: 1rem; overflow-x: auto; background: #0f0f16;
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .subnav { width: 100%; border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <nav class="subnav" aria-label="Documentation sections">
+      <a href="documentation.html">Overview</a>
+      <a href="documentation-github.html">GitHub</a>
+      <a class="active" href="documentation-cicd.html">CI/CD</a>
+      <a href="documentation-cli.html">CLI</a>
+    </nav>
+
+    <section class="hero">
+      <p class="eyebrow">CI/CD Reference</p>
+      <h1>Delivery should be automated, reviewable, and hard to misuse.</h1>
+      <p>This is the Back Office release standard for audited repos and for Back Office itself: validate every change, keep preview and production distinct, and protect production with explicit gates.</p>
+      <div class="hero-actions">
+        <a class="btn btn-solid" href="documentation.html">Back to docs hub</a>
+        <a class="btn" href="documentation-github.html">GitHub reference</a>
+      </div>
+    </section>
+
+    <section class="stack">
+      <article class="section">
+        <h2>Required workflow set</h2>
+        <div class="grid">
+          <div>
+            <ul>
+              <li><strong>CI</strong>: run on pull requests and non-main pushes with shell checks, Python validation, lint, and Back Office regression tests.</li>
+              <li><strong>Preview</strong>: produce a reviewable dashboard artifact for pull requests.</li>
+            </ul>
+          </div>
+          <div>
+            <ul>
+              <li><strong>CD</strong>: validate first, then deploy production only from <code>main</code> through GitHub OIDC + AWS.</li>
+              <li><strong>Nightly</strong>: rerun CI and refresh delivery metadata artifacts on a schedule.</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="section">
+        <h2>Release guardrails</h2>
+        <ul>
+          <li>Use workflow concurrency so stale CI and preview runs get canceled instead of consuming noise and time.</li>
+          <li>Add job-level timeouts to deploy and nightly workflows so stuck jobs fail fast.</li>
+          <li>Run smoke tests immediately after production deploys.</li>
+          <li>Use protected GitHub environments with required reviewers for production.</li>
+          <li>Prefer an overnight PR or queued release candidate over unattended production promotion when confidence is low.</li>
+        </ul>
+      </article>
+
+      <article class="section">
+        <h2>Reference flow</h2>
+        <pre><code>Back Office audit
+  -> prioritized work
+  -> branch or PR
+  -> CI gate
+  -> preview validation
+  -> review
+  -> protected production deploy
+  -> smoke test
+  -> dashboard refresh</code></pre>
+        <p>The core rule is simple: automate analysis and verification aggressively, automate production promotion carefully.</p>
+      </article>
+
+      <article class="section">
+        <h2>Back Office deployment paths</h2>
+        <ul>
+          <li><strong>Repo deploy path</strong>: push to <code>main</code> in the Back Office repo and let GitHub Actions handle the dashboard deploy workflow.</li>
+          <li><strong>Direct sync path</strong>: run <code>bash scripts/sync-dashboard.sh</code> when you intentionally want to publish the static dashboards and payloads from a local operator environment.</li>
+          <li>The direct sync path should still respect the same discipline: tests first, aggregation second, upload third.</li>
+        </ul>
+      </article>
+
+      <article class="section">
+        <h2>Current workflow files</h2>
+        <pre><code>.github/workflows/ci.yml
+.github/workflows/preview.yml
+.github/workflows/deploy.yml
+.github/workflows/nightly-backoffice.yml
+templates/github-actions/product-ci.yml
+templates/github-actions/product-preview.yml
+templates/github-actions/product-cd.yml
+templates/github-actions/nightly-backoffice.yml</code></pre>
+      </article>
+
+      <article class="section">
+        <h2>What Back Office should report</h2>
+        <ul>
+          <li>Whether CI, preview, production, and nightly workflows exist for each configured target.</li>
+          <li>Whether lint, test, and build commands are actually configured for each target.</li>
+          <li>Whether automation posture is good enough to consider a repo delivery-ready.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

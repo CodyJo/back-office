@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Back Office Documentation - GitHub</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="site-branding.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --border: #2a2a3a;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --accent: #c4944a;
+      --radius: 14px;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(196, 148, 74, 0.12), transparent 26%),
+        linear-gradient(180deg, #09090d 0%, #0f1017 100%);
+    }
+    .container { max-width: 1040px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .subnav {
+      display: flex; flex-wrap: wrap; gap: 0.85rem; margin-bottom: 1rem;
+      padding: 0.35rem; border-radius: 999px; width: fit-content; max-width: 100%;
+      background: rgba(18, 18, 26, 0.7); border: 1px solid var(--border);
+    }
+    .subnav a {
+      text-decoration: none; color: var(--text-dim); padding: 0.65rem 0.95rem; border-radius: 999px;
+    }
+    .subnav a.active { color: var(--text); background: rgba(196, 148, 74, 0.12); border: 1px solid rgba(196, 148, 74, 0.28); }
+    .hero, .section {
+      background: rgba(18, 18, 26, 0.94);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+    .hero { padding: 1.6rem; margin-bottom: 1rem; }
+    .eyebrow {
+      color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.76rem; margin-bottom: 0.75rem;
+    }
+    h1 { font-size: clamp(2rem, 4vw, 2.9rem); letter-spacing: -0.04em; margin-bottom: 0.75rem; }
+    h2 { font-size: 1.25rem; margin-bottom: 0.8rem; }
+    p, li { color: var(--text-dim); line-height: 1.7; }
+    .hero-actions { display: flex; gap: 0.85rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+      border-radius: 999px; padding: 0.78rem 1rem; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text);
+    }
+    .btn-solid { border-color: rgba(196, 148, 74, 0.5); background: rgba(196, 148, 74, 0.12); color: var(--accent); }
+    .stack { display: grid; gap: 1rem; }
+    .section { padding: 1.35rem; }
+    .section ul { padding-left: 1rem; display: grid; gap: 0.5rem; }
+    code, pre {
+      font-family: var(--mono);
+      color: #f3d6a4;
+    }
+    pre {
+      margin-top: 1rem; padding: 1rem; overflow-x: auto; background: #0f0f16;
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .subnav { width: 100%; border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <nav class="subnav" aria-label="Documentation sections">
+      <a href="documentation.html">Overview</a>
+      <a class="active" href="documentation-github.html">GitHub</a>
+      <a href="documentation-cicd.html">CI/CD</a>
+      <a href="documentation-cli.html">CLI</a>
+    </nav>
+
+    <section class="hero">
+      <p class="eyebrow">GitHub Reference</p>
+      <h1>How Back Office is organized across repositories.</h1>
+      <p>The GitHub reference explains the boundary between the Back Office control-plane repo and the product repos it audits, scaffolds, and reports on.</p>
+      <div class="hero-actions">
+        <a class="btn btn-solid" href="documentation.html">Back to docs hub</a>
+        <a class="btn" href="index.html">HQ Dashboard</a>
+      </div>
+    </section>
+
+    <section class="stack">
+      <article class="section">
+        <h2>Repository split</h2>
+        <div class="grid">
+          <div>
+            <p><strong>Back Office repo</strong> owns the audit framework, dashboard UI, aggregators, workflow scaffolding templates, sync scripts, and documentation pages.</p>
+            <pre><code>agents/
+scripts/
+dashboard/
+templates/github-actions/
+config/targets.yaml</code></pre>
+          </div>
+          <div>
+            <p><strong>Target product repos</strong> own their application code, local lint/test/build commands, and the generated GitHub Actions files Back Office scaffolds into place.</p>
+            <pre><code>.github/workflows/
+app source
+tests
+deploy code
+product docs</code></pre>
+          </div>
+        </div>
+      </article>
+
+      <article class="section">
+        <h2>What should change where</h2>
+        <ul>
+          <li>Change <code>config/targets.yaml</code> in Back Office when you need to register a repo, update audit context, or define lint, test, and deploy commands.</li>
+          <li>Change <code>templates/github-actions/</code> in Back Office when you want to improve the generated CI, preview, CD, or nightly workflow templates.</li>
+          <li>Change product repo source code when Back Office findings identify issues or product work that belongs to that repo.</li>
+          <li>Review generated workflow files inside the target repo before committing them. Back Office scaffolds them; it does not auto-merge them into production repos.</li>
+        </ul>
+      </article>
+
+      <article class="section">
+        <h2>Recommended GitHub flow</h2>
+        <ul>
+          <li>Run audits from Back Office to identify work and refresh dashboards.</li>
+          <li>Create or update workflow definitions by scaffolding from Back Office into the target repo.</li>
+          <li>Open a PR in the target repo for generated workflows or code fixes.</li>
+          <li>Let CI validate the PR in the target repo before merge.</li>
+          <li>Let dashboard automation report workflow coverage back through Back Office after merge.</li>
+        </ul>
+      </article>
+
+      <article class="section">
+        <h2>Scaffolded workflow files</h2>
+        <p>Back Office treats GitHub Actions as a generated starting point, not a hidden control plane. The output is meant to be reviewed, edited, and committed in the product repo.</p>
+        <pre><code>python3 scripts/backoffice-cli.py scaffold-workflows --target bible-app</code></pre>
+        <ul>
+          <li>Generated files land in the target repo under <code>.github/workflows/</code>.</li>
+          <li>The scaffold uses target-level commands from <code>config/targets.yaml</code>.</li>
+          <li>If a repo has special deploy constraints, edit the generated workflow in that repo instead of overfitting the shared template for one-off behavior.</li>
+        </ul>
+      </article>
+
+      <article class="section">
+        <h2>Documentation ownership</h2>
+        <ul>
+          <li>The README in the Back Office repo should explain the framework, local operating model, deployment model, and links to dashboard documentation pages.</li>
+          <li>Product repos should keep their own product-specific setup and deployment instructions. Back Office should not replace repo-level product docs.</li>
+          <li>The dashboard documentation pages are the product-facing documentation surface. The README is the GitHub-facing documentation surface.</li>
+        </ul>
+      </article>
+
+      <article class="section">
+        <h2>Exact GitHub URLs</h2>
+        <pre><code>https://github.com/CodyJo/back-office
+https://github.com/CodyJo/back-office/blob/main/README.md
+https://github.com/CodyJo/back-office/tree/main/docs
+https://github.com/CodyJo/back-office/actions
+https://github.com/CodyJo/codyjo.com
+https://github.com/CodyJo/codyjo.com/actions
+https://github.com/CodyJo/analogify
+https://github.com/CodyJo/thenewbeautifulme
+https://github.com/CodyJo/bible-app</code></pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

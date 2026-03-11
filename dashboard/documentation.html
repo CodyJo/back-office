@@ -48,47 +48,36 @@
   <main class="container">
     <section class="hero">
       <p class="eyebrow">Back Office Documentation</p>
-      <h1>CI/CD best practices reference architecture</h1>
-      <p>Use this page as the Back Office delivery standard across the estate: every push should get validated, every release should be reviewable, and production should stay protected.</p>
+      <h1>Back Office documentation hub</h1>
+      <p>Use this hub for the actual operating model: how workflows are structured, how the CLI works, where GitHub ownership lives, and which live URLs map to which surface.</p>
       <div class="actions">
         <a class="btn btn-solid" href="index.html">HQ Dashboard</a>
         <a class="btn" href="admin.html">Admin Dashboard</a>
+        <a class="btn" href="documentation-github.html">GitHub</a>
+        <a class="btn" href="documentation-cicd.html">CI/CD</a>
+        <a class="btn" href="documentation-cli.html">CLI</a>
       </div>
     </section>
 
     <section class="grid">
       <article class="card">
-        <h2>Required workflows</h2>
+        <h2>GitHub docs</h2>
         <ul>
-          <li><strong>CI</strong>: every push and pull request, including lint, typecheck, tests, and build.</li>
-          <li><strong>Preview</strong>: PR-safe preview validation before merge.</li>
-          <li><strong>Nightly</strong>: unattended release-readiness and audit refresh jobs.</li>
-          <li><strong>CD</strong>: production deployment only from <code>main</code>, behind protected environments.</li>
+          <li>Repo boundaries between Back Office and product repos.</li>
+          <li>What belongs in <code>config/targets.yaml</code> versus product repos.</li>
+          <li>Where scaffolded GitHub Actions start and where product ownership takes over.</li>
         </ul>
+        <p class="note"><a href="documentation-github.html">Open GitHub reference</a></p>
       </article>
 
       <article class="card">
-        <h2>Release guardrails</h2>
+        <h2>CI/CD reference</h2>
         <ul>
-          <li>Use concurrency to cancel stale CI and preview runs.</li>
-          <li>Add timeout limits to deploy and nightly jobs.</li>
-          <li>Run smoke tests after production deployment.</li>
-          <li>Prefer overnight PR creation over unattended production release.</li>
+          <li>Current workflow file set for Back Office and scaffolded repos.</li>
+          <li>Validation gates before deploy.</li>
+          <li>Protected deploy posture and reporting expectations.</li>
         </ul>
-      </article>
-
-      <article class="card">
-        <h2>Reference flow</h2>
-        <pre><code>Back Office audit
-  -> prioritized work
-  -> branch or PR
-  -> CI gate
-  -> preview validation
-  -> review
-  -> production deploy
-  -> smoke test
-  -> dashboard refresh</code></pre>
-        <p class="note">The operating principle is simple: automate analysis and verification aggressively, automate production promotion carefully.</p>
+        <p class="note"><a href="documentation-cicd.html">Open CI/CD reference</a></p>
       </article>
 
       <article class="card">
@@ -96,9 +85,18 @@
         <pre><code>python3 scripts/backoffice-cli.py list-targets
 python3 scripts/backoffice-cli.py audit --target bible-app --departments qa,product
 python3 scripts/backoffice-cli.py refresh
-python3 scripts/backoffice-cli.py deploy
-python3 scripts/backoffice-cli.py scaffold-workflows --target bible-app</code></pre>
-        <p class="note">This CLI is the portable entry point so any operator or coding agent can run Back Office the same way.</p>
+python3 scripts/backoffice-cli.py deploy</code></pre>
+        <p class="note"><a href="documentation-cli.html">Open CLI reference</a></p>
+      </article>
+
+      <article class="card">
+        <h2>Live URLs</h2>
+        <pre><code>https://www.codyjo.com/blog/
+https://www.codyjo.com/back-office/
+https://www.codyjo.com/back-office/admin/
+https://admin.codyjo.com/
+https://admin.codyjo.com/documentation.html</code></pre>
+        <p class="note">The GitHub repo also keeps a canonical URL index in <code>docs/LIVE-URLS.md</code>.</p>
       </article>
     </section>
   </main>

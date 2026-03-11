@@ -7,6 +7,22 @@ The system is designed to work in two modes:
 - local operating mode for running audits across repos in the workspace
 - published dashboard mode for serving product dashboards on `admin.*` subdomains and `www.codyjo.com/back-office/`
 
+## Documentation Map
+
+GitHub-facing reference docs:
+
+- [Workflow Architecture](docs/WORKFLOW-ARCHITECTURE.md)
+- [CLI Reference](docs/CLI-REFERENCE.md)
+- [CI/CD Reference](docs/CICD-REFERENCE.md)
+- [Live URLs](docs/LIVE-URLS.md)
+
+Published dashboard docs:
+
+- `dashboard/documentation.html`
+- `dashboard/documentation-github.html`
+- `dashboard/documentation-cicd.html`
+- `dashboard/documentation-cli.html`
+
 ## What Back Office Does
 
 Back Office provides:
