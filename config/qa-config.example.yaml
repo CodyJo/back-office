@@ -17,6 +17,13 @@ dashboard_targets:
     subdomain: "admin.example.com"
     repo: "my-web-app"          # Only show this repo's findings on this target
 
+  - bucket: "www.example.com"
+    base_path: "back-office"
+    cloudfront_id: ""
+    subdomain: "www.example.com"
+    allow_public_read: true     # Required for any non-admin public publish
+    repo: ""
+
 # Scan settings
 scan:
   # What to analyze

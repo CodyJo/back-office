@@ -1,6 +1,11 @@
 # Results data (generated locally, synced to S3)
 results/*.json
 results/*/
+results/.jobs.json
+results/.jobs-history.json
+results/.jobs.lock
+results/.local-audit-run.lock
+results/local-audit-log.md
 
 # Terraform
 terraform/.terraform/
@@ -8,6 +13,7 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/terraform.tfvars
 terraform/tfplan
+terraform/.terraform.lock.hcl
 
 # Config (may contain secrets)
 config/*.yaml
@@ -35,6 +41,13 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated dashboard/runtime state
+dashboard/.jobs.json
+dashboard/.jobs-history.json
+dashboard/automation-data.json
+dashboard/local-audit-log.json
+dashboard/local-audit-log.md
 
 # Project docs
 TODO.md

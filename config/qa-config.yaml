@@ -17,11 +17,12 @@ dashboard_targets:
     cloudfront_id: "E30Z8D5XMDR1A9"
     subdomain: "admin.codyjo.com"
     repo: ""
-  # Back Office self-audit dashboard at www.codyjo.com/back-office/
+  # Disabled by default. Public publish now requires allow_public_read: true.
   - bucket: "www.codyjo.com"
     base_path: "back-office/dashboard"
     cloudfront_id: "EF4U8A7W3OH5K"
     subdomain: "www.codyjo.com"
+    allow_public_read: false
     repo: ""
 
 scan:

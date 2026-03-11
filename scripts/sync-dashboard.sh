@@ -55,7 +55,8 @@ dashboard_files = [
     'index.html', 'qa.html', 'backoffice.html',
     'seo.html', 'ada.html', 'compliance.html', 'privacy.html', 'monetization.html', 'product.html',
     'jobs.html', 'faq.html', 'self-audit.html', 'admin.html',
-    'selah.html', 'analogify.html', 'chromahaus.html', 'tnbm-tarot.html', 'back-office-hq.html', 'documentation.html',
+    'selah.html', 'analogify.html', 'chromahaus.html', 'tnbm-tarot.html', 'back-office-hq.html',
+    'documentation.html', 'documentation-github.html', 'documentation-cicd.html', 'documentation-cli.html',
     'site-branding.js', 'department-context.js', 'favicon.svg',
 ]
 
@@ -114,6 +115,12 @@ for t in targets:
     base_path = t.get('base_path', '')
     cf_id = t.get('cloudfront_id', '')
     repo = t.get('repo', '')  # If set, deploy only this repo's data
+    subdomain = t.get('subdomain', '')
+    allow_public_read = t.get('allow_public_read', False)
+
+    if subdomain and not subdomain.startswith('admin.') and not allow_public_read:
+        print(f'\\nSkipping public target {subdomain} — set allow_public_read: true to publish dashboards publicly.')
+        continue
 
     prefix = f'{base_path}/' if base_path else ''
     invalidation_paths = []

@@ -138,7 +138,7 @@ upload_html() {
   local prefix="$3"
 
   local dashboard_dir="$QA_ROOT/dashboard"
-  local html_files=(index.html qa.html seo.html ada.html compliance.html privacy.html monetization.html product.html jobs.html faq.html self-audit.html admin.html selah.html analogify.html chromahaus.html tnbm-tarot.html back-office-hq.html documentation.html site-branding.js favicon.svg)
+  local html_files=(index.html qa.html seo.html ada.html compliance.html privacy.html monetization.html product.html jobs.html faq.html self-audit.html admin.html selah.html analogify.html chromahaus.html tnbm-tarot.html back-office-hq.html documentation.html documentation-github.html documentation-cicd.html documentation-cli.html site-branding.js favicon.svg)
   local invalidation_paths=()
 
   for f in "${html_files[@]}"; do
@@ -174,6 +174,11 @@ targets = cfg.get('dashboard_targets', [])
 for t in targets:
     repo = t.get('repo', '')
     if '$REPO' and repo != '$REPO':
+        continue
+    subdomain = t.get('subdomain', '')
+    allow_public_read = t.get('allow_public_read', False)
+    if subdomain and not subdomain.startswith('admin.') and not allow_public_read:
+        print(f'Skipping public target {subdomain} — set allow_public_read: true to publish dashboards publicly.', file=sys.stderr)
         continue
     print(json.dumps({
         'bucket': t['bucket'],
