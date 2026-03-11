@@ -73,6 +73,14 @@ dept_data_map = [
 # Job status files (from dashboard dir, not per-repo)
 job_status_files = ['.jobs.json', '.jobs-history.json']
 
+# Shared metadata files required by HQ even on repo-scoped targets.
+shared_meta_files = [
+    ('automation-data.json', 'automation-data.json'),
+    ('org-data.json', 'org-data.json'),
+    ('local-audit-log.json', 'local-audit-log.json'),
+    ('local-audit-log.md', 'local-audit-log.md'),
+]
+
 # Aggregated data files (used when no repo filter is specified)
 agg_data_files = [
     ('data.json', 'qa-data.json'),
@@ -150,6 +158,15 @@ for t in targets:
                 s3_key = f'{prefix}{job_file}'
                 upload_file(local_path, bucket, s3_key, 'application/json')
                 invalidation_paths.append(f'/{s3_key}')
+        for local_name, s3_name in shared_meta_files:
+            local_path = os.path.join(dashboard_dir, local_name)
+            if not os.path.exists(local_path):
+                print(f'  Skipping {local_name} (not found)')
+                continue
+            s3_key = f'{prefix}{s3_name}'
+            content_type = 'text/markdown' if local_name.endswith('.md') else 'application/json'
+            upload_file(local_path, bucket, s3_key, content_type)
+            invalidation_paths.append(f'/{s3_key}')
     else:
         # Deploy aggregated data (all repos combined)
         for local_name, s3_name in agg_data_files:
