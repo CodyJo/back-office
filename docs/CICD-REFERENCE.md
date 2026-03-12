@@ -114,7 +114,8 @@ Back Office should be able to report for each target:
 - whether preview exists
 - whether production deploy exists
 - whether nightly exists
-- whether lint/test/build are configured in `config/targets.yaml`
+- whether lint/test/build/coverage are configured in `config/targets.yaml`
+- latest portfolio regression status and best-effort coverage where available
 
 ## Security Notes
 
@@ -131,6 +132,7 @@ Current production posture for Back Office dashboard publishing:
 - `.github/workflows/deploy.yml`
 - `.github/workflows/nightly-backoffice.yml`
 - `dashboard/metrics.html`
+- `dashboard/regression.html`
 - `templates/github-actions/product-ci.yml`
 - `templates/github-actions/product-preview.yml`
 - `templates/github-actions/product-cd.yml`

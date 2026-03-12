@@ -54,7 +54,7 @@ results_dir = '$QA_ROOT/results'
 dashboard_files = [
     'index.html', 'qa.html', 'backoffice.html',
     'seo.html', 'ada.html', 'compliance.html', 'privacy.html', 'monetization.html', 'product.html',
-    'jobs.html', 'faq.html', 'self-audit.html', 'admin.html',
+    'jobs.html', 'faq.html', 'self-audit.html', 'admin.html', 'regression.html',
     'selah.html', 'analogify.html', 'chromahaus.html', 'tnbm-tarot.html', 'back-office-hq.html',
     'documentation.html', 'documentation-github.html', 'documentation-cicd.html', 'documentation-cli.html',
     'site-branding.js', 'department-context.js', 'favicon.svg',
@@ -80,6 +80,7 @@ shared_meta_files = [
     ('org-data.json', 'org-data.json'),
     ('local-audit-log.json', 'local-audit-log.json'),
     ('local-audit-log.md', 'local-audit-log.md'),
+    ('regression-data.json', 'regression-data.json'),
 ]
 
 # Aggregated data files (used when no repo filter is specified)
@@ -92,6 +93,7 @@ agg_data_files = [
     ('monetization-data.json', 'monetization-data.json'),
     ('product-data.json', 'product-data.json'),
     ('automation-data.json', 'automation-data.json'),
+    ('regression-data.json', 'regression-data.json'),
     ('org-data.json', 'org-data.json'),
     ('.jobs.json', '.jobs.json'),
     ('.jobs-history.json', '.jobs-history.json'),
@@ -117,6 +119,25 @@ def upload_file(local_path, bucket, s3_key, content_type):
         deploy_failed = True
         print(f'  ERROR: upload failed ({exc}); skipping {s3_key}')
         return False
+
+def sync_regression_results(bucket, prefix):
+    regression_root = os.path.join(results_dir, 'regression')
+    if not os.path.isdir(regression_root):
+        print('  Skipping regression logs (results/regression not found)')
+        return
+
+    s3_uri = f's3://{bucket}/{prefix}results/regression' if prefix else f's3://{bucket}/results/regression'
+    print(f'  Syncing regression logs -> {s3_uri}')
+    try:
+        subprocess.run([
+            'aws', 's3', 'sync', regression_root, s3_uri,
+            '--delete',
+            '--cache-control', 'no-cache, no-store, must-revalidate'
+        ], check=True)
+    except subprocess.CalledProcessError as exc:
+        global deploy_failed
+        deploy_failed = True
+        print(f'  ERROR: regression log sync failed ({exc})')
 
 
 for t in targets:
@@ -203,6 +224,8 @@ for t in targets:
             '--distribution-id', cf_id,
             '--paths', *invalidation_paths
         ], check=True)
+
+    sync_regression_results(bucket, prefix)
 
 if deploy_failed:
     print('\\nDashboard sync completed with upload failures; see errors above.')

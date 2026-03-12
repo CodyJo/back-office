@@ -106,6 +106,7 @@ def run_scaffolding_tests(repo_root: Path) -> None:
                             "path": str(target_repo),
                             "lint_command": "npm run lint",
                             "test_command": "npm test",
+                            "coverage_command": "npm run test:coverage",
                             "deploy_command": "npm run build",
                         }
                     ]
@@ -119,6 +120,7 @@ def run_scaffolding_tests(repo_root: Path) -> None:
             rendered = module.render_template("product-ci.yml", target)
             check("scaffold_renders_lint", "npm run lint" in rendered)
             check("scaffold_renders_test", "npm test" in rendered)
+            check("scaffold_renders_coverage", "npm run test:coverage" in rendered)
             check("scaffold_renders_build", "npm run build" in rendered)
 
             module.write_workflow(target, "ci", force=False)

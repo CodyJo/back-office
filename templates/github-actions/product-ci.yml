@@ -29,5 +29,6 @@ jobs:
       - name: Test
         run: __TEST_COMMAND__
 
+__COVERAGE_STEP__
       - name: Build
         run: __BUILD_COMMAND__

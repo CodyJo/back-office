@@ -103,7 +103,7 @@
         <div class="grid">
           <div>
             <ul>
-              <li><strong>CI</strong>: run on pull requests and non-main pushes with shell checks, Python validation, lint, and Back Office regression tests.</li>
+              <li><strong>CI</strong>: run on pull requests and non-main pushes with shell checks, Python validation, lint, tests, and optional coverage when configured for the target.</li>
               <li><strong>Preview</strong>: produce a reviewable dashboard artifact for pull requests.</li>
             </ul>
           </div>
@@ -147,7 +147,7 @@
           <li><strong>Repo deploy path</strong>: push to <code>main</code> in the Back Office repo and let GitHub Actions handle the dashboard deploy workflow.</li>
           <li><strong>Direct sync path</strong>: run <code>bash scripts/sync-dashboard.sh</code> when you intentionally want to publish the static dashboards and payloads from a local operator environment.</li>
           <li>The direct sync path should still respect the same discipline: tests first, aggregation second, upload third.</li>
-          <li>Both paths publish the docs hub and the metrics surface, not just the HQ and department dashboards.</li>
+          <li>Both paths publish the docs hub, the metrics surface, and the regression dashboard payload when it has been generated.</li>
         </ul>
       </article>
 
@@ -167,9 +167,9 @@ templates/github-actions/nightly-backoffice.yml</code></pre>
         <h2>What Back Office should report</h2>
         <ul>
           <li>Whether CI, preview, production, and nightly workflows exist for each configured target.</li>
-          <li>Whether lint, test, and build commands are actually configured for each target.</li>
+          <li>Whether lint, test, build, and coverage commands are actually configured for each target.</li>
           <li>Whether automation posture is good enough to consider a repo delivery-ready.</li>
-          <li>Code-quality and agent-usage rollups through the metrics dashboard.</li>
+          <li>Code-quality, regression, and agent-usage rollups through the dashboard suite.</li>
         </ul>
       </article>
     </section>

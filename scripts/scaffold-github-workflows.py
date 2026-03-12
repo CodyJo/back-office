@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import textwrap
 from pathlib import Path
 
 import yaml
@@ -40,11 +41,21 @@ def normalize_build_command(target: dict) -> str:
 def render_template(template_name: str, target: dict) -> str:
     template_path = TEMPLATES_DIR / template_name
     content = template_path.read_text()
+    coverage_command = str(target.get("coverage_command", "")).strip()
+    coverage_step = ""
+    if coverage_command:
+        coverage_step = textwrap.dedent(
+            f"""\
+                  - name: Coverage
+                    run: {coverage_command}
+            """
+        )
     return (
         content
         .replace("__LINT_COMMAND__", target.get("lint_command", "echo 'set lint command'"))
         .replace("__TEST_COMMAND__", target.get("test_command", "echo 'set test command'"))
         .replace("__BUILD_COMMAND__", normalize_build_command(target))
+        .replace("__COVERAGE_STEP__", coverage_step)
     )
 
 

@@ -238,6 +238,12 @@ def detect_command_coverage(target: dict, repo_path: Path) -> dict:
             "command": target.get("deploy_command", ""),
             "script_detected": has_script("build"),
         },
+        "coverage": {
+            "configured": bool(target.get("coverage_command")),
+            "status": "configured" if target.get("coverage_command") else "missing",
+            "command": target.get("coverage_command", ""),
+            "script_detected": has_script("test:coverage", "coverage"),
+        },
     }
 
 
