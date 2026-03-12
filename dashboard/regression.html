@@ -169,7 +169,7 @@
         '</div>'
       )).join('');
 
-      const runsDir = data.runs_dir || '../results/regression';
+      const runsDir = data.runs_dir || 'results/regression';
       const runId = run.run_id || '';
       const tbody = document.getElementById('targetsTable');
       const targets = Array.isArray(run.targets) ? run.targets : [];
@@ -217,4 +217,3 @@
   </script>
 </body>
 </html>
-

@@ -181,8 +181,32 @@ def best_effort_coverage(target: dict, target_dir: str, run_dir: str, timeout_s:
     If coverage can't be collected, returns (None, cmd_results) and runner should run normal tests.
     """
     lang = str(target.get("language") or "")
+    coverage_cmd = str(target.get("coverage_command") or "").strip()
     test_cmd = str(target.get("test_command") or "").strip()
     results: list[CmdResult] = []
+
+    # Explicit coverage command wins and allows repos with non-default stacks
+    # (for example Astro + Vitest) to participate in regression coverage.
+    if coverage_cmd:
+        try:
+            r = run_cmd(coverage_cmd, cwd=target_dir, out_dir=run_dir, label="coverage", timeout_s=timeout_s)
+            results.append(r)
+            if r.exit_code == 0:
+                summary_path = os.path.join(target_dir, "coverage", "coverage-summary.json")
+                cov = parse_vitest_coverage_summary(summary_path)
+                if cov:
+                    return cov, results
+                lcov_path = os.path.join(target_dir, "coverage", "lcov.info")
+                cov = parse_lcov_percent(lcov_path)
+                if cov:
+                    return cov, results
+                cov_json = os.path.join(target_dir, "coverage.json")
+                cov = parse_pytest_cov_json(cov_json)
+                if cov:
+                    return cov, results
+        except subprocess.TimeoutExpired:
+            pass
+        return None, results
 
     # Python: try pytest-cov JSON report.
     if lang == "python":
@@ -321,7 +345,9 @@ def main() -> int:
     dashboard_payload = {
         "generated_at": utc_now_iso(),
         "latest_run": run_summary,
-        "runs_dir": os.path.relpath(args.out, DASHBOARD_DIR),
+        # Use a stable dashboard-relative path that works both in the local
+        # HTTP server (rooted at QA_ROOT) and when deployed to dashboard S3 roots.
+        "runs_dir": "results/regression",
     }
     safe_mkdir(os.path.dirname(args.dashboard_out))
     write_json(args.dashboard_out, dashboard_payload)
@@ -333,4 +359,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
