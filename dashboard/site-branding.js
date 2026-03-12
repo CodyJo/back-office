@@ -401,7 +401,7 @@
     '  line-height: 1; flex-shrink: 0;' +
     '}' +
     '.faq-trigger:hover {' +
-    '  color: #6c5ce7; background: rgba(108,92,231,0.15);' +
+    '  color: #c4944a; background: rgba(196,148,74,0.15);' +
     '}' +
     '.faq-tip {' +
     '  display: none; position: absolute; z-index: 500;' +
@@ -420,7 +420,7 @@
     '}' +
     '.faq-tip-link {' +
     '  display: block; margin-top: 0.4rem; font-size: 0.65rem;' +
-    '  color: #6c5ce7; text-decoration: none; font-weight: 500;' +
+    '  color: #c4944a; text-decoration: none; font-weight: 500;' +
     '}' +
     '.faq-tip-link:hover { text-decoration: underline; }' +
     '@media (max-width: 600px) {' +
@@ -538,7 +538,7 @@
     '  border-radius: 8px; padding: 0.75rem 1rem; cursor: pointer;' +
     '  transition: border-color 0.15s;' +
     '}' +
-    '.cmd-toast-cmd:hover { border-color: #6c5ce7; }' +
+    '.cmd-toast-cmd:hover { border-color: #c4944a; }' +
     '.cmd-toast-text {' +
     '  font-family: "JetBrains Mono", monospace; font-size: 0.82rem;' +
     '  color: #e4e4ef; flex: 1; user-select: all; word-break: break-all;' +
@@ -547,11 +547,11 @@
     '  font-family: "Inter", -apple-system, sans-serif;' +
     '  font-size: 0.68rem; font-weight: 500; text-transform: uppercase;' +
     '  letter-spacing: 0.06em; padding: 0.3rem 0.7rem;' +
-    '  border-radius: 6px; border: 1px solid #6c5ce7;' +
-    '  background: rgba(108,92,231,0.1); color: #6c5ce7;' +
+    '  border-radius: 6px; border: 1px solid #c4944a;' +
+    '  background: rgba(196,148,74,0.1); color: #c4944a;' +
     '  cursor: pointer; white-space: nowrap; transition: all 0.15s;' +
     '}' +
-    '.cmd-toast-copy:hover { background: #6c5ce7; color: white; }' +
+    '.cmd-toast-copy:hover { background: #c4944a; color: white; }' +
     '.cmd-toast-copy.copied { background: #2ed573; border-color: #2ed573; color: white; }' +
     '.cmd-toast-hint {' +
     '  font-family: "Inter", -apple-system, sans-serif;' +

@@ -20,9 +20,9 @@
       --text: #e4e4ef;
       --text-dim: #8888a0;
       --text-muted: #5a5a70;
-      --accent: #fdcb6e;
-      --accent-glow: #ffeaa7;
-      --accent-dim: rgba(253,203,110,0.15);
+      --accent: #c4944a;
+      --accent-glow: #d4a055;
+      --accent-dim: rgba(196,148,74,0.15);
       --critical: #ff4757;
       --critical-bg: rgba(255,71,87,0.1);
       --high: #ff8c42;
@@ -66,10 +66,10 @@
 
     .logo-icon {
       width: 44px; height: 44px;
-      background: linear-gradient(135deg, #6c5ce7, #7c6cf7);
+      background: linear-gradient(135deg, #c4944a, #d4a055);
       border-radius: 10px; display: flex; align-items: center; justify-content: center;
       font-size: 1.1rem; font-weight: 700; color: white;
-      box-shadow: 0 0 20px rgba(108,92,231,0.3);
+      box-shadow: 0 0 20px rgba(196,148,74,0.3);
     }
 
     .logo h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
@@ -133,7 +133,7 @@
     }
 
     .compliance-level-badge.level-aaa { background: var(--success-bg); color: var(--success); border: 1px solid rgba(46,213,115,0.3); }
-    .compliance-level-badge.level-aa { background: rgba(253,203,110,0.15); color: var(--accent); border: 1px solid rgba(253,203,110,0.3); }
+    .compliance-level-badge.level-aa { background: rgba(196,148,74,0.15); color: var(--accent); border: 1px solid rgba(196,148,74,0.3); }
     .compliance-level-badge.level-a { background: var(--medium-bg); color: var(--medium); border: 1px solid rgba(255,209,102,0.3); }
     .compliance-level-badge.level-none { background: var(--critical-bg); color: var(--critical); border: 1px solid rgba(255,71,87,0.3); }
 
@@ -315,7 +315,7 @@
 
     .status-open { background: var(--surface-3); color: var(--text-dim); }
     .status-fixed { background: var(--success-bg); color: var(--success); }
-    .status-in-progress { background: rgba(253,203,110,0.15); color: var(--accent); }
+    .status-in-progress { background: rgba(196,148,74,0.15); color: var(--accent); }
     .status-wontfix { background: var(--surface-3); color: var(--text-muted); }
 
     .effort-tag {
@@ -464,7 +464,7 @@
     .run-scan-btn {
       font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
       padding: 0.45rem 1rem; border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, var(--accent), var(--accent-glow, #7c6cf7));
+      background: linear-gradient(135deg, var(--accent), var(--accent-glow, #d4a055));
       color: white; border: none; cursor: pointer;
       transition: opacity 0.15s, transform 0.1s;
       display: inline-flex; align-items: center; gap: 0.4rem;

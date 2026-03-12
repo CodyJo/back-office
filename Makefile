@@ -1,4 +1,4 @@
-.PHONY: setup qa fix watch dashboard clean help jobs test scaffold-workflows cli
+.PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression
 .PHONY: seo ada compliance monetization product audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
@@ -10,6 +10,9 @@ help: ## Show this help
 
 setup: ## Initial setup (create configs, check prerequisites)
 	bash scripts/setup.sh
+
+regression: ## Run portfolio regression tests + coverage (best-effort)
+	python3 scripts/regression-runner.py
 
 # ── QA Department ─────────────────────────────────────────────────────────────
 
@@ -23,7 +26,7 @@ fix: ## Run fix agent on TARGET repo (make fix TARGET=/path/to/repo)
 
 watch: ## Watch for new findings and auto-fix (make watch TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make watch TARGET=/path/to/repo" && exit 1)
-	bash agents/watch.sh "$(TARGET)" --auto-fix --sync
+	bash agents/watch.sh "$(TARGET)" --auto-fix --sync --rescan $(if $(INTERVAL),--interval "$(INTERVAL)",)
 
 scan-and-fix: ## Run full cycle: scan then fix (make scan-and-fix TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make scan-and-fix TARGET=/path/to/repo" && exit 1)
@@ -149,6 +152,25 @@ test: ## Run scoring tests (pre-deploy gate)
 	python3 scripts/test-scoring.py
 	@echo "Running local audit workflow tests..."
 	python3 scripts/test-local-audit-workflow.py
+	@echo "Running CLI and scaffolding tests..."
+	python3 scripts/test-cli-and-scaffolding.py
+	@echo "Running server and setup tests..."
+	python3 scripts/test-servers-and-setup.py
+
+test-coverage: ## Run regression tests with Python line coverage reporting
+	@echo "Running scoring tests with coverage..."
+	python3 -m coverage erase
+	python3 -m coverage run --rcfile=.coveragerc scripts/test-scoring.py
+	@echo "Running local audit workflow tests with coverage..."
+	python3 -m coverage run --rcfile=.coveragerc scripts/test-local-audit-workflow.py
+	@echo "Running CLI and scaffolding tests with coverage..."
+	python3 -m coverage run --rcfile=.coveragerc scripts/test-cli-and-scaffolding.py
+	@echo "Running server and setup tests with coverage..."
+	python3 -m coverage run --rcfile=.coveragerc scripts/test-servers-and-setup.py
+	python3 -m coverage combine
+	python3 -m coverage report
+	python3 -m coverage xml -o coverage.xml
+	python3 -m coverage json -o coverage.json
 
 local-targets: ## List configured local audit targets
 	python3 scripts/local_audit_workflow.py list-targets

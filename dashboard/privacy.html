@@ -20,8 +20,8 @@
       --text: #e4e4ef;
       --text-dim: #8888a0;
       --text-muted: #5a5a70;
-      --accent: #ff7aa8;
-      --accent-glow: #ff90b7;
+      --accent: #c4944a;
+      --accent-glow: #d4a055;
       --critical: #ff4757;
       --high: #ff8c42;
       --medium: #ffd166;
@@ -61,10 +61,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #ff7aa8, #ff90b7);
+      background: linear-gradient(135deg, #c4944a, #d4a055);
       color: #fff;
       font-weight: 700;
-      box-shadow: 0 0 20px rgba(255, 122, 168, 0.25);
+      box-shadow: 0 0 20px rgba(196, 148, 74, 0.25);
     }
     .logo h1 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; }
     .logo p { color: var(--text-dim); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }
@@ -84,8 +84,8 @@
       font-size: 0.78rem;
     }
     .nav a.active {
-      border-color: rgba(255, 122, 168, 0.35);
-      background: rgba(255, 122, 168, 0.12);
+      border-color: rgba(196, 148, 74, 0.35);
+      background: rgba(196, 148, 74, 0.12);
       color: var(--accent);
     }
     .hero {
@@ -196,9 +196,9 @@
       padding: 0.45rem 0.7rem;
       font-family: var(--mono);
       font-weight: 700;
-      background: rgba(255, 122, 168, 0.12);
+      background: rgba(196, 148, 74, 0.12);
       color: var(--accent);
-      border: 1px solid rgba(255, 122, 168, 0.25);
+      border: 1px solid rgba(196, 148, 74, 0.25);
     }
     .repo-meta {
       display: flex;
@@ -430,8 +430,7 @@
         if (!resp.ok) throw new Error('privacy-data.json not found');
         return await resp.json();
       } catch (err) {
-        console.warn('Using privacy demo data:', err);
-        return DEMO;
+        return { repos: [], generated_at: null, totals: { critical: 0, high: 0, medium: 0, low: 0, info: 0, total_findings: 0 } };
       }
     }
 

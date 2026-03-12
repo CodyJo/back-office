@@ -72,6 +72,47 @@ SCORE_FIELDS = {
 ALL_DEPARTMENTS = list(DEPARTMENT_SCRIPTS.keys())
 
 
+def extract_scanned_at(payload: dict) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    direct = payload.get("scanned_at") or payload.get("timestamp")
+    if direct:
+        return direct
+    meta = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    audit_date = meta.get("auditDate") or meta.get("audit_date")
+    if isinstance(audit_date, str) and audit_date:
+        # Stored as YYYY-MM-DD in some department outputs.
+        return f"{audit_date}T00:00:00Z"
+    generated_at = meta.get("generated_at") or meta.get("generatedAt")
+    if isinstance(generated_at, str) and generated_at:
+        return generated_at
+    return None
+
+
+def extract_score(payload: dict, department: str, summary: dict) -> int | float | None:
+    if department == "qa":
+        return qa_score_from_summary(summary)
+
+    if isinstance(summary, dict):
+        score_field = SCORE_FIELDS.get(department, "")
+        if score_field and isinstance(summary.get(score_field), (int, float)):
+            return summary.get(score_field)
+
+    meta = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    meta_score_fields = {
+        "seo": ["seoScore", "seo_score", "overallScore", "overall_score"],
+        "ada": ["complianceScore", "compliance_score"],
+        "compliance": ["complianceScore", "compliance_score"],
+        "monetization": ["monetizationReadinessScore", "monetization_readiness_score", "overallScore", "overall_score"],
+        "product": ["productReadinessScore", "product_readiness_score", "overallScore", "overall_score"],
+    }
+    for key in meta_score_fields.get(department, []):
+        value = meta.get(key)
+        if isinstance(value, (int, float)):
+            return value
+    return None
+
+
 def load_targets(config_path: str = CONFIG_PATH) -> list[dict]:
     with open(config_path) as f:
         payload = yaml.safe_load(f) or {}
@@ -148,21 +189,14 @@ def summarize_department(repo_dir: str, department: str) -> dict:
     elif isinstance(findings, list):
         total = len(findings)
 
-    score = None
-    if department == "qa":
-        score = qa_score_from_summary(summary)
-    elif isinstance(summary, dict):
-        score = summary.get(SCORE_FIELDS.get(department, ""), None)
+    score = extract_score(payload, department, summary if isinstance(summary, dict) else {})
 
     return {
         "department": department,
         "status": "complete",
         "findings_path": findings_path,
-        "scanned_at": (
-            payload.get("scanned_at")
-            or payload.get("timestamp")
-            or (summary.get("scanned_at") if isinstance(summary, dict) else None)
-        ),
+        "scanned_at": extract_scanned_at(payload)
+        or (summary.get("scanned_at") if isinstance(summary, dict) else None),
         "findings_total": total,
         "score": score,
         "summary": summary if isinstance(summary, dict) else {},

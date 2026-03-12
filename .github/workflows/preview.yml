@@ -18,7 +18,25 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python tooling
-        run: pip install pyyaml
+        run: pip install ruff pyyaml
+
+      - name: Validate preview build inputs
+        run: |
+          bash -n scripts/run-agent.sh
+          bash -n scripts/sync-dashboard.sh
+          bash -n scripts/quick-sync.sh
+          bash -n scripts/job-status.sh
+          bash -n agents/qa-scan.sh
+          bash -n agents/seo-audit.sh
+          bash -n agents/ada-audit.sh
+          bash -n agents/compliance-audit.sh
+          bash -n agents/monetization-audit.sh
+          bash -n agents/product-audit.sh
+          bash -n agents/fix-bugs.sh
+          bash -n agents/watch.sh
+          python3 -m py_compile scripts/*.py
+          ruff check scripts/
+          make test
 
       - name: Generate current dashboard artifacts
         run: |

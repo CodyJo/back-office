@@ -20,9 +20,9 @@
       --text: #e4e4ef;
       --text-dim: #8888a0;
       --text-muted: #5a5a70;
-      --accent: #e17055;
-      --accent-glow: #f0826e;
-      --accent-bg: rgba(225,112,85,0.12);
+      --accent: #c4944a;
+      --accent-glow: #d4a055;
+      --accent-bg: rgba(196,148,74,0.12);
       --critical: #ff4757;
       --critical-bg: rgba(255,71,87,0.1);
       --high: #ff8c42;
@@ -69,10 +69,10 @@
 
     .logo-icon {
       width: 44px; height: 44px;
-      background: linear-gradient(135deg, #6c5ce7, #7c6cf7);
+      background: linear-gradient(135deg, #c4944a, #d4a055);
       border-radius: 10px; display: flex; align-items: center; justify-content: center;
       font-size: 1.1rem; font-weight: 700; color: white;
-      box-shadow: 0 0 20px rgba(108,92,231,0.3);
+      box-shadow: 0 0 20px rgba(196,148,74,0.3);
     }
 
     .logo h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
@@ -458,7 +458,7 @@
 
     .status-open { background: var(--surface-3); color: var(--text-dim); }
     .status-fixed { background: var(--success-bg); color: var(--success); }
-    .status-in-progress { background: rgba(225,112,85,0.15); color: var(--accent-glow); }
+    .status-in-progress { background: rgba(196,148,74,0.15); color: var(--accent-glow); }
     .status-waived { background: var(--info-bg); color: var(--info); }
 
     .cat-tag {
@@ -567,7 +567,7 @@
     .run-scan-btn {
       font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
       padding: 0.45rem 1rem; border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, var(--accent), var(--accent-glow, #7c6cf7));
+      background: linear-gradient(135deg, var(--accent), var(--accent-glow, #d4a055));
       color: white; border: none; cursor: pointer;
       transition: opacity 0.15s, transform 0.1s;
       display: inline-flex; align-items: center; gap: 0.4rem;
@@ -1042,8 +1042,7 @@ async function loadData() {
     if (!resp.ok) throw new Error('Not found');
     data = await resp.json();
   } catch (e) {
-    console.log('Using demo data (compliance-data.json not found)');
-    data = getDemoData();
+    data = { findings: [], meta: {}, summary: {}, scan_timestamp: null };
   }
   STATE.findings = normalizeComplianceFindings(data.findings || []);
   renderAll(data.meta || {});

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Back Office Regression</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="site-branding.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --border: #2a2a3a;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --text-muted: #6d6d84;
+      --accent: #c4944a;
+      --success: #2ed573;
+      --warn: #ffd166;
+      --danger: #ff6b6b;
+      --radius: 14px;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: inherit; }
+    .container { max-width: 1220px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .subnav { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .subnav a {
+      display: inline-flex; align-items: center; justify-content: center;
+      text-decoration: none; color: var(--text);
+      border: 1px solid var(--border); background: var(--surface-2);
+      border-radius: 999px; padding: 0.7rem 0.95rem;
+      font-size: 0.78rem;
+    }
+    .subnav a.active {
+      border-color: rgba(196, 148, 74, 0.5);
+      background: rgba(196, 148, 74, 0.12);
+      color: var(--accent);
+    }
+    .hero, .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .hero { padding: 1.5rem; margin-bottom: 1rem; }
+    .eyebrow, th, .pill {
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.7rem;
+    }
+    .eyebrow { color: var(--accent); margin-bottom: 0.75rem; }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.04em; margin-bottom: 0.6rem; }
+    p, td { color: var(--text-dim); line-height: 1.7; }
+    .grid { display: grid; gap: 1rem; }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1rem; }
+    .panel { padding: 1.2rem; }
+    .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem; }
+    .metric .label { color: var(--text-muted); font-size: 0.68rem; }
+    .metric .value { font-family: var(--mono); font-size: 1.8rem; font-weight: 800; margin-top: 0.45rem; }
+    .pill { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.5rem; background: var(--surface-2); color: var(--text-dim); }
+    .good { color: var(--success); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--danger); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.7rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--text-muted); }
+    .mono { font-family: var(--mono); font-size: 0.85rem; color: var(--text); }
+    .small { font-size: 0.82rem; color: var(--text-dim); }
+    code { font-family: var(--mono); font-size: 0.78rem; color: var(--text); }
+    .logs a { color: var(--accent); text-decoration: none; }
+    .logs a:hover { text-decoration: underline; }
+    @media (max-width: 960px) {
+      .metrics { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <nav class="subnav" aria-label="Back Office navigation">
+      <a href="index.html">HQ</a>
+      <a href="metrics.html">Metrics</a>
+      <a href="regression.html" class="active">Regression</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="documentation.html">Docs</a>
+    </nav>
+
+    <section class="hero">
+      <div class="eyebrow">Regression</div>
+      <h1>Full regression status across all apps.</h1>
+      <p>
+        Runs each repo’s configured test command, with best-effort coverage collection.
+        Use <code>python3 scripts/regression-runner.py</code> to generate the latest payload.
+      </p>
+      <p class="small" style="margin-top:0.75rem;">
+        Latest run: <span class="mono" id="runId">Loading…</span> ·
+        Generated: <span class="mono" id="generatedAt">Loading…</span>
+      </p>
+    </section>
+
+    <section class="grid metrics" id="topMetrics"></section>
+
+    <section class="panel">
+      <h2 style="margin-bottom:0.8rem;">Targets</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Target</th>
+            <th>Status</th>
+            <th>Coverage</th>
+            <th>Duration</th>
+            <th>Logs</th>
+          </tr>
+        </thead>
+        <tbody id="targetsTable">
+          <tr><td colspan="5" class="small">Loading…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+    }
+    function fmtMs(ms) {
+      if (!Number.isFinite(ms)) return '—';
+      if (ms < 1000) return ms + 'ms';
+      return (ms / 1000).toFixed(1) + 's';
+    }
+    function pill(text, cls) {
+      return '<span class="pill ' + cls + '">' + esc(text) + '</span>';
+    }
+
+    async function load() {
+      const res = await fetch('regression-data.json', { cache: 'no-store' });
+      const data = await res.json();
+      const run = data.latest_run || {};
+      document.getElementById('runId').textContent = run.run_id || '—';
+      document.getElementById('generatedAt').textContent = data.generated_at || '—';
+
+      const total = Number(run.targets_total || 0);
+      const passed = Number(run.targets_passed || 0);
+      const failed = Number(run.targets_failed || 0);
+
+      const metrics = [
+        { label: 'Targets', value: String(total), cls: '' },
+        { label: 'Passed', value: String(passed), cls: 'good' },
+        { label: 'Failed', value: String(failed), cls: failed ? 'bad' : 'good' },
+        { label: 'Run ID', value: String(run.run_id || '—'), cls: '' },
+      ];
+      document.getElementById('topMetrics').innerHTML = metrics.map(m => (
+        '<div class="metric">' +
+          '<div class="label eyebrow">' + esc(m.label) + '</div>' +
+          '<div class="value ' + esc(m.cls) + '">' + esc(m.value) + '</div>' +
+        '</div>'
+      )).join('');
+
+      const runsDir = data.runs_dir || '../results/regression';
+      const runId = run.run_id || '';
+      const tbody = document.getElementById('targetsTable');
+      const targets = Array.isArray(run.targets) ? run.targets : [];
+      if (!targets.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="small">No targets in latest run.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = targets.map(t => {
+        const status = t.status === 'passed'
+          ? pill('Passed', 'good')
+          : pill('Failed', 'bad');
+
+        const cov = t.coverage && typeof t.coverage.percent === 'number'
+          ? (t.coverage.percent.toFixed(1) + '% (' + esc(t.coverage.tool || 'coverage') + ')')
+          : '—';
+
+        const dur = t.test && typeof t.test.duration_ms === 'number'
+          ? fmtMs(t.test.duration_ms)
+          : '—';
+
+        const base = runsDir.replace(/\/$/, '') + '/' + encodeURIComponent(runId) + '/' + encodeURIComponent(t.name);
+        const stdoutHref = base + '/test.stdout.log';
+        const stderrHref = base + '/test.stderr.log';
+        return (
+          '<tr>' +
+            '<td class="mono">' + esc(t.name) + '</td>' +
+            '<td>' + status + '</td>' +
+            '<td class="small">' + esc(cov) + '</td>' +
+            '<td class="small">' + esc(dur) + '</td>' +
+            '<td class="logs small">' +
+              '<a href="' + esc(stdoutHref) + '">stdout</a>' +
+              ' · ' +
+              '<a href="' + esc(stderrHref) + '">stderr</a>' +
+            '</td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+
+    load().catch(err => {
+      document.getElementById('targetsTable').innerHTML =
+        '<tr><td colspan="5" class="small">Failed to load regression-data.json: ' + esc(err && err.message ? err.message : String(err)) + '</td></tr>';
+    });
+  </script>
+</body>
+</html>
+

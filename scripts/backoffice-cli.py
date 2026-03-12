@@ -17,6 +17,14 @@ def run_command(command: list[str]) -> int:
     return completed.returncode
 
 
+def run_commands(commands: list[list[str]]) -> int:
+    for command in commands:
+        exit_code = run_command(command)
+        if exit_code != 0:
+            return exit_code
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Back Office CLI for audits, dashboard refreshes, workflow scaffolding, and deploys."
@@ -40,10 +48,12 @@ def build_parser() -> argparse.ArgumentParser:
     audit = subparsers.add_parser("audit", help="Run a local audit for a configured target.")
     audit.add_argument("--target", required=True, help="Configured target name, for example bible-app.")
     audit.add_argument("--departments", help="Comma-separated department keys, for example qa,product.")
+    audit.add_argument("--deploy", action="store_true", help="Publish dashboard assets after a successful audit.")
 
     audit_all = subparsers.add_parser("audit-all", help="Run local audits for all configured targets.")
     audit_all.add_argument("--targets", help="Optional comma-separated target subset.")
     audit_all.add_argument("--departments", help="Optional comma-separated department subset.")
+    audit_all.add_argument("--deploy", action="store_true", help="Publish dashboard assets after a successful audit run.")
 
     scaffold = subparsers.add_parser("scaffold-workflows", help="Scaffold GitHub Actions into a configured target repo.")
     scaffold.add_argument("--target", required=True, help="Configured target name.")
@@ -88,14 +98,20 @@ def main(argv: list[str] | None = None) -> int:
       command = ["python3", "scripts/local_audit_workflow.py", "run-target", "--target", args.target]
       if args.departments:
         command.extend(["--departments", args.departments])
-      return run_command(command)
+      commands = [command]
+      if args.deploy:
+        commands.append(["bash", "scripts/sync-dashboard.sh"])
+      return run_commands(commands)
     if args.command == "audit-all":
       command = ["python3", "scripts/local_audit_workflow.py", "run-all"]
       if args.targets:
         command.extend(["--targets", args.targets])
       if args.departments:
         command.extend(["--departments", args.departments])
-      return run_command(command)
+      commands = [command]
+      if args.deploy:
+        commands.append(["bash", "scripts/sync-dashboard.sh"])
+      return run_commands(commands)
     if args.command == "scaffold-workflows":
       return run_command(["python3", "scripts/scaffold-github-workflows.py", "--target", args.target])
     if args.command == "quick-sync":

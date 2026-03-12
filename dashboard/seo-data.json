@@ -1,45 +1,56 @@
 {
   "department": "seo",
-  "generated_at": "2026-03-11T07:38:42.638322+00:00",
+  "generated_at": "2026-03-12T01:36:01.465247+00:00",
   "totals": {
-    "critical": 3,
-    "high": 12,
-    "medium": 30,
-    "low": 17,
-    "info": 14,
-    "total_findings": 76
+    "critical": 5,
+    "high": 11,
+    "medium": 31,
+    "low": 18,
+    "info": 13,
+    "total_findings": 78
   },
   "repos": [
     {
       "name": "bible-app",
-      "scanned_at": "2026-03-11T07:12:07.689643+00:00",
+      "scanned_at": "2026-03-11T16:00:00Z",
       "summary": {
-        "total": 17,
-        "critical": 0,
-        "high": 5,
-        "medium": 5,
-        "low": 2,
-        "info": 5,
-        "seo_score": 85,
-        "scanned_at": "2026-03-11T07:12:07.689643+00:00"
+        "total": 19,
+        "critical": 2,
+        "high": 4,
+        "medium": 6,
+        "low": 3,
+        "info": 4,
+        "seo_score": 79,
+        "scanned_at": "2026-03-11T16:00:00Z"
       },
       "findings": [
         {
           "id": "SEO-001",
-          "severity": "high",
+          "severity": "critical",
           "category": "technical-seo",
-          "title": "14 of 15 pages share the same default meta title and description",
+          "title": "14 of 16 pages missing page-specific metadata (title, description, canonical)",
           "file": "src/app/layout.tsx",
           "line": 10,
           "effort": "medium",
-          "fixable": true,
+          "fixable": false,
           "status": "open"
         },
         {
           "id": "SEO-002",
+          "severity": "critical",
+          "category": "ai-optimization",
+          "title": "Client-rendered pages produce empty/loading HTML for crawlers",
+          "file": "next.config.ts",
+          "line": 4,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "SEO-003",
           "severity": "high",
           "category": "technical-seo",
-          "title": "Sitemap only lists 6 of 15 public pages",
+          "title": "Sitemap lists only 6 of 16 pages",
           "file": "public/sitemap.xml",
           "line": 1,
           "effort": "tiny",
@@ -47,21 +58,10 @@
           "status": "open"
         },
         {
-          "id": "SEO-003",
-          "severity": "high",
-          "category": "technical-seo",
-          "title": "All pages have canonical URL pointing to homepage instead of self-referencing",
-          "file": "src/app/layout.tsx",
-          "line": 17,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
           "id": "SEO-004",
           "severity": "high",
           "category": "social-meta",
-          "title": "No Open Graph image (og:image) defined anywhere",
+          "title": "No og:image or twitter:image defined anywhere",
           "file": "src/app/layout.tsx",
           "line": 18,
           "effort": "small",
@@ -72,21 +72,21 @@
           "id": "SEO-005",
           "severity": "high",
           "category": "social-meta",
-          "title": "Twitter card type is summary_large_image but no image is provided",
+          "title": "All pages share identical Open Graph and Twitter metadata",
           "file": "src/app/layout.tsx",
-          "line": 26,
-          "effort": "tiny",
-          "fixable": true,
+          "line": 18,
+          "effort": "medium",
+          "fixable": false,
           "status": "open"
         },
         {
           "id": "SEO-006",
-          "severity": "medium",
-          "category": "social-meta",
-          "title": "No per-page Open Graph or Twitter metadata",
+          "severity": "high",
+          "category": "technical-seo",
+          "title": "All pages inherit homepage canonical URL, creating site-wide canonical conflict",
           "file": "src/app/layout.tsx",
-          "line": 18,
-          "effort": "medium",
+          "line": 17,
+          "effort": "small",
           "fixable": true,
           "status": "open"
         },
@@ -94,21 +94,21 @@
           "id": "SEO-007",
           "severity": "medium",
           "category": "ai-optimization",
-          "title": "Dynamic content loaded client-side is invisible to crawlers and AI extractors",
-          "file": "src/app/daily/page.tsx",
-          "line": 35,
-          "effort": "large",
-          "fixable": false,
+          "title": "No structured data for key content types (BreadcrumbList, Organization, FAQ)",
+          "file": "src/app/layout.tsx",
+          "line": 47,
+          "effort": "small",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "SEO-008",
           "severity": "medium",
-          "category": "content-seo",
-          "title": "Limited structured data - only WebApplication and WebSite schemas",
-          "file": "src/app/layout.tsx",
-          "line": 47,
-          "effort": "small",
+          "category": "ai-optimization",
+          "title": "Pages use generic div/span instead of semantic HTML elements",
+          "file": "src/app/daily/page.tsx",
+          "line": 132,
+          "effort": "medium",
           "fixable": true,
           "status": "open"
         },
@@ -116,9 +116,9 @@
           "id": "SEO-009",
           "severity": "medium",
           "category": "technical-seo",
-          "title": "Auth pages (login, register, forgot-password) not excluded from indexing",
-          "file": "src/app/login/page.tsx",
-          "line": 1,
+          "title": "Sitemap entries lack lastmod dates",
+          "file": "public/sitemap.xml",
+          "line": 3,
           "effort": "small",
           "fixable": true,
           "status": "open"
@@ -126,8 +126,30 @@
         {
           "id": "SEO-010",
           "severity": "medium",
+          "category": "content-seo",
+          "title": "Auth and utility pages are indexed but contain no crawlable content",
+          "file": "src/app/login/page.tsx",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "SEO-011",
+          "severity": "medium",
+          "category": "content-seo",
+          "title": "Footer contains only a privacy link \u2014 missed internal linking opportunity",
+          "file": "src/app/layout.tsx",
+          "line": 75,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "SEO-012",
+          "severity": "medium",
           "category": "performance-seo",
-          "title": "Framer Motion imported on every page adds significant JS bundle size",
+          "title": "Framer Motion imported on all 14 client pages increases JavaScript bundle",
           "file": "src/app/page.tsx",
           "line": 4,
           "effort": "large",
@@ -135,51 +157,40 @@
           "status": "open"
         },
         {
-          "id": "SEO-011",
+          "id": "SEO-013",
           "severity": "low",
           "category": "technical-seo",
-          "title": "Sitemap missing lastmod dates",
-          "file": "public/sitemap.xml",
-          "line": 3,
-          "effort": "tiny",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "SEO-012",
-          "severity": "low",
-          "category": "content-seo",
-          "title": "Unused default Next.js SVG files in public directory",
-          "file": "public/next.svg",
-          "line": 1,
-          "effort": "tiny",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "SEO-013",
-          "severity": "info",
-          "category": "ai-optimization",
-          "title": "No FAQ schema on study prompts and reflection questions",
-          "file": "src/app/study/page.tsx",
-          "line": 67,
+          "title": "No breadcrumb navigation or BreadcrumbList schema",
+          "file": "src/app/layout.tsx",
+          "line": 72,
           "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "SEO-014",
-          "severity": "info",
-          "category": "content-seo",
-          "title": "No BreadcrumbList structured data",
+          "severity": "low",
+          "category": "ai-optimization",
+          "title": "No datePublished or dateModified in structured data",
           "file": "src/app/layout.tsx",
           "line": 47,
-          "effort": "small",
+          "effort": "tiny",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "SEO-015",
+          "severity": "low",
+          "category": "content-seo",
+          "title": "Feature card icons use dangerouslySetInnerHTML without aria attributes",
+          "file": "src/app/page.tsx",
+          "line": 192,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "SEO-016",
           "severity": "info",
           "category": "ai-optimization",
           "title": "No IndexNow integration for faster search engine discovery",
@@ -190,10 +201,10 @@
           "status": "open"
         },
         {
-          "id": "SEO-016",
+          "id": "SEO-017",
           "severity": "info",
           "category": "ai-optimization",
-          "title": "No speakable schema for scripture content",
+          "title": "No speakable schema for voice assistant optimization",
           "file": "src/app/layout.tsx",
           "line": 47,
           "effort": "tiny",
@@ -201,40 +212,51 @@
           "status": "open"
         },
         {
-          "id": "SEO-017",
+          "id": "SEO-018",
           "severity": "info",
           "category": "ai-optimization",
-          "title": "No datePublished or dateModified content freshness signals",
-          "file": "src/app/layout.tsx",
-          "line": 47,
+          "title": "No FAQPage schema despite natural FAQ-style content opportunities",
+          "file": "src/app/study/page.tsx",
+          "line": 67,
           "effort": "small",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "SEO-019",
+          "severity": "info",
+          "category": "content-seo",
+          "title": "Navigation links use short labels without keyword-rich anchor text",
+          "file": "src/components/Navigation.tsx",
+          "line": 12,
+          "effort": "tiny",
           "fixable": true,
           "status": "open"
         }
       ],
       "categories": {
         "technical_seo": {
-          "score": 70,
+          "score": 63,
           "issues": 5
         },
         "ai_optimization": {
-          "score": 92,
-          "issues": 5
+          "score": 72,
+          "issues": 7
         },
         "content_seo": {
-          "score": 93,
-          "issues": 3
+          "score": 89,
+          "issues": 4
         },
         "performance_seo": {
           "score": 96,
           "issues": 1
         },
         "social_meta": {
-          "score": 80,
-          "issues": 3
+          "score": 84,
+          "issues": 2
         }
       },
-      "seo_score": 85
+      "seo_score": 79
     },
     {
       "name": "codyjo.com",

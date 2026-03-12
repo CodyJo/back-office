@@ -20,10 +20,11 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python tooling
-        run: pip install ruff pyyaml
+        run: pip install coverage ruff pyyaml
 
       - name: Validate shell syntax
         run: |
+          bash -n scripts/run-agent.sh
           bash -n scripts/sync-dashboard.sh
           bash -n scripts/quick-sync.sh
           bash -n scripts/job-status.sh
@@ -42,5 +43,21 @@ jobs:
       - name: Lint Python scripts
         run: ruff check scripts/
 
-      - name: Run Back Office regression suite
-        run: make test
+      - name: Run Back Office regression suite with coverage
+        run: make test-coverage
+
+      - name: Publish coverage summary
+        run: |
+          echo "## Python Coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          python3 -m coverage report >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: back-office-coverage
+          path: |
+            coverage.xml
+            coverage.json

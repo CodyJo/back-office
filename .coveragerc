@@ -1,0 +1,8 @@
+[run]
+source = scripts
+parallel = true
+patch = subprocess
+
+[report]
+omit =
+    scripts/test-*.py

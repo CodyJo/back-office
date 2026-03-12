@@ -135,6 +135,7 @@ python3 scripts/backoffice-cli.py audit --target back-office --departments qa,pr
 ```
 
 If `--departments` is omitted, the target's `default_departments` are used.
+Add `--deploy` to publish the refreshed dashboard after the audit succeeds.
 
 ### `audit-all`
 
@@ -147,6 +148,7 @@ python3 scripts/backoffice-cli.py audit-all --targets bible-app,thenewbeautifulm
 ```
 
 If `--targets` is omitted, all configured targets run.
+Add `--deploy` to publish the refreshed dashboard after the full run succeeds.
 
 Exact command for every configured target:
 
@@ -187,8 +189,7 @@ Use it when you want a fast partial dashboard update instead of a full dashboard
 
 ```bash
 python3 scripts/backoffice-cli.py setup --write-missing-configs
-python3 scripts/backoffice-cli.py audit-all
-python3 scripts/backoffice-cli.py refresh
+python3 scripts/backoffice-cli.py audit-all --deploy
 python3 scripts/backoffice-cli.py test
 ```
 

@@ -66,14 +66,28 @@ run_claude_print() {
 }
 
 run_stdin_text() {
-  local runner_bin
-  runner_bin="${RUNNER_CMD%% *}"
+  local runner_parts runner_bin
+  read -r -a runner_parts <<< "$RUNNER_CMD"
+  runner_bin="${runner_parts[0]:-}"
   command -v "$runner_bin" >/dev/null 2>&1 || {
     echo "Back Office agent runner not found: $runner_bin" >&2
     exit 1
   }
 
-  printf '%s' "$PROMPT" | bash -lc "$RUNNER_CMD"
+  case "$runner_bin" in
+    codex)
+      printf '%s' "$PROMPT" | "${runner_parts[@]}" \
+        -s workspace-write \
+        -a never \
+        exec - \
+        --cd "$REPO_DIR" \
+        --add-dir "$REPO_DIR" \
+        --add-dir "$ROOT_DIR"
+      ;;
+    *)
+      printf '%s' "$PROMPT" | "${runner_parts[@]}"
+      ;;
+  esac
 }
 
 case "$RUNNER_MODE" in

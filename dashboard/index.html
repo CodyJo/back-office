@@ -173,6 +173,7 @@
     <nav class="nav">
       <a href="index.html" class="active">HQ</a>
       <a href="metrics.html">Metrics</a>
+      <a href="regression.html">Regression</a>
       <a href="privacy.html">Privacy</a>
       <a href="jobs.html">Jobs</a>
       <a href="faq.html">Scoring</a>
@@ -484,6 +485,10 @@
 
     function getSourceKeyForDepartment(department) {
       return department.source_key || null;
+    }
+
+    function getDepartmentSource(sourceKey) {
+      return DEPARTMENT_SOURCES.find(source => source.key === sourceKey) || null;
     }
 
     function getEmployeeFindingCount(employee) {
@@ -804,22 +809,26 @@
 
       document.getElementById('departmentGrid').innerHTML = orgData.departments.map(dept => {
         const sourceKey = getSourceKeyForDepartment(dept);
+        const sourceMeta = sourceKey ? getDepartmentSource(sourceKey) : null;
         const score = sourceKey ? getDepartmentScore(sourceKey) : Math.round(getEmployeesForSelection().reduce((sum, emp) => sum + emp.daily_score, 0) / Math.max(getEmployeesForSelection().length, 1));
         const findings = sourceKey ? getDepartmentFindingCount(sourceKey) : getEmployeesForSelection().length;
         const departmentHref = sourceKey
           ? `${sourceKey}.html${selected.key !== 'all' ? `?product=${encodeURIComponent(selected.key)}` : ''}`
           : '';
+        const displayName = sourceMeta ? sourceMeta.name : dept.name;
+        const displayPersona = sourceMeta ? `${dept.name} ownership for ${sourceMeta.name.toLowerCase()} findings and reporting.` : dept.persona;
         return `
           <article class="dept-card"${departmentHref ? ` onclick="window.location.href='${departmentHref}'" style="cursor:pointer;"` : ''}>
             <div class="dept-top">
               <div>
-                <div class="dept-name">${esc(dept.name)}</div>
-                <div class="dept-purpose">${esc(dept.persona)}</div>
+                <div class="dept-name">${esc(displayName)}</div>
+                <div class="dept-purpose">${esc(displayPersona)}</div>
               </div>
               <div class="score-pill" style="color:${scoreClass(score)}">${score || 'n/a'}</div>
             </div>
             <div class="resume">${esc(dept.purpose)}</div>
             <div class="resume" style="margin-top:0.5rem;">Findings / capacity signal: ${findings}</div>
+            ${sourceMeta && dept.name !== displayName ? `<div class="resume" style="margin-top:0.5rem;">Team owner: ${esc(dept.name)}</div>` : ''}
             ${departmentHref ? `<div class="resume" style="margin-top:0.5rem;"><a href="${departmentHref}" style="color:var(--accent);text-decoration:none;">Open department dashboard</a></div>` : ''}
             <div class="chips">${dept.skills.slice(0, 5).map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
           </article>

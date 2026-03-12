@@ -97,6 +97,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_run_scan()
         elif path == "/api/run-all":
             self._handle_run_all()
+        elif path == "/api/run-regression":
+            self._handle_run_regression()
         else:
             self.send_error(404, "Not found")
 
@@ -224,6 +226,27 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             "target": TARGET_REPO,
             "parallel": parallel,
         })
+
+    def _handle_run_regression(self):
+        """Run portfolio regression in background."""
+        if self._origin_allowed() is False:
+            self.send_error(403, "Origin not allowed")
+            return
+
+        runner = os.path.join(QA_ROOT, "scripts", "regression-runner.py")
+        if not os.path.exists(runner):
+            self._json_response(500, {"error": "regression-runner.py not found"})
+            return
+
+        def _run():
+            try:
+                subprocess.run(["python3", runner], cwd=QA_ROOT)
+            except Exception:
+                pass
+
+        t = threading.Thread(target=_run, daemon=True)
+        t.start()
+        self._json_response(200, {"status": "started"})
 
     def do_OPTIONS(self):
         """Handle CORS preflight."""

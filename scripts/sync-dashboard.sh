@@ -100,14 +100,23 @@ agg_data_files = [
 ]
 
 
+deploy_failed = False
+
 def upload_file(local_path, bucket, s3_key, content_type):
     print(f'  Deploying {os.path.basename(local_path)} -> s3://{bucket}/{s3_key}')
-    subprocess.run([
-        'aws', 's3', 'cp', local_path,
-        f's3://{bucket}/{s3_key}',
-        '--content-type', content_type,
-        '--cache-control', 'no-cache, no-store, must-revalidate'
-    ], check=True)
+    try:
+        subprocess.run([
+            'aws', 's3', 'cp', local_path,
+            f's3://{bucket}/{s3_key}',
+            '--content-type', content_type,
+            '--cache-control', 'no-cache, no-store, must-revalidate'
+        ], check=True)
+        return True
+    except subprocess.CalledProcessError as exc:
+        global deploy_failed
+        deploy_failed = True
+        print(f'  ERROR: upload failed ({exc}); skipping {s3_key}')
+        return False
 
 
 for t in targets:
@@ -140,8 +149,8 @@ for t in targets:
             content_type = 'image/svg+xml'
         else:
             content_type = 'text/html'
-        upload_file(local_path, bucket, s3_key, content_type)
-        invalidation_paths.append(f'/{s3_key}')
+        if upload_file(local_path, bucket, s3_key, content_type):
+            invalidation_paths.append(f'/{s3_key}')
 
     # Upload data files — per-repo raw data or aggregated data
     if repo:
@@ -156,15 +165,15 @@ for t in targets:
                     print(f'  Skipping {s3_name} (no {raw_file} for {repo})')
                     continue
                 s3_key = f'{prefix}{s3_name}'
-                upload_file(raw_path, bucket, s3_key, 'application/json')
-                invalidation_paths.append(f'/{s3_key}')
+                if upload_file(raw_path, bucket, s3_key, 'application/json'):
+                    invalidation_paths.append(f'/{s3_key}')
         # Also deploy job status and history from dashboard dir
         for job_file in job_status_files:
             local_path = os.path.join(dashboard_dir, job_file)
             if os.path.exists(local_path):
                 s3_key = f'{prefix}{job_file}'
-                upload_file(local_path, bucket, s3_key, 'application/json')
-                invalidation_paths.append(f'/{s3_key}')
+                if upload_file(local_path, bucket, s3_key, 'application/json'):
+                    invalidation_paths.append(f'/{s3_key}')
         for local_name, s3_name in shared_meta_files:
             local_path = os.path.join(dashboard_dir, local_name)
             if not os.path.exists(local_path):
@@ -172,8 +181,8 @@ for t in targets:
                 continue
             s3_key = f'{prefix}{s3_name}'
             content_type = 'text/markdown' if local_name.endswith('.md') else 'application/json'
-            upload_file(local_path, bucket, s3_key, content_type)
-            invalidation_paths.append(f'/{s3_key}')
+            if upload_file(local_path, bucket, s3_key, content_type):
+                invalidation_paths.append(f'/{s3_key}')
     else:
         # Deploy aggregated data (all repos combined)
         for local_name, s3_name in agg_data_files:
@@ -183,8 +192,8 @@ for t in targets:
                 continue
             s3_key = f'{prefix}{s3_name}'
             content_type = 'text/markdown' if local_name.endswith('.md') else 'application/json'
-            upload_file(local_path, bucket, s3_key, content_type)
-            invalidation_paths.append(f'/{s3_key}')
+            if upload_file(local_path, bucket, s3_key, content_type):
+                invalidation_paths.append(f'/{s3_key}')
 
     # Invalidate CloudFront cache
     if cf_id and invalidation_paths:
@@ -194,6 +203,10 @@ for t in targets:
             '--distribution-id', cf_id,
             '--paths', *invalidation_paths
         ], check=True)
+
+if deploy_failed:
+    print('\\nDashboard sync completed with upload failures; see errors above.')
+    sys.exit(1)
 
 print('\\nDashboard sync complete.')
 "
