@@ -74,7 +74,7 @@ Quick-sync behavior: `python -m backoffice sync --dept qa` skips the pre-deploy 
 
 ### Scripts That Stay as Shell
 
-- `scripts/run-agent.sh` — reads runner config via `eval $(python -m backoffice config shell-export)`
+- `scripts/run-agent.sh` — reads runner config via `eval $(python -m backoffice config shell-export)`. Note: this introduces a Python dependency where there was none (previously just `source agent-runner.env`). `scripts/setup.sh` must run first to install the package.
 - `scripts/job-status.sh` — lightweight job status helper used by Makefile audit targets
 - `scripts/sync-dashboard.sh` — becomes 3-line wrapper: `python -m backoffice sync "$@"`
 - `scripts/quick-sync.sh` — becomes 3-line wrapper: `python -m backoffice sync --dept "$@"`
@@ -118,9 +118,9 @@ Five config files merge into one: `config/backoffice.yaml`.
 ### Complete Config Schema
 
 ```yaml
-# Agent runner
+# Agent runner (command may include arguments, e.g. "claude --model haiku")
 runner:
-  command: claude
+  command: "claude --model haiku"
   mode: claude-print
 
 # Production API server
@@ -195,7 +195,7 @@ targets:
   # ... remaining targets follow the same schema
 ```
 
-All target fields are preserved: `path`, `language`, `default_departments`, `lint_command`, `test_command`, `coverage_command`, `deploy_command`, `context`. The API server resolves its target paths from the same `targets:` section (the separate `targets` map in `api-config.yaml` is eliminated).
+All target fields are preserved: `path`, `language`, `default_departments`, `lint_command`, `test_command`, `coverage_command`, `deploy_command`, `context`. Targets missing optional fields (e.g., `pe-bootstrap` has no `coverage_command`) use the dataclass defaults (empty string). The API server resolves its target paths from the same `targets:` section (the separate `targets` map in `api-config.yaml` is eliminated).
 
 ### Config Object
 
@@ -268,6 +268,53 @@ class SyncEngine:
         self.upload()
         self.invalidate()
 ```
+
+### Canonical File Manifest
+
+The sync engine uses a single source of truth for which files to upload. This resolves the discrepancy between the current `sync-dashboard.sh` and `quick-sync.sh` file lists.
+
+**Full sync** uploads all of these:
+
+```python
+# Dashboard HTML/JS/CSS files
+DASHBOARD_FILES = [
+    'index.html', 'qa.html', 'backoffice.html',
+    'seo.html', 'ada.html', 'compliance.html', 'privacy.html',
+    'monetization.html', 'product.html',
+    'jobs.html', 'faq.html', 'self-audit.html', 'admin.html', 'regression.html',
+    'selah.html', 'analogify.html', 'chromahaus.html', 'tnbm-tarot.html',
+    'back-office-hq.html',
+    'documentation.html', 'documentation-github.html',
+    'documentation-cicd.html', 'documentation-cli.html',
+    'site-branding.js', 'department-context.js', 'favicon.svg',
+]
+
+# Department findings -> dashboard data file mapping
+DEPT_DATA_MAP = {
+    'qa':            ('findings.json',            'qa-data.json'),
+    'seo':           ('seo-findings.json',        'seo-data.json'),
+    'ada':           ('ada-findings.json',        'ada-data.json'),
+    'compliance':    ('compliance-findings.json',  'compliance-data.json'),
+    'privacy':       ('privacy-findings.json',     'privacy-data.json'),
+    'monetization':  ('monetization-findings.json','monetization-data.json'),
+    'product':       ('product-findings.json',     'product-data.json'),
+    'self-audit':    ('findings.json',             'self-audit-data.json'),
+}
+
+# Shared metadata files (uploaded for both repo-scoped and aggregated targets)
+SHARED_META_FILES = [
+    'automation-data.json', 'org-data.json',
+    'local-audit-log.json', 'local-audit-log.md',
+    'regression-data.json',
+]
+
+# Job status files
+JOB_STATUS_FILES = ['.jobs.json', '.jobs-history.json']
+```
+
+**Quick-sync** (`sync --dept qa`) uploads only: the department's data file from `DEPT_DATA_MAP`, plus `JOB_STATUS_FILES` and `SHARED_META_FILES`. No HTML files, no other departments.
+
+Note: `dashboard/metrics.html` exists on disk but is intentionally local-only and not deployed.
 
 Provider selection driven by `deploy.provider` in config:
 
