@@ -31,38 +31,91 @@ Consolidate all Python scripts into a `backoffice/` package with clean module bo
 ```
 backoffice/
   __init__.py
-  config.py          — Unified config loader
-  logging.py         — Structured logging setup
+  __main__.py         — Unified entry point: python -m backoffice <command>
+  config.py           — Unified config loader, exposes typed Config dataclass
+  log_config.py       — Structured logging setup (named to avoid shadowing stdlib logging)
   sync/
     __init__.py
-    engine.py         — Orchestrates sync: gate -> aggregate -> upload -> invalidate
+    engine.py          — Orchestrates sync: gate -> aggregate -> upload -> invalidate
     providers/
       __init__.py
-      base.py         — Abstract StorageProvider and CDNProvider interfaces
-      aws.py          — S3 + CloudFront implementation (boto3)
-  aggregate.py        — Rewrite of aggregate-results.py
-  delivery.py         — Rewrite of generate-delivery-data.py
-  tasks.py            — Rewrite of task-queue.py
-  regression.py       — Rewrite of regression-runner.py
-  setup.py            — Rewrite of backoffice_setup.py
-  server.py           — Rewrite of dashboard-server.py
-  cli.py              — Rewrite of backoffice-cli.py
-  workflow.py         — Rewrite of local_audit_workflow.py
+      base.py          — Abstract StorageProvider and CDNProvider interfaces
+      aws.py           — S3 + CloudFront implementation (boto3)
+  aggregate.py         — Rewrite of aggregate-results.py
+  delivery.py          — Rewrite of generate-delivery-data.py
+  tasks.py             — Rewrite of task-queue.py
+  regression.py        — Rewrite of regression-runner.py
+  setup.py             — Rewrite of backoffice_setup.py
+  server.py            — Rewrite of dashboard-server.py (local dev server)
+  api_server.py        — Rewrite of api-server.py (production scan trigger API)
+  cli.py               — Rewrite of backoffice-cli.py (delegates subcommands)
+  workflow.py           — Rewrite of local_audit_workflow.py
+  scaffolding.py       — Rewrite of scaffold-github-workflows.py
 ```
 
-Agent shell scripts in `agents/` are untouched. `scripts/run-agent.sh` stays as a shell script but reads config via `eval $(python -m backoffice.config shell-export)`. `scripts/sync-dashboard.sh` and `scripts/quick-sync.sh` become 3-line wrappers calling into the package.
+### Entry Points
+
+All modules are invoked through a single entry point: `python -m backoffice <command>`. The `__main__.py` dispatches to the appropriate module based on the subcommand. Examples:
+
+```
+python -m backoffice sync              # full dashboard sync
+python -m backoffice sync --dept qa    # quick-sync for one department (skips test gate)
+python -m backoffice config show       # dump resolved config
+python -m backoffice config shell-export  # output shell vars for agent scripts
+python -m backoffice audit ...         # run audit
+python -m backoffice tasks list        # task queue operations
+python -m backoffice regression        # run regression suite
+python -m backoffice scaffold ...      # scaffold GitHub Actions workflows
+python -m backoffice serve             # local dev dashboard server
+python -m backoffice api-server        # production API server
+```
+
+Quick-sync behavior: `python -m backoffice sync --dept qa` skips the pre-deploy test gate and aggregation step — it uploads only that department's data file and invalidates the CDN. This matches current `quick-sync.sh` behavior.
+
+### Scripts That Stay as Shell
+
+- `scripts/run-agent.sh` — reads runner config via `eval $(python -m backoffice config shell-export)`
+- `scripts/job-status.sh` — lightweight job status helper used by Makefile audit targets
+- `scripts/sync-dashboard.sh` — becomes 3-line wrapper: `python -m backoffice sync "$@"`
+- `scripts/quick-sync.sh` — becomes 3-line wrapper: `python -m backoffice sync --dept "$@"`
+- `scripts/setup.sh` — initial bootstrap (installs Python deps, etc.)
+
+### Scripts Removed (logic moves to package)
+
+`scripts/parse-config.py` is replaced by `python -m backoffice config shell-export`. The null-delimited output and shell-safety validation move into `backoffice/config.py`.
+
+Agent shell scripts in `agents/` are untouched.
 
 Makefile targets keep the same interface:
 ```makefile
 # Before
 dashboard: scripts/sync-dashboard.sh
 # After
-dashboard: python -m backoffice.sync
+dashboard: python -m backoffice sync
 ```
 
 ## 2. Unified Config
 
-Three config files merge into one: `config/backoffice.yaml`.
+Five config files merge into one: `config/backoffice.yaml`.
+
+| Old File | New Location | Notes |
+|----------|-------------|-------|
+| `config/targets.yaml` | `targets:` section | List format changes to dict-keyed by name |
+| `config/qa-config.yaml` | `deploy:`, `scan:`, `fix:`, `notifications:` sections | Field renames noted below |
+| `config/agent-runner.env` | `runner:` section | Shell env vars become YAML |
+| `config/api-config.yaml` | `api:` section | Port, API key, CORS origins |
+| `config/task-queue.yaml` | Stays separate | Operational state, not config — lives at `config/task-queue.yaml` unchanged |
+
+### Field Name Mapping (qa-config.yaml -> backoffice.yaml)
+
+| Old (`qa-config.yaml`) | New (`backoffice.yaml`) |
+|------------------------|------------------------|
+| `dashboard_targets[].cloudfront_id` | `deploy.aws.dashboard_targets[].distribution_id` |
+| `dashboard_targets[].repo` | `deploy.aws.dashboard_targets[].filter_repo` (null = aggregated) |
+| `dashboard_targets[].base_path` | `deploy.aws.dashboard_targets[].base_path` (kept) |
+| `dashboard_targets[].allow_public_read` | `deploy.aws.dashboard_targets[].allow_public_read` (kept, default false) |
+
+### Complete Config Schema
 
 ```yaml
 # Agent runner
@@ -70,43 +123,113 @@ runner:
   command: claude
   mode: claude-print
 
+# Production API server
+api:
+  port: 8070
+  api_key: ""
+  allowed_origins:
+    - "https://admin.thenewbeautifulme.com"
+    - "http://localhost:8070"
+
 # Storage & CDN provider
 deploy:
   provider: aws
   aws:
-    region: us-east-1
+    region: us-west-2
     dashboard_targets:
-      - bucket: my-bucket
-        distribution_id: EXXXXX
-        subdomain: admin.example.com
-        filter_repo: null
+      - bucket: admin-thenewbeautifulme-site
+        base_path: ""
+        distribution_id: E372ZR95FXKVT5
+        subdomain: admin.thenewbeautifulme.com
+        filter_repo: thenewbeautifulme
+        allow_public_read: false
 
 # Scan & fix settings
 scan:
-  max_findings: 50
-  severity_threshold: medium
-fix:
-  auto_deploy: false
-  require_tests: true
+  run_linter: true
+  run_tests: true
+  security_audit: true
+  performance_review: true
+  code_quality: true
+  min_severity: low
+  max_findings: 200
+  exclude_patterns:
+    - "node_modules/**"
+    - "venv/**"
+    - ".git/**"
+    - "*.min.js"
 
-# Audit targets
+fix:
+  auto_fix_severity: high
+  run_tests_after_fix: true
+  run_linter_after_fix: true
+  max_parallel_fixes: 4
+  auto_commit: true
+  auto_push: false
+
+notifications:
+  sync_to_s3: true
+
+# Audit targets (dict-keyed by name; replaces the old list format)
 targets:
   back-office:
     path: /home/merm/projects/back-office
     language: python
-    default_departments: [qa, seo, ada]
-    test_command: make test
-    coverage_command: make test-coverage
+    default_departments: [qa]
+    lint_command: "python3 scripts/test-scoring.py"
+    test_command: "make test"
+    coverage_command: "make test-coverage"
+    deploy_command: "python3 scripts/aggregate-results.py results dashboard/data.json"
+    context: |
+      This is the local Back Office control plane and dashboard suite.
   bible-app:
     path: /home/merm/projects/bible-app
-    # ...
+    language: typescript
+    default_departments: [qa, seo, ada, compliance, monetization, product]
+    lint_command: "npm run lint"
+    test_command: "npm test && npm run typecheck"
+    coverage_command: "npm run test:coverage"
+    deploy_command: "npm run build"
+    context: |
+      Selah is a mobile-first Bible study app deployed at selah.codyjo.com.
+  # ... remaining targets follow the same schema
 ```
 
-`backoffice/config.py` loads this once and exposes a typed config object. All modules import from there — no more `os.environ` lookups scattered through the codebase.
+All target fields are preserved: `path`, `language`, `default_departments`, `lint_command`, `test_command`, `coverage_command`, `deploy_command`, `context`. The API server resolves its target paths from the same `targets:` section (the separate `targets` map in `api-config.yaml` is eliminated).
 
-The `BACK_OFFICE_ROOT` env var is still respected as an override for the root path. Agent shell scripts access runner config via `eval $(python -m backoffice.config shell-export)` which outputs shell variable assignments.
+### Config Object
 
-**Files removed:** `config/qa-config.yaml`, `config/agent-runner.env`.
+`backoffice/config.py` loads this once and exposes a **frozen dataclass hierarchy**:
+
+```python
+@dataclass(frozen=True)
+class Target:
+    path: str
+    language: str
+    default_departments: list[str]
+    lint_command: str = ""
+    test_command: str = ""
+    coverage_command: str = ""
+    deploy_command: str = ""
+    context: str = ""
+
+@dataclass(frozen=True)
+class Config:
+    runner: RunnerConfig
+    api: ApiConfig
+    deploy: DeployConfig
+    scan: ScanConfig
+    fix: FixConfig
+    notifications: NotificationsConfig
+    targets: dict[str, Target]
+```
+
+All modules import `Config` from here — no more `os.environ` lookups scattered through the codebase. The `BACK_OFFICE_ROOT` env var is still respected as an override for the root path.
+
+Agent shell scripts access runner config and target fields via `eval $(python -m backoffice config shell-export)`. The shell-export subcommand replaces `scripts/parse-config.py` and includes the same null-delimited output mode and shell-safety validation.
+
+**Files removed:** `config/targets.yaml`, `config/qa-config.yaml`, `config/api-config.yaml`, `config/agent-runner.env`.
+**Files kept:** `config/task-queue.yaml` (operational state, not configuration).
 
 ## 3. Provider Abstraction
 
@@ -160,7 +283,7 @@ def get_providers(config) -> tuple[StorageProvider, CDNProvider]:
 Replace all `print()` calls and inconsistent output with Python's `logging` module configured once at startup.
 
 ```python
-# backoffice/logging.py
+# backoffice/log_config.py
 
 def setup_logging(verbose: bool = False, json_output: bool = False):
     """Call once at entry point."""
@@ -201,9 +324,9 @@ Key decisions:
 ### Per-Module Behavior
 
 **Sync Engine (`sync/engine.py`)**
-- Pre-deploy gate fails (tests don't pass): Abort entire sync, log which tests failed, exit 2. No uploads happen.
+- Pre-deploy gate fails (tests don't pass): Abort entire sync, log which tests failed, exit 2. No uploads happen. Note: quick-sync mode (`sync --dept`) skips this gate entirely, matching current behavior.
 - Aggregation fails (malformed findings JSON): Skip that department, log warning with file path and parse error, continue. Dashboard shows stale data for that department.
-- Upload fails mid-batch: Retry each file up to 3 times with exponential backoff (1s, 2s, 4s). If still failing, log error, continue uploading the rest. Exit 1 at the end.
+- Upload fails mid-batch: Application-level retry — each file retried up to 3 times with exponential backoff (1s, 2s, 4s). This is on top of boto3's built-in retry (which handles transient HTTP errors). The application retry catches higher-level failures (permission denied, bucket not found after eventual consistency, etc.). If a file still fails after retries, log error, continue uploading the rest. Exit 1 at the end.
 - CDN invalidation fails: Log warning, don't fail the run. Dashboard serves stale cache until next successful invalidation.
 
 **Config (`config.py`)**
@@ -239,14 +362,25 @@ Key decisions:
 - Everything works during transition without breaking Makefile or CI.
 
 ### Phase 2 — Makefile points to package
-- Update Makefile targets to call `python -m backoffice.<module>` directly.
+- Update Makefile targets to call `python -m backoffice <command>` directly.
 - Update CI to run tests against the package.
-- Agent shell scripts get the `eval $(python -m backoffice.config shell-export)` helper.
+- Agent shell scripts get the `eval $(python -m backoffice config shell-export)` helper.
 
-### Phase 3 — Delete old scripts
-- Remove: `scripts/aggregate-results.py`, `scripts/generate-delivery-data.py`, `scripts/task-queue.py`, `scripts/regression-runner.py`, `scripts/backoffice_setup.py`, `scripts/dashboard-server.py`, `scripts/backoffice-cli.py`, `scripts/local_audit_workflow.py`.
-- Remove: `config/qa-config.yaml`, `config/agent-runner.env`.
-- Keep: `scripts/run-agent.sh` (reads config differently), `scripts/sync-dashboard.sh` (3-line wrapper), `scripts/quick-sync.sh` (3-line wrapper).
+### Phase 3 — Delete old scripts and configs
+- **Remove scripts:** `scripts/aggregate-results.py`, `scripts/generate-delivery-data.py`, `scripts/task-queue.py`, `scripts/regression-runner.py`, `scripts/backoffice_setup.py`, `scripts/dashboard-server.py`, `scripts/api-server.py`, `scripts/backoffice-cli.py`, `scripts/local_audit_workflow.py`, `scripts/parse-config.py`, `scripts/scaffold-github-workflows.py`.
+- **Remove configs:** `config/targets.yaml`, `config/qa-config.yaml`, `config/api-config.yaml`, `config/agent-runner.env`.
+- **Keep scripts:** `scripts/run-agent.sh` (reads config via shell-export), `scripts/sync-dashboard.sh` (3-line wrapper), `scripts/quick-sync.sh` (3-line wrapper), `scripts/job-status.sh` (lightweight job status helper), `scripts/setup.sh` (initial bootstrap).
+- **Keep configs:** `config/task-queue.yaml` (operational state), `config/backoffice.yaml` (new unified config).
+- **Keep example files:** Update `config/*.example.yaml` to match new schema.
+
+### Migration Verification
+
+The sync engine rewrite is the highest-risk change (it touches live S3 deploys). To verify correctness:
+
+1. **Dry-run mode**: `python -m backoffice sync --dry-run` logs every file that would be uploaded with its content-type, cache-control, and destination key — but does not upload. Compare this output against the current `sync-dashboard.sh` behavior on the same data.
+2. **Diff test**: Run old sync script with `--dryrun` flag (aws cli) and new sync engine with `--dry-run`, diff the file manifests.
+3. **Staged rollout**: Deploy to the lowest-traffic dashboard target first (admin.codyjo.com), verify manually, then expand to other targets.
+4. **`allow_public_read` safety**: Unit test that the default is `false` and that the upload logic respects it. This is a safety-critical field.
 
 ### Tests
 - Migrate `scripts/test-*.py` to `tests/` directory at project root.
@@ -260,3 +394,4 @@ Key decisions:
 - `lib/` — reference docs
 - `terraform/` — infrastructure
 - `docs/` — existing documentation
+- `scripts/run-local-bible-app-product-audit.sh` — one-off convenience script
