@@ -78,13 +78,19 @@ var match = host.match(/^admin\.(.+)$/);
 var match = host.match(/^backoffice\.(.+)$/);
 ```
 
-- [ ] **Step 4: Verify no residual admin.* subdomain references in modified files**
+- [ ] **Step 4: Verify terraform/cd.tf needs no changes**
+
+Run: `grep -n 'admin\.' terraform/cd.tf`
+
+Expected: No matches. The file contains only S3 bucket ARNs with `admin-` (hyphen), not `admin.` (dot) subdomain strings. No changes needed — noting this explicitly since the spec lists the file.
+
+- [ ] **Step 5: Verify no residual admin.* subdomain references in modified files**
 
 Run: `grep -n 'admin\.' config/backoffice.yaml config/backoffice.example.yaml dashboard/site-branding.js | grep -v 'admin-'`
 
 Expected: No matches (bucket names like `admin-codyjo-site` contain `admin-` with a hyphen, not `admin.` with a dot).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add config/backoffice.yaml config/backoffice.example.yaml dashboard/site-branding.js
@@ -243,11 +249,28 @@ def test_aggregate_hq_coverage_timestamps(hq_results, hq_dashboard):
     assert site["coverage"]["ada"] is None
 
 
+def test_aggregate_hq_coverage_finding_count(hq_results, hq_dashboard):
+    hq_dashboard.mkdir(parents=True, exist_ok=True)
+    result = aggregate_hq(str(hq_results), str(hq_dashboard))
+    site = result["sites"]["codyjo.com"]
+    assert site["coverage"]["qa"]["finding_count"] == 5
+    assert site["coverage"]["seo"]["finding_count"] == 3
+
+
+def test_aggregate_hq_backoffice_url(hq_results, hq_dashboard):
+    hq_dashboard.mkdir(parents=True, exist_ok=True)
+    result = aggregate_hq(str(hq_results), str(hq_dashboard))
+    # URL derived from repo name — for known domains, uses https://backoffice.{domain}
+    site = result["sites"]["codyjo.com"]
+    assert "backoffice" in site["backoffice_url"]
+
+
 def test_aggregate_hq_totals(hq_results, hq_dashboard):
     hq_dashboard.mkdir(parents=True, exist_ok=True)
     result = aggregate_hq(str(hq_results), str(hq_dashboard))
     totals = result["totals"]
     assert totals["sites_audited"] == 2
+    assert "sites_stale" in totals
     # Total risk across both sites
     assert totals["risk"]["critical"] == 1  # only thenewbeautifulme
     assert totals["risk"]["high"] == 1      # only codyjo.com
@@ -330,6 +353,14 @@ For QA score: `max(0, 100 - critical*15 - high*8 - medium*3 - low*1)` (same as w
 
 For privacy score: call existing `privacy_score()` with the compliance findings filtered through `is_privacy_finding()`.
 
+**backoffice_url construction:** For each repo name, check if it looks like a domain (contains a dot). If so: `https://backoffice.{repo_name}`. Otherwise: `https://backoffice.codyjo.com` (fallback to main site). Can also check `org-data.json` for product metadata if available.
+
+**sites_stale:** A site is "stale" if ALL its audited departments have `last_audit` > 30 days ago. `totals.sites_stale` counts these sites.
+
+**finding_count:** Each coverage entry includes the total finding count for that department from the findings file.
+
+**Privacy score dependency:** `aggregate_hq()` reads `privacy-findings.json` which is created by `aggregate_privacy()`. The call MUST be placed after `aggregate_privacy()` in the orchestrator. Add a comment noting this dependency.
+
 Error handling:
 - Empty results/ → empty sites, null totals
 - Malformed JSON → log warning, skip file, continue
@@ -340,13 +371,14 @@ Error handling:
 Add call after the self-audit aggregation in the `aggregate()` function:
 ```python
 # HQ dashboard (cross-site portfolio view)
+# NOTE: Must run after aggregate_privacy() which creates privacy-findings.json files
 aggregate_hq(results_dir, dashboard_dir)
 ```
 
 - [ ] **Step 5: Run tests**
 
 Run: `python3 -m pytest tests/test_aggregate_hq.py -v`
-Expected: PASS (all 10 tests)
+Expected: PASS (all 11 tests)
 
 Run: `python3 -m pytest tests/ -v`
 Expected: ALL tests pass
@@ -446,13 +478,14 @@ git commit -m "feat: add HQ cross-site dashboard with health/risk/coverage"
 
 - [ ] **Step 1: Find and replace back-office-hq.html references**
 
-In each file listed above, replace `back-office-hq.html` with `hq.html`. Use grep to find exact locations:
-
+First, grep to find all references:
 ```bash
 grep -rn 'back-office-hq' dashboard/
 ```
 
-Update each match.
+Replace `back-office-hq.html` with `hq.html` in each match. The known locations are `selah.html:61`, `analogify.html:43`, `chromahaus.html:43`, `tnbm-tarot.html:43`.
+
+**Note on index.html:** `index.html` may not contain a direct `back-office-hq.html` reference (it IS the HQ landing page). If grep finds no match in `index.html`, no change is needed there — the spec's instruction was to ensure the HQ is linked, and `index.html` already serves as the main navigation.
 
 - [ ] **Step 2: Delete old file**
 
