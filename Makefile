@@ -12,7 +12,7 @@ setup: ## Initial setup (create configs, check prerequisites)
 	bash scripts/setup.sh
 
 regression: ## Run portfolio regression tests + coverage (best-effort)
-	python3 scripts/regression-runner.py
+	python3 -m backoffice regression
 
 # ── QA Department ─────────────────────────────────────────────────────────────
 
@@ -143,47 +143,28 @@ audit-live: ## Run ALL audits with live dashboard refresh after each (make audit
 	echo "All audits complete. Dashboard updated live at each step."
 
 quick-sync: ## Quick-sync one department's data (make quick-sync DEPT=qa REPO=codyjo.com)
-	bash scripts/quick-sync.sh "$(DEPT)" "$(REPO)"
+	python3 -m backoffice sync --dept $(DEPT)
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 test: ## Run scoring tests (pre-deploy gate)
-	@echo "Running scoring tests..."
-	python3 scripts/test-scoring.py
-	@echo "Running local audit workflow tests..."
-	python3 scripts/test-local-audit-workflow.py
-	@echo "Running CLI and scaffolding tests..."
-	python3 scripts/test-cli-and-scaffolding.py
-	@echo "Running server and setup tests..."
-	python3 scripts/test-servers-and-setup.py
+	python3 -m pytest tests/ -v
 
 test-coverage: ## Run regression tests with Python line coverage reporting
-	@echo "Running scoring tests with coverage..."
-	python3 -m coverage erase
-	python3 -m coverage run --rcfile=.coveragerc scripts/test-scoring.py
-	@echo "Running local audit workflow tests with coverage..."
-	python3 -m coverage run --rcfile=.coveragerc scripts/test-local-audit-workflow.py
-	@echo "Running CLI and scaffolding tests with coverage..."
-	python3 -m coverage run --rcfile=.coveragerc scripts/test-cli-and-scaffolding.py
-	@echo "Running server and setup tests with coverage..."
-	python3 -m coverage run --rcfile=.coveragerc scripts/test-servers-and-setup.py
-	python3 -m coverage combine
-	python3 -m coverage report
-	python3 -m coverage xml -o coverage.xml
-	python3 -m coverage json -o coverage.json
+	python3 -m pytest tests/ --cov=backoffice --cov-report=term --cov-report=xml --cov-report=json:coverage.json
 
 local-targets: ## List configured local audit targets
-	python3 scripts/local_audit_workflow.py list-targets
+	python3 -m backoffice list-targets
 
 local-refresh: ## Refresh local dashboard data + audit log from existing results
-	python3 scripts/local_audit_workflow.py refresh
+	python3 -m backoffice refresh
 
 local-audit: ## Run local audit for a configured target (make local-audit TARGET_NAME=bible-app DEPTS=product,qa)
 	@test -n "$(TARGET_NAME)" || (echo "Usage: make local-audit TARGET_NAME=<name> [DEPTS=qa,product]" && exit 1)
-	python3 scripts/local_audit_workflow.py run-target --target "$(TARGET_NAME)" $(if $(DEPTS),--departments "$(DEPTS)",)
+	python3 -m backoffice audit $(TARGET_NAME) $(if $(DEPTS),--departments "$(DEPTS)",)
 
 local-audit-all: ## Run local audits for all configured targets
-	python3 scripts/local_audit_workflow.py run-all $(if $(TARGETS),--targets "$(TARGETS)",) $(if $(DEPTS),--departments "$(DEPTS)",)
+	python3 -m backoffice audit-all $(if $(TARGETS),--targets "$(TARGETS)",) $(if $(DEPTS),--departments "$(DEPTS)",)
 
 self-audit-local: ## Run the Back Office self-audit and refresh the local dashboard
 	python3 scripts/local_audit_workflow.py run-target --target back-office --departments qa
@@ -191,7 +172,7 @@ self-audit-local: ## Run the Back Office self-audit and refresh the local dashbo
 # ── Dashboard & Infrastructure ────────────────────────────────────────────────
 
 dashboard: ## Deploy all dashboards to S3
-	bash scripts/sync-dashboard.sh
+	python3 -m backoffice sync
 
 scaffold-workflows: ## Scaffold GitHub Actions into a configured target (make scaffold-workflows TARGET_NAME=bible-app)
 	@test -n "$(TARGET_NAME)" || (echo "Usage: make scaffold-workflows TARGET_NAME=<name>" && exit 1)
@@ -199,10 +180,10 @@ scaffold-workflows: ## Scaffold GitHub Actions into a configured target (make sc
 
 cli: ## Run the Back Office CLI (make cli CMD="list-targets")
 	@test -n "$(CMD)" || (echo "Usage: make cli CMD=\"list-targets\"" && exit 1)
-	python3 scripts/backoffice-cli.py $(CMD)
+	python3 -m backoffice $(CMD)
 
 jobs: ## Start dashboard server with scan API (make jobs TARGET=/path/to/repo)
-	python3 scripts/dashboard-server.py $(if $(TARGET),--target "$(TARGET)",)
+	python3 -m backoffice serve --port 8070
 
 grafana: ## Start Grafana monitoring dashboard
 	cd monitoring && docker compose up -d

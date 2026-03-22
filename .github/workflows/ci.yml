@@ -20,7 +20,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python tooling
-        run: pip install coverage ruff pyyaml
+        run: pip install pytest pytest-cov ruff pyyaml
 
       - name: Validate shell syntax
         run: |
@@ -38,20 +38,22 @@ jobs:
           bash -n agents/watch.sh
 
       - name: Validate Python syntax
-        run: python3 -m py_compile scripts/*.py
+        run: |
+          python3 -m py_compile scripts/*.py
+          python3 -m compileall backoffice/ -q
 
       - name: Lint Python scripts
-        run: ruff check scripts/
+        run: ruff check scripts/ backoffice/
 
       - name: Run Back Office regression suite with coverage
-        run: make test-coverage
+        run: python3 -m pytest tests/ --cov=backoffice --cov-report=term --cov-report=xml
 
       - name: Publish coverage summary
         run: |
           echo "## Python Coverage" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```text' >> "$GITHUB_STEP_SUMMARY"
-          python3 -m coverage report >> "$GITHUB_STEP_SUMMARY"
+          python3 -m pytest tests/ --cov=backoffice --cov-report=term 2>&1 | tail -20 >> "$GITHUB_STEP_SUMMARY" || true
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage artifact

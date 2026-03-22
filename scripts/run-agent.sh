@@ -10,11 +10,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-RUNNER_CONFIG_FILE="${BACK_OFFICE_RUNNER_CONFIG:-$ROOT_DIR/config/agent-runner.env}"
 
-if [ -f "$RUNNER_CONFIG_FILE" ]; then
-  # shellcheck disable=SC1090
-  . "$RUNNER_CONFIG_FILE"
+# Load runner config from unified config
+if command -v python3 &>/dev/null; then
+    eval "$(python3 -m backoffice config shell-export 2>/dev/null)" || true
+fi
+
+# Fallback: source legacy env file if package not available
+if [ -z "${BACK_OFFICE_AGENT_RUNNER:-}" ]; then
+    RUNNER_CONFIG="${BACK_OFFICE_RUNNER_CONFIG:-$ROOT_DIR/config/agent-runner.env}"
+    [ -f "$RUNNER_CONFIG" ] && source "$RUNNER_CONFIG"
 fi
 
 PROMPT=""
