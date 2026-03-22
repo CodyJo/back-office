@@ -1,410 +1,121 @@
 {
-  "scan_id": "f291b4c9-7513-45e6-9a8f-b5f688ed4dd9",
+  "scan_id": "3524f730-0722-4fef-9aea-53978f91bedf",
   "repo_name": "back-office",
   "repo_path": "/home/merm/projects/back-office",
-  "scanned_at": "2026-03-11T23:35:32.146491+00:00",
-  "scan_duration_seconds": 180,
+  "scanned_at": "2026-03-12T02:45:29.556187+00:00",
+  "scan_duration_seconds": 360,
   "summary": {
-    "total": 22,
-    "critical": 3,
-    "high": 7,
-    "medium": 8,
-    "low": 4,
+    "total": 5,
+    "critical": 0,
+    "high": 2,
+    "medium": 3,
+    "low": 0,
     "info": 0,
-    "scanned_at": "2026-03-11T23:35:32.146491+00:00"
+    "scanned_at": "2026-03-12T02:45:29.556187+00:00"
   },
   "lint_results": {
     "passed": true,
     "errors": 0,
     "warnings": 0,
-    "output": "77 passed, 0 failed"
+    "output": "python3 scripts/test-scoring.py\n\nQA Department\nADA Compliance\nRegulatory Compliance\nHQ Dashboard\nField Normalization\nPre-calculated Departments (SEO/Monetization/Product)\nReal Data Validation\n77 passed, 0 failed"
   },
   "test_results": {
     "passed": true,
     "total": 77,
     "failed": 0,
     "errors": 0,
-    "output": "77 passed, 0 failed. Local audit workflow tests passed."
+    "output": "make test\n- scripts/test-scoring.py: 77 passed, 0 failed\n- scripts/test-local-audit-workflow.py: passed\n- scripts/test-cli-and-scaffolding.py: passed\n- scripts/test-servers-and-setup.py: passed"
   },
   "findings": [
     {
       "id": "FIND-001",
-      "severity": "critical",
+      "severity": "high",
       "category": "security",
-      "title": "Command injection via unquoted DEPLOY_CMD in fix-bugs.sh",
-      "description": "The deploy command variable is expanded without quoting ($DEPLOY_CMD) and the regex character allowlist does not block spaces, which means multi-word commands with shell metacharacters that pass the filter can still trigger word-splitting and globbing. The shellcheck SC2086 disable comment confirms the intent to skip this warning.",
-      "file": "agents/fix-bugs.sh",
-      "line": 136,
-      "evidence": "(cd \"$TARGET_REPO\" && $DEPLOY_CMD)  # shellcheck disable=SC2086",
-      "impact": "An attacker who controls deploy_command in config could execute arbitrary shell commands in the target repo directory.",
-      "fix_suggestion": "Split DEPLOY_CMD into an array at config parse time and invoke as \"${deploy_cmd_array[@]}\", or validate against a strict allowlist of known commands.",
-      "effort": "small",
+      "title": "HQ dashboard injects unescaped product names into `innerHTML`",
+      "description": "The HQ dashboard defines an `esc()` helper but bypasses it when rendering product options. `product.key` and `product.name` are inserted directly into `select.innerHTML`, so a malicious value in `org-data.json` can inject markup or script-bearing attributes into the page.",
+      "file": "dashboard/index.html",
+      "line": 360,
+      "evidence": "function esc(value) { ... }\nselect.innerHTML = orgData.products.map(product => `<option value=\"${product.key}\">${product.name}</option>`).join('');",
+      "impact": "A poisoned dashboard data file can execute JavaScript in the admin dashboard origin, exposing dashboard data and any browser-stored credentials or session state.",
+      "fix_suggestion": "Build the `<option>` nodes with `document.createElement('option')`, assign `.value` and `.textContent`, or escape both fields before writing HTML.",
+      "effort": "tiny",
       "fixable_by_agent": true,
       "references": [
-        "CWE-78",
-        "OWASP A1"
+        "CWE-79",
+        "OWASP A03:2021"
       ]
     },
     {
       "id": "FIND-002",
-      "severity": "critical",
-      "category": "security",
-      "title": "No Content-Length limit in API server allows memory exhaustion",
-      "description": "The _read_body method in the API server converts Content-Length to int and reads that many bytes with no upper bound. A malicious client can send Content-Length: 999999999999 to force a massive memory allocation.",
+      "severity": "medium",
+      "category": "input-validation",
+      "title": "API server accepts arbitrary request bodies with no size limit",
+      "description": "The API handler trusts `Content-Length` and reads the entire body into memory before parsing JSON. There is no upper bound or early rejection for oversized requests.",
       "file": "scripts/api-server.py",
       "line": 155,
       "evidence": "length = int(self.headers.get(\"Content-Length\", 0))\n...\nreturn json.loads(self.rfile.read(length))",
-      "impact": "Denial of service via memory exhaustion on the API server.",
-      "fix_suggestion": "Add MAX_CONTENT_LENGTH = 1_000_000 and reject requests exceeding it with a 413 response before reading the body.",
+      "impact": "A large POST to `/api/run-scan` or `/api/run-all` can force the process to allocate attacker-controlled memory and degrade or crash the scan worker.",
+      "fix_suggestion": "Reject bodies above a small fixed limit such as 8-16 KB with HTTP 413 before calling `read()`, and handle invalid `Content-Length` values defensively.",
       "effort": "tiny",
       "fixable_by_agent": true,
       "references": [
-        "CWE-770",
-        "OWASP A6"
+        "CWE-400",
+        "OWASP A04:2021"
       ]
     },
     {
       "id": "FIND-003",
-      "severity": "critical",
+      "severity": "medium",
       "category": "security",
-      "title": "Workflow template injection via unsanitized shell commands",
-      "description": "scaffold-github-workflows.py uses string .replace() to insert lint_command, test_command, and build_command from targets config directly into GitHub Actions YAML. These values are not validated or escaped, allowing arbitrary command injection into generated CI workflows.",
-      "file": "scripts/scaffold-github-workflows.py",
-      "line": 45,
-      "evidence": "content.replace(\"__LINT_COMMAND__\", target.get(\"lint_command\", \"echo 'set lint command'\"))\n.replace(\"__TEST_COMMAND__\", target.get(\"test_command\", ...))\n.replace(\"__BUILD_COMMAND__\", normalize_build_command(target))",
-      "impact": "Malicious values in targets.yaml could inject arbitrary commands into generated GitHub Actions workflows, leading to supply-chain compromise.",
-      "fix_suggestion": "Validate that command values match a safe pattern (e.g., ^[a-zA-Z0-9 _./:-]+$) before templating. Alternatively, use proper YAML serialization (ruamel.yaml) instead of string replacement.",
-      "effort": "small",
+      "title": "Production scan API has no rate limiting on expensive POST endpoints",
+      "description": "Authenticated POST requests go straight from `do_POST()` to scan-launch handlers. There is no per-IP, per-key, or per-department throttling around `/api/run-scan`, `/api/run-all`, or `/api/stop`.",
+      "file": "scripts/api-server.py",
+      "line": 189,
+      "evidence": "def do_POST(self):\n    path = urlparse(self.path).path\n    if not self._check_auth():\n        ...\n    if path == \"/api/run-scan\":\n        self._handle_run_scan()\n    elif path == \"/api/run-all\":\n        self._handle_run_all()",
+      "impact": "A leaked API key or abusive client can repeatedly trigger costly scans and starve the worker machine, even if only one job per department runs at a time.",
+      "fix_suggestion": "Add request throttling keyed by client IP and API key, with stricter limits for scan-trigger endpoints and clear 429 responses.",
+      "effort": "medium",
       "fixable_by_agent": true,
       "references": [
-        "CWE-94",
-        "OWASP A1"
+        "CWE-770",
+        "OWASP A04:2021"
       ]
     },
     {
       "id": "FIND-004",
       "severity": "high",
       "category": "security",
-      "title": "GitHub OIDC role uses wildcard branch condition",
-      "description": "The OIDC trust policy for the GitHub deploy role uses 'repo:CodyJo/back-office:*' which allows ANY branch, tag, environment, or pull request to assume the AWS deployment role.",
-      "file": "terraform/cd.tf",
-      "line": 23,
-      "evidence": "\"token.actions.githubusercontent.com:sub\" = \"repo:CodyJo/back-office:*\"",
-      "impact": "A compromised feature branch or pull request could assume the deploy role and push malicious content to the production S3 bucket and invalidate the CloudFront cache.",
-      "fix_suggestion": "Restrict to main branch only: \"repo:CodyJo/back-office:ref:refs/heads/main\"",
-      "effort": "tiny",
+      "title": "API target resolution bypasses configured repository allowlist",
+      "description": "The production API is documented as config-driven, but `resolve_target()` accepts any existing directory path from the request body before consulting configured targets. That means the caller is not restricted to the repositories listed in `api-config.yaml`.",
+      "file": "scripts/api-server.py",
+      "line": 75,
+      "evidence": "def resolve_target(site_hint):\n    if site_hint and os.path.isdir(site_hint):\n        return site_hint",
+      "impact": "Any caller with the API key can direct agents at arbitrary directories on the worker host, widening the blast radius from approved repos to local source trees or sensitive filesystem locations.",
+      "fix_suggestion": "Only resolve targets from the configured `targets` map, or canonicalize and verify requested paths against an explicit allowlist of approved repo roots.",
+      "effort": "small",
       "fixable_by_agent": true,
       "references": [
         "CWE-284",
-        "OWASP A5"
+        "OWASP A01:2021"
       ]
     },
     {
       "id": "FIND-005",
-      "severity": "high",
-      "category": "security",
-      "title": "XSS via unescaped innerHTML in product selector",
-      "description": "In index.html, product names from orgData are inserted into innerHTML without HTML escaping. An esc() function exists in the same file but is not used here. If product.name contains HTML/JS, it will execute.",
-      "file": "dashboard/index.html",
-      "line": 360,
-      "evidence": "select.innerHTML = orgData.products.map(product => `<option value=\"${product.key}\">${product.name}</option>`).join('');",
-      "impact": "Stored XSS if malicious product names are injected into the data source, allowing arbitrary code execution in the dashboard viewer's browser.",
-      "fix_suggestion": "Use the existing esc() function: `<option value=\"${esc(product.key)}\">${esc(product.name)}</option>`",
-      "effort": "tiny",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-79",
-        "OWASP A7"
-      ]
-    },
-    {
-      "id": "FIND-006",
-      "severity": "high",
-      "category": "security",
-      "title": "API server target path resolution lacks validation",
-      "description": "The resolve_target() function in api-server.py accepts a site_hint from user input and resolves it to a filesystem path. While there is a path existence check, there is no validation against path traversal or symlink attacks.",
-      "file": "scripts/api-server.py",
-      "line": 72,
-      "evidence": "def resolve_target(site_hint):\n    ...\n    if os.path.isdir(site_hint):\n        return site_hint",
-      "impact": "An attacker with API access could point scans at arbitrary directories on the filesystem.",
-      "fix_suggestion": "Validate resolved paths against an allowlist of configured target directories. Use os.path.realpath() to resolve symlinks and verify the result is within allowed paths.",
-      "effort": "small",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-22",
-        "OWASP A5"
-      ]
-    },
-    {
-      "id": "FIND-007",
-      "severity": "high",
+      "severity": "medium",
       "category": "code-quality",
-      "title": "Race condition in file locking with truncation",
-      "description": "The with_run_lock decorator in local_audit_workflow.py uses fcntl.flock but creates the lock file with 'w' mode (truncating it each time). This can cause the lock to be released prematurely if another process opens the file between truncation and flock acquisition.",
-      "file": "scripts/local_audit_workflow.py",
-      "line": 296,
-      "evidence": "with open(RUN_LOCK_FILE, \"w\") as lock_file:\n    try:\n        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n    except BlockingIOError as exc:\n        raise ValueError(...)",
-      "impact": "Concurrent audit runs could corrupt results files or produce inconsistent state.",
-      "fix_suggestion": "Open the lock file with 'a' mode instead of 'w' to avoid truncating. Consider writing the PID for stale lock detection.",
-      "effort": "small",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-362",
-        "CWE-667"
-      ]
-    },
-    {
-      "id": "FIND-008",
-      "severity": "high",
-      "category": "input-validation",
-      "title": "Path traversal risk from unsanitized REPO_NAME in shell scripts",
-      "description": "Multiple agent scripts derive REPO_NAME from basename of the user-supplied TARGET_REPO path and use it to construct results directory paths without validating the characters.",
-      "file": "agents/qa-scan.sh",
-      "line": 38,
-      "evidence": "REPO_NAME=$(basename \"$TARGET_REPO\")\nRESULTS_DIR=\"$QA_ROOT/results/$REPO_NAME\"",
-      "impact": "Directory traversal could cause results to be written to unintended locations if REPO_NAME contains special characters.",
-      "fix_suggestion": "Validate REPO_NAME matches ^[a-zA-Z0-9._-]+$ before using in paths.",
-      "effort": "tiny",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-22",
-        "OWASP A5"
-      ]
-    },
-    {
-      "id": "FIND-009",
-      "severity": "high",
-      "category": "code-quality",
-      "title": "Subprocess errors silently swallowed in API server agent runner",
-      "description": "The _run() function inside run_agent() uses try/finally without except, meaning subprocess failures are silently discarded. The job is removed from running_jobs but no error is recorded.",
+      "title": "Background scan failures are silently discarded by the API server",
+      "description": "The worker thread runs the department script without `check=True` and does not record the exit status. Regardless of success or failure, the job is removed from `running_jobs`, so callers only see that the scan stopped, not that it failed.",
       "file": "scripts/api-server.py",
-      "line": 97,
+      "line": 99,
       "evidence": "def _run():\n    try:\n        subprocess.run(args, cwd=QA_ROOT)\n    finally:\n        with running_lock:\n            running_jobs.pop(dept, None)",
-      "impact": "Failed scans appear to complete successfully. Users have no visibility into scan failures via the API.",
-      "fix_suggestion": "Add except clause to log errors, store failure status in a shared dict, and expose error state via the /api/jobs endpoint.",
+      "impact": "Failed scans can be misreported as completed, which hides regressions from operators and breaks any monitoring that depends on API status alone.",
+      "fix_suggestion": "Run subprocesses with `check=False`, capture the return code explicitly, and persist a failed job state or error message in the jobs metadata before removing the job from the active set.",
       "effort": "small",
       "fixable_by_agent": true,
       "references": [
-        "CWE-390"
+        "CWE-391",
+        "OWASP A09:2021"
       ]
-    },
-    {
-      "id": "FIND-010",
-      "severity": "high",
-      "category": "security",
-      "title": "Symlink following in workflow file glob",
-      "description": "generate-delivery-data.py uses Path.glob() to list workflow files in target repos. glob() follows symlinks by default, so a malicious target repo could create symlinks to sensitive files on the system.",
-      "file": "scripts/generate-delivery-data.py",
-      "line": 89,
-      "evidence": "for pattern in WORKFLOW_FILE_GLOBS:\n    files.extend(sorted(workflow_dir.glob(pattern)))",
-      "impact": "Information disclosure \u2014 a crafted target repo could cause the system to read arbitrary YAML files from the filesystem.",
-      "fix_suggestion": "Check that resolved paths (file.resolve()) are still within workflow_dir before reading. Filter out symlinks with file.is_symlink().",
-      "effort": "small",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-59",
-        "CWE-22"
-      ]
-    },
-    {
-      "id": "FIND-011",
-      "severity": "medium",
-      "category": "security",
-      "title": "CSP allows unsafe-inline for scripts across all dashboards",
-      "description": "All dashboard HTML files set Content-Security-Policy with script-src 'self' 'unsafe-inline', which significantly weakens XSS protection since inline scripts are allowed.",
-      "file": "dashboard/index.html",
-      "line": 7,
-      "evidence": "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src 'self' 'unsafe-inline'; ...\">",
-      "impact": "Any XSS vulnerability (like FIND-005) can execute arbitrary inline scripts because the CSP does not block them.",
-      "fix_suggestion": "Move inline scripts to external .js files and remove 'unsafe-inline' from CSP, or use nonce-based CSP.",
-      "effort": "large",
-      "fixable_by_agent": false,
-      "references": [
-        "CWE-693"
-      ]
-    },
-    {
-      "id": "FIND-012",
-      "severity": "medium",
-      "category": "security",
-      "title": "Admin API key stored in sessionStorage",
-      "description": "backoffice.html stores the admin API key in sessionStorage, which is accessible to any script running in the same origin.",
-      "file": "dashboard/backoffice.html",
-      "line": 960,
-      "evidence": "sessionStorage.setItem('qa_admin_key', key);",
-      "impact": "If any XSS vulnerability exists on the same origin, the stored API key can be exfiltrated.",
-      "fix_suggestion": "Keep the key only in a JavaScript closure variable (in-memory), not in sessionStorage. Require re-entry on page refresh.",
-      "effort": "small",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-922",
-        "OWASP A3"
-      ]
-    },
-    {
-      "id": "FIND-013",
-      "severity": "medium",
-      "category": "security",
-      "title": "Full environment propagated to subprocess in local_audit_workflow.py",
-      "description": "When launching subprocess for dashboard refresh, the entire os.environ is spread into the child process environment. This could leak sensitive environment variables (AWS keys, tokens) to child scripts.",
-      "file": "scripts/local_audit_workflow.py",
-      "line": 257,
-      "evidence": "env={\n    **os.environ,\n    \"BACK_OFFICE_ROOT\": QA_ROOT,\n    ...\n}",
-      "impact": "Sensitive credentials in the parent environment are exposed to all child processes.",
-      "fix_suggestion": "Build a minimal allowlist of environment variables (PATH, HOME, LANG) instead of spreading the full os.environ.",
-      "effort": "small",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-526"
-      ]
-    },
-    {
-      "id": "FIND-014",
-      "severity": "medium",
-      "category": "input-validation",
-      "title": "No schema validation on loaded JSON results",
-      "description": "Multiple scripts (aggregate-results.py, api-server.py, local_audit_workflow.py) load JSON from the results directory without validating the schema. Malformed or malicious JSON could cause unexpected behavior.",
-      "file": "scripts/aggregate-results.py",
-      "line": 76,
-      "evidence": "def load_json(path):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except (FileNotFoundError, json.JSONDecodeError):\n        return None",
-      "impact": "Corrupted or crafted results files could cause dashboard data generation to fail or produce misleading output.",
-      "fix_suggestion": "Add lightweight schema validation for required fields (summary.total, findings array) before processing.",
-      "effort": "medium",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-20"
-      ]
-    },
-    {
-      "id": "FIND-015",
-      "severity": "medium",
-      "category": "security",
-      "title": "API server lacks rate limiting",
-      "description": "The dashboard API server has no rate limiting on any endpoints. An attacker could repeatedly trigger expensive scan operations or brute-force the API key.",
-      "file": "scripts/api-server.py",
-      "line": 131,
-      "evidence": "class DashboardHandler(http.server.SimpleHTTPRequestHandler):",
-      "impact": "Resource exhaustion via rapid scan requests or API key brute-force.",
-      "fix_suggestion": "Add a simple per-IP rate limiter (e.g., token bucket in a dict keyed by client IP) to the request handler. Limit scan triggers to 1 per minute per department.",
-      "effort": "medium",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-770",
-        "OWASP A4"
-      ]
-    },
-    {
-      "id": "FIND-016",
-      "severity": "medium",
-      "category": "input-validation",
-      "title": "Agent scripts don't validate TARGET is an absolute path",
-      "description": "All agent scripts accept TARGET_REPO as an argument and validate it's a git directory, but don't verify it's an absolute path. Relative paths could resolve differently depending on the working directory.",
-      "file": "agents/qa-scan.sh",
-      "line": 21,
-      "evidence": "TARGET_REPO=\"${1:?Usage: qa-scan.sh /path/to/target-repo [--sync]}\"",
-      "impact": "Relative paths could cause scans to target unintended directories depending on invocation context.",
-      "fix_suggestion": "Normalize the path early: TARGET_REPO=\"$(cd \"$1\" && pwd)\" or check that it starts with /.",
-      "effort": "tiny",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-426"
-      ]
-    },
-    {
-      "id": "FIND-017",
-      "severity": "medium",
-      "category": "code-quality",
-      "title": "Inline Python blocks in shell scripts are fragile and hard to audit",
-      "description": "Multiple shell scripts (sync-dashboard.sh, quick-sync.sh, job-status.sh) contain large inline Python blocks executed via python3 -c. These are difficult to test, lint, and audit for security issues.",
-      "file": "scripts/sync-dashboard.sh",
-      "line": 40,
-      "evidence": "python3 -c \"import json, sys; ...\" (multi-line inline Python in bash)",
-      "impact": "Maintenance burden and increased risk of undetected bugs in untestable inline code.",
-      "fix_suggestion": "Extract inline Python blocks to standalone .py scripts that can be linted, tested, and version-controlled independently.",
-      "effort": "medium",
-      "fixable_by_agent": true,
-      "references": []
-    },
-    {
-      "id": "FIND-018",
-      "severity": "medium",
-      "category": "security",
-      "title": "Terraform state stored locally instead of remote encrypted backend",
-      "description": "terraform.tfstate is stored locally. While it is gitignored, local state files risk being lost, leaked, or corrupted. The state contains AWS account IDs and resource ARNs.",
-      "file": "terraform/terraform.tfstate",
-      "line": 1,
-      "evidence": "Local terraform.tfstate file exists with AWS account ID and resource ARNs",
-      "impact": "State file loss could make Terraform unable to manage existing infrastructure. Leaked state reveals infrastructure details.",
-      "fix_suggestion": "Migrate to S3 backend with encryption and DynamoDB locking: terraform { backend \"s3\" { ... } }",
-      "effort": "medium",
-      "fixable_by_agent": false,
-      "references": []
-    },
-    {
-      "id": "FIND-019",
-      "severity": "low",
-      "category": "code-quality",
-      "title": "Silent flock failure in job-status.sh",
-      "description": "The flock command failure is suppressed with '|| true', meaning concurrent writes to the jobs JSON can occur if locking fails.",
-      "file": "scripts/job-status.sh",
-      "line": 88,
-      "evidence": "flock -w 5 200 2>/dev/null || true",
-      "impact": "Corrupted jobs.json if multiple scans update status simultaneously.",
-      "fix_suggestion": "Remove '|| true' and fail explicitly if the lock cannot be acquired within the timeout.",
-      "effort": "tiny",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-362"
-      ]
-    },
-    {
-      "id": "FIND-020",
-      "severity": "low",
-      "category": "code-quality",
-      "title": "Missing error handling for int() conversion in scoring",
-      "description": "qa_score_from_summary() calls int() on dict values that may not be numeric, which would raise ValueError.",
-      "file": "scripts/local_audit_workflow.py",
-      "line": 123,
-      "evidence": "critical = int(summary.get(\"critical\", 0))",
-      "impact": "Unhandled exception if findings JSON contains non-numeric severity counts.",
-      "fix_suggestion": "Wrap in try/except ValueError or use a safe_int helper that defaults to 0.",
-      "effort": "tiny",
-      "fixable_by_agent": true,
-      "references": [
-        "CWE-20"
-      ]
-    },
-    {
-      "id": "FIND-021",
-      "severity": "low",
-      "category": "code-quality",
-      "title": "Missing alt attribute on dynamic images in backoffice.html",
-      "description": "Dynamically generated img elements for product thumbnails lack alt attributes, violating WCAG 2.1 AA accessibility requirements.",
-      "file": "dashboard/backoffice.html",
-      "line": 1823,
-      "evidence": "<img src=\"${esc(p.thumb_url)}\" style=\"width:100%;height:100%;object-fit:cover;\" loading=\"lazy\">",
-      "impact": "Screen readers cannot describe the images. Fails WCAG 2.1 AA Perceivable principle.",
-      "fix_suggestion": "Add alt=\"${esc(p.name || 'Product thumbnail')}\" to the img tag.",
-      "effort": "tiny",
-      "fixable_by_agent": true,
-      "references": [
-        "WCAG 1.1.1"
-      ]
-    },
-    {
-      "id": "FIND-022",
-      "severity": "low",
-      "category": "code-quality",
-      "title": "Hardcoded department mappings duplicated across scripts",
-      "description": "Department name-to-file mappings are duplicated in quick-sync.sh, job-status.sh, api-server.py, and local_audit_workflow.py. Adding a new department requires updating all locations.",
-      "file": "scripts/quick-sync.sh",
-      "line": 30,
-      "evidence": "Department case/map duplicated in quick-sync.sh, job-status.sh, api-server.py",
-      "impact": "Maintenance burden and risk of inconsistency when adding departments.",
-      "fix_suggestion": "Extract department registry to a shared config file (e.g., departments.yaml) and read it at runtime.",
-      "effort": "medium",
-      "fixable_by_agent": false,
-      "references": []
     }
   ]
 }

@@ -62,6 +62,12 @@ Use the CLI to manage it:
 
 This is the reproducible local orchestration layer.
 
+Important path behavior:
+
+- script paths resolve from the Back Office repo itself
+- config, results, dashboard, and task-queue payload roots can be redirected with `BACK_OFFICE_ROOT`
+- `refresh` passes the redirected paths through to delivery metadata generation and task-queue sync so temp-root and test runs do not mutate the live repo outputs
+
 It supports four real commands:
 
 - `list-targets`

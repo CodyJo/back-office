@@ -15,6 +15,7 @@ GitHub-facing reference docs:
 - [CLI Reference](docs/CLI-REFERENCE.md)
 - [CI/CD Reference](docs/CICD-REFERENCE.md)
 - [Live URLs](docs/LIVE-URLS.md)
+- [Handoff](docs/HANDOFF.md)
 
 Published dashboard docs:
 
@@ -68,6 +69,20 @@ Each audit department produces its own findings and score model:
 ### Static dashboard architecture
 
 The dashboards are static HTML + JavaScript. There is no frontend build step. Findings are emitted as JSON, aggregated into dashboard data files, then published directly to S3.
+
+### Context discipline and effective use
+
+Back Office should keep contexts small on purpose.
+
+That means:
+
+- open only the files needed for the current decision
+- summarize before delegating
+- delegate bounded tasks instead of entire products
+- use real repo scripts and audit artifacts as gates
+- prefer repeatable entrypoints over ad hoc prompt sprawl
+
+The goal is not just lower token usage. The goal is higher signal, fewer compounded errors, and easier handoff between agents.
 
 ## Architecture
 

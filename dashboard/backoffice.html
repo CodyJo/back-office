@@ -1400,80 +1400,47 @@
 
   // ── Tasks / TODO Tab (admin) ──────────────────────────────────────────
 
-  const TASKS_KEY = 'qa_tasks';
+  const TASKS_URL = 'task-queue.json';
   let _taskFilter = 'all';
+  let _taskPayload = { tasks: [], summary: {} };
 
-  function loadTasks() {
-    const tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
-
-    // Seed defaults if empty
-    if (tasks.length === 0) {
-      const defaults = [
-        { id: 'TODO-001', title: 'Integrate UAT test steps into pytest suite', cat: 'integrate-uat', priority: 'high', done: false, created_at: new Date().toISOString(), notes: 'Convert manual UAT steps into automated test cases in tests/' },
-        { id: 'TODO-002', title: 'Add PIN brute-force UAT test', cat: 'integrate-uat', priority: 'medium', done: false, created_at: new Date().toISOString(), notes: 'Automated test that verifies rate limiting after 5 failed attempts' },
-        { id: 'TODO-003', title: 'Add gallery expiry UAT test', cat: 'integrate-uat', priority: 'medium', done: false, created_at: new Date().toISOString(), notes: 'Test that expired galleries return proper error codes' },
-        { id: 'TODO-004', title: 'Add XSS comment sanitization test', cat: 'integrate-uat', priority: 'high', done: false, created_at: new Date().toISOString(), notes: 'Verify HTML entities are escaped in comment submission and display' },
-        { id: 'TODO-005', title: 'Set up nightly QA scan cron', cat: 'infrastructure', priority: 'medium', done: false, created_at: new Date().toISOString(), notes: 'Schedule agents/qa-scan.sh to run nightly via crontab' },
-        { id: 'TODO-006', title: 'Connect bug report form to DynamoDB', cat: 'feature', priority: 'low', done: false, created_at: new Date().toISOString(), notes: 'Store user-submitted reports in a DynamoDB table instead of localStorage' },
-        { id: 'TODO-007', title: 'Fix JWT cross-service shared secret', cat: 'security', priority: 'high', done: false, created_at: new Date().toISOString(), notes: 'Separate signing keys per service in Secrets Manager (Sprint 3)' },
-        { id: 'TODO-008', title: 'Add mobile viewport UAT test', cat: 'integrate-uat', priority: 'low', done: false, created_at: new Date().toISOString(), notes: 'Playwright test for 375px viewport gallery rendering' },
-      ];
-      localStorage.setItem(TASKS_KEY, JSON.stringify(defaults));
+  async function loadTasks() {
+    try {
+      const res = await fetch(TASKS_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status);
+      _taskPayload = await res.json();
+      if (!_taskPayload || !Array.isArray(_taskPayload.tasks)) {
+        throw new Error('invalid task payload');
+      }
+    } catch (e) {
+      _taskPayload = { tasks: [], summary: {} };
     }
-
     renderTasks();
   }
 
   function renderTasks() {
-    const tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
-    const cats = [...new Set(tasks.map(t => t.cat))];
+    const tasks = Array.isArray(_taskPayload.tasks) ? _taskPayload.tasks : [];
+    const cats = [...new Set(tasks.map(t => t.category))];
 
     const filtered = _taskFilter === 'all' ? tasks
-      : _taskFilter === 'open' ? tasks.filter(t => !t.done)
-      : _taskFilter === 'done' ? tasks.filter(t => t.done)
-      : tasks.filter(t => t.cat === _taskFilter);
+      : _taskFilter === 'open' ? tasks.filter(t => !['done', 'cancelled'].includes(t.status))
+      : _taskFilter === 'done' ? tasks.filter(t => t.status === 'done')
+      : tasks.filter(t => t.category === _taskFilter);
 
-    const open = tasks.filter(t => !t.done).length;
-    const done = tasks.filter(t => t.done).length;
-    const uatOpen = tasks.filter(t => t.cat === 'integrate-uat' && !t.done).length;
+    const open = tasks.filter(t => !['done', 'cancelled'].includes(t.status)).length;
+    const done = tasks.filter(t => t.status === 'done').length;
+    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
 
     // Update badge
     document.getElementById('tasksBadge').textContent = open;
 
     let html = '';
 
-    // ── Add Task form ──
     html += `<div class="add-todo-form fade-in">
-      <h3>Add Task</h3>
-      <div class="add-todo-row">
-        <div class="form-group" style="flex:3;min-width:200px;">
-          <label for="newTaskTitle">Task</label>
-          <input type="text" id="newTaskTitle" placeholder="Add Playwright test for gallery photo grid">
-        </div>
-        <div class="form-group" style="min-width:150px;">
-          <label for="newTaskCat">Category</label>
-          <select id="newTaskCat">
-            <option value="integrate-uat">Integrate UAT</option>
-            <option value="security">Security</option>
-            <option value="feature">Feature</option>
-            <option value="infrastructure">Infrastructure</option>
-            <option value="bugfix">Bug Fix</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="form-group" style="min-width:100px;">
-          <label for="newTaskPri">Priority</label>
-          <select id="newTaskPri">
-            <option value="high">High</option>
-            <option value="medium" selected>Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex:2;min-width:180px;">
-          <label for="newTaskNotes">Notes</label>
-          <input type="text" id="newTaskNotes" placeholder="Optional details">
-        </div>
-        <button class="btn btn-accent" onclick="addTask()" style="margin-bottom:0;height:38px;">Add</button>
+      <h3>Delegated Work Queue</h3>
+      <div style="color:var(--text-dim);font-size:0.82rem;line-height:1.55;">
+        This queue is now managed in-repo by Back Office instead of browser localStorage.
+        Use <code>python3 scripts/backoffice-cli.py task-create</code> and the related task commands to assign or advance work.
       </div>
     </div>`;
 
@@ -1481,7 +1448,7 @@
     html += `<div class="todo-stats fade-in">
       <span><strong>${open}</strong> open</span>
       <span><strong>${done}</strong> done</span>
-      <span><strong>${uatOpen}</strong> UAT to integrate</span>
+      <span><strong>${inProgress}</strong> in progress</span>
     </div>`;
 
     // ── Filters ──
@@ -1507,26 +1474,35 @@
     // Sort: open+high first, then open+medium, then open+low, then done
     const priOrder = { high: 0, medium: 1, low: 2 };
     const sorted = [...filtered].sort((a, b) => {
-      if (a.done !== b.done) return a.done ? 1 : -1;
+      const aDone = a.status === 'done';
+      const bDone = b.status === 'done';
+      if (aDone !== bDone) return aDone ? 1 : -1;
       return (priOrder[a.priority] ?? 3) - (priOrder[b.priority] ?? 3);
     });
 
     for (const t of sorted) {
       const priColor = { high: 'var(--critical)', medium: 'var(--medium)', low: 'var(--low)' }[t.priority] || 'var(--text-dim)';
-      html += `<div class="todo-item ${t.done ? 'done' : ''} fade-in">
-        <div class="todo-check" onclick="toggleTask('${t.id}')">${t.done ? '&#10003;' : ''}</div>
+      const statusLabel = (t.status || 'proposed').replaceAll('_', ' ');
+      const latestHistory = Array.isArray(t.history) && t.history.length > 0 ? t.history[t.history.length - 1] : null;
+      html += `<div class="todo-item ${t.status === 'done' ? 'done' : ''} fade-in">
+        <div class="todo-check">${t.status === 'done' ? '&#10003;' : ''}</div>
         <div class="todo-body">
           <div class="todo-title">${esc(t.title)}</div>
           <div class="todo-meta">
-            <span class="todo-cat-tag">${catLabels[t.cat] || t.cat}</span>
+            <span class="todo-cat-tag">${esc(t.repo || 'unknown repo')}</span>
+            <span class="todo-cat-tag">${catLabels[t.category] || esc(t.category || 'other')}</span>
             <span style="color:${priColor};font-weight:600;text-transform:uppercase;font-size:0.62rem;">${t.priority}</span>
-            ${t.notes ? ` &middot; ${esc(t.notes)}` : ''}
+            <span style="text-transform:uppercase;font-size:0.62rem;color:var(--text-dim);">${esc(statusLabel)}</span>
+            ${t.owner ? ` &middot; owner ${esc(t.owner)}` : ''}
             &middot; ${fmtTime(new Date(t.created_at))}
+            ${t.notes ? ` &middot; ${esc(t.notes)}` : ''}
+            ${latestHistory && latestHistory.note ? ` &middot; ${esc(latestHistory.note)}` : ''}
           </div>
+          ${Array.isArray(t.acceptance_criteria) && t.acceptance_criteria.length > 0
+            ? `<div class="todo-meta" style="margin-top:0.45rem;">Done means: ${esc(t.acceptance_criteria.join(' | '))}</div>`
+            : ''}
         </div>
-        <div class="todo-actions">
-          <button title="Delete" onclick="deleteTask('${t.id}')">&#10005;</button>
-        </div>
+        <div class="todo-actions"></div>
       </div>`;
     }
 
@@ -1539,45 +1515,6 @@
 
   window.filterTasks = function(filter) {
     _taskFilter = filter;
-    renderTasks();
-  };
-
-  window.toggleTask = function(id) {
-    const tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
-    const task = tasks.find(t => t.id === id);
-    if (task) {
-      task.done = !task.done;
-      if (task.done) task.done_at = new Date().toISOString();
-      else delete task.done_at;
-    }
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-    renderTasks();
-  };
-
-  window.deleteTask = function(id) {
-    const tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks.filter(t => t.id !== id)));
-    renderTasks();
-  };
-
-  window.addTask = function() {
-    const title = document.getElementById('newTaskTitle').value.trim();
-    if (!title) return;
-
-    const tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
-    tasks.push({
-      id: 'TODO-' + String(tasks.length + 1).padStart(3, '0') + '-' + Date.now().toString(36),
-      title: title.replace(/[<>&"']/g, ''),
-      cat: document.getElementById('newTaskCat').value,
-      priority: document.getElementById('newTaskPri').value,
-      notes: (document.getElementById('newTaskNotes').value.trim() || '').replace(/[<>&"']/g, ''),
-      done: false,
-      created_at: new Date().toISOString(),
-    });
-
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-    document.getElementById('newTaskTitle').value = '';
-    document.getElementById('newTaskNotes').value = '';
     renderTasks();
   };
 

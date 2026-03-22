@@ -16,12 +16,6 @@ if command -v python3 &>/dev/null; then
     eval "$(python3 -m backoffice config shell-export 2>/dev/null)" || true
 fi
 
-# Fallback: source legacy env file if package not available
-if [ -z "${BACK_OFFICE_AGENT_RUNNER:-}" ]; then
-    RUNNER_CONFIG="${BACK_OFFICE_RUNNER_CONFIG:-$ROOT_DIR/config/agent-runner.env}"
-    [ -f "$RUNNER_CONFIG" ] && source "$RUNNER_CONFIG"
-fi
-
 PROMPT=""
 TOOLS=""
 REPO_DIR=""

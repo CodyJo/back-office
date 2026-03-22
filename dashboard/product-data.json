@@ -1,58 +1,58 @@
 {
   "department": "product",
-  "generated_at": "2026-03-12T01:36:01.473221+00:00",
+  "generated_at": "2026-03-12T05:29:51.711590+00:00",
   "totals": {
-    "critical": 4,
-    "high": 15,
-    "medium": 41,
-    "low": 22,
-    "info": 8,
-    "total_findings": 90
+    "critical": 10,
+    "high": 23,
+    "medium": 39,
+    "low": 33,
+    "info": 5,
+    "total_findings": 110
   },
   "repos": [
     {
       "name": "bible-app",
-      "scanned_at": "2026-03-11T06:41:50.255844+00:00",
+      "scanned_at": "2026-03-12T03:19:05.409236+00:00",
       "summary": {
-        "total": 32,
+        "total": 10,
         "critical": 1,
-        "high": 5,
-        "medium": 15,
-        "low": 8,
-        "info": 3,
-        "product_readiness_score": 68,
-        "scanned_at": "2026-03-11T06:41:50.255844+00:00"
+        "high": 3,
+        "medium": 4,
+        "low": 1,
+        "info": 1,
+        "product_readiness_score": 74,
+        "scanned_at": "2026-03-12T03:19:05.409236+00:00"
       },
       "findings": [
         {
           "id": "PROD-001",
           "severity": "critical",
           "category": "feature-gap",
-          "title": "Auth API is a stub \u2014 login, register, and forgot-password flows are non-functional",
-          "file": "lambda/api/index.mjs",
-          "line": 1,
-          "effort": "large",
-          "fixable": false,
+          "title": "Bookmarks can be managed but not created anywhere in the product UI",
+          "file": "src/lib/storage.ts",
+          "line": 111,
+          "effort": "medium",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-002",
           "severity": "high",
           "category": "feature-gap",
-          "title": "No in-context bookmark button during Bible study or reading",
-          "file": "src/app/study/page.tsx",
-          "line": 674,
-          "effort": "medium",
-          "fixable": true,
+          "title": "Account backup is write-only with no restore or cloud rehydration flow",
+          "file": "src/lib/account-sync.ts",
+          "line": 94,
+          "effort": "large",
+          "fixable": false,
           "status": "open"
         },
         {
           "id": "PROD-003",
           "severity": "high",
           "category": "feature-gap",
-          "title": "No verse search functionality despite API support",
-          "file": "src/lib/bible-api.ts",
-          "line": 3,
+          "title": "Email verification backend exists but users have no verification or resend UI",
+          "file": "src/app/settings/page.tsx",
+          "line": 48,
           "effort": "medium",
           "fixable": true,
           "status": "open"
@@ -61,31 +61,31 @@
           "id": "PROD-004",
           "severity": "high",
           "category": "feature-gap",
-          "title": "No verse comparison or parallel translations UI",
-          "file": "src/lib/bible-api.ts",
-          "line": 3,
+          "title": "Account deletion is implemented in the API but missing from the product",
+          "file": "lambda/api/index.mjs",
+          "line": 363,
           "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-005",
-          "severity": "high",
-          "category": "ux-improvement",
-          "title": "Reading plan passages are not linked to reading or study flows",
-          "file": "src/app/plans/page.tsx",
-          "line": 315,
-          "effort": "small",
+          "severity": "medium",
+          "category": "feature-gap",
+          "title": "Study history saves scaffolding prompts instead of the actual AI study output",
+          "file": "src/app/study/page.tsx",
+          "line": 248,
+          "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-006",
           "severity": "medium",
-          "category": "feature-gap",
-          "title": "Limited verse of the day pool \u2014 only 30 hardcoded references",
-          "file": "src/app/daily/page.tsx",
-          "line": 92,
+          "category": "ux-improvement",
+          "title": "AI failure fallback tells users the live study feature is still coming soon",
+          "file": "src/components/StudyChat.tsx",
+          "line": 30,
           "effort": "small",
           "fixable": true,
           "status": "open"
@@ -93,261 +93,761 @@
         {
           "id": "PROD-007",
           "severity": "medium",
-          "category": "feature-gap",
-          "title": "No notification or reminder system for daily reading habits",
-          "file": "src/lib/storage.ts",
-          "line": 6,
-          "effort": "large",
-          "fixable": false,
+          "category": "ux-improvement",
+          "title": "PWA offline support covers only a subset of the app's main surfaces",
+          "file": "public/sw.js",
+          "line": 2,
+          "effort": "small",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-008",
-          "severity": "medium",
-          "category": "feature-gap",
-          "title": "No verse highlighting or annotation during reading",
-          "file": "src/app/study/page.tsx",
-          "line": 680,
+          "severity": "low",
+          "category": "infrastructure",
+          "title": "Terraform provisions placeholder Lambda artifacts instead of deployable application code",
+          "file": "terraform/lambda.tf",
+          "line": 97,
           "effort": "large",
           "fixable": false,
           "status": "open"
         },
         {
           "id": "PROD-009",
-          "severity": "low",
-          "category": "feature-gap",
-          "title": "No community or social features for group Bible study",
-          "file": "src/app/study/page.tsx",
-          "line": 1,
-          "effort": "large",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "Existing insights data could drive personalized nudges and weekly review features",
+          "file": "src/app/insights/page.tsx",
+          "line": 65,
+          "effort": "medium",
           "fixable": false,
           "status": "open"
         },
         {
           "id": "PROD-010",
           "severity": "medium",
-          "category": "ux-improvement",
-          "title": "Clipboard copy fails silently with no user feedback",
-          "file": "src/app/bookmarks/page.tsx",
-          "line": 52,
-          "effort": "tiny",
+          "category": "feature-gap",
+          "title": "Profile name editing is available in the API but absent from Settings",
+          "file": "lambda/api/index.mjs",
+          "line": 334,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        }
+      ],
+      "categories": {
+        "feature_gap": {
+          "score": 53,
+          "issues": 6
+        },
+        "ux_improvement": {
+          "score": 92,
+          "issues": 2
+        },
+        "technical_debt": {
+          "score": 100,
+          "issues": 0
+        },
+        "growth_opportunity": {
+          "score": 52,
+          "issues": 1
+        },
+        "documentation": {
+          "score": 100,
+          "issues": 0
+        },
+        "infrastructure": {
+          "score": 98,
+          "issues": 1
+        }
+      }
+    },
+    {
+      "name": "codyjo.com",
+      "scanned_at": "2026-03-12T03:50:58.312406+00:00",
+      "summary": {
+        "total": 9,
+        "critical": 1,
+        "high": 3,
+        "medium": 3,
+        "low": 0,
+        "info": 2,
+        "product_readiness_score": 77,
+        "scanned_at": "2026-03-12T03:50:58.312406+00:00"
+      },
+      "findings": [
+        {
+          "id": "PROD-001",
+          "severity": "critical",
+          "category": "feature-gap",
+          "title": "Primary demo conversion flow still lives outside the Astro app and conflicts with crawl metadata",
+          "file": "public/demo.html",
+          "line": 1,
+          "effort": "large",
           "fixable": true,
           "status": "open"
         },
         {
-          "id": "PROD-011",
-          "severity": "medium",
-          "category": "ux-improvement",
-          "title": "No offline indicator despite PWA architecture",
-          "file": "src/components/ServiceWorker.tsx",
-          "line": 1,
+          "id": "PROD-002",
+          "severity": "high",
+          "category": "technical-debt",
+          "title": "Environment-specific contact and demo APIs are hardcoded into the client bundle",
+          "file": "src/pages/index.astro",
+          "line": 318,
           "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
-          "id": "PROD-012",
+          "id": "PROD-003",
+          "severity": "high",
+          "category": "technical-debt",
+          "title": "Automated verification does not cover the site's lead-generation flows",
+          "file": "scripts/verify-dist.mjs",
+          "line": 6,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-004",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "SEO Privacy Tracker ships as a dead-end product page without proof, docs, or supporting content",
+          "file": "src/pages/seo-privacy-tracker.astro",
+          "line": 18,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-005",
           "severity": "medium",
           "category": "ux-improvement",
-          "title": "No quick-study shortcut for returning users",
-          "file": "src/app/study/page.tsx",
-          "line": 131,
+          "title": "Empty product blog hubs provide no recovery path when a product has no posts",
+          "file": "src/pages/blog/product/[product].astro",
+          "line": 57,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-006",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "The 404 page is misbranded to Analogify and funnels users into a single product",
+          "file": "src/pages/404.astro",
+          "line": 5,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-007",
+          "severity": "medium",
+          "category": "documentation",
+          "title": "README still describes the repo as an Analogify-only marketing site",
+          "file": "README.md",
+          "line": 5,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-008",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "The existing product metadata and blog filter system can power richer cross-sell and resource journeys",
+          "file": "src/data/products.ts",
+          "line": 1,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-009",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "SEO Privacy Tracker is well positioned for a self-serve public proof experience",
+          "file": "src/pages/seo-privacy-tracker.astro",
+          "line": 47,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open"
+        }
+      ],
+      "categories": {
+        "feature_gap": {
+          "score": 77,
+          "issues": 2
+        },
+        "ux_improvement": {
+          "score": 92,
+          "issues": 2
+        },
+        "technical_debt": {
+          "score": 84,
+          "issues": 3
+        },
+        "growth_opportunity": {
+          "score": 54,
+          "issues": 2
+        },
+        "documentation": {
+          "score": 96,
+          "issues": 1
+        },
+        "infrastructure": {
+          "score": 100,
+          "issues": 0
+        }
+      }
+    },
+    {
+      "name": "pe-bootstrap",
+      "scanned_at": "2026-03-12T04:03:41.057210+00:00",
+      "summary": {
+        "total": 11,
+        "critical": 2,
+        "high": 3,
+        "medium": 4,
+        "low": 1,
+        "info": 1,
+        "product_readiness_score": 71,
+        "scanned_at": "2026-03-12T04:03:41.057210+00:00"
+      },
+      "findings": [
+        {
+          "id": "PROD-001",
+          "severity": "critical",
+          "category": "feature-gap",
+          "title": "Hosted frontend never loads the generated API base config",
+          "file": "frontend/web/index.html",
+          "line": 162,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-002",
+          "severity": "critical",
+          "category": "infrastructure",
+          "title": "Builder image Dockerfile cannot build from the documented context",
+          "file": "frontend/builder/Dockerfile",
+          "line": 35,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-003",
+          "severity": "high",
+          "category": "infrastructure",
+          "title": "Cloud Build jobs are not bound to the service account that has compute permissions",
+          "file": "frontend/api/main.py",
+          "line": 120,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-004",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "Web UI omits several Terraform capabilities that the CLI supports",
+          "file": "frontend/web/app.js",
+          "line": 117,
+          "effort": "large",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-005",
+          "severity": "high",
+          "category": "ux-improvement",
+          "title": "Failure handling is modal and lossy instead of inline and recoverable",
+          "file": "frontend/web/app.js",
+          "line": 148,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-006",
+          "severity": "medium",
+          "category": "feature-gap",
+          "title": "No cancel or retry workflow for long-running builds",
+          "file": "frontend/api/main.py",
+          "line": 154,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-007",
+          "severity": "medium",
+          "category": "technical-debt",
+          "title": "Critical orchestration paths have no automated tests or CI checks",
+          "file": "frontend/api/main.py",
+          "line": 40,
+          "effort": "large",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-008",
+          "severity": "medium",
+          "category": "infrastructure",
+          "title": "Failed build startup leaves orphaned secrets and metadata behind",
+          "file": "frontend/api/main.py",
+          "line": 166,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-009",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "List and detail views lack meaningful loading and empty-state guidance",
+          "file": "frontend/web/index.html",
+          "line": 135,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-010",
+          "severity": "low",
+          "category": "documentation",
+          "title": "Operational documentation stops at setup and lacks API or support runbooks",
+          "file": "README.md",
+          "line": 193,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-011",
+          "severity": "info",
+          "category": "growth-opportunity",
+          "title": "Existing metadata can power a lightweight deployment insights dashboard",
+          "file": "frontend/api/main.py",
+          "line": 187,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        }
+      ],
+      "categories": {
+        "feature_gap": {
+          "score": 73,
+          "issues": 3
+        },
+        "ux_improvement": {
+          "score": 88,
+          "issues": 2
+        },
+        "technical_debt": {
+          "score": 96,
+          "issues": 1
+        },
+        "growth_opportunity": {
+          "score": 52,
+          "issues": 1
+        },
+        "documentation": {
+          "score": 98,
+          "issues": 1
+        },
+        "infrastructure": {
+          "score": 73,
+          "issues": 3
+        }
+      }
+    },
+    {
+      "name": "photo-gallery",
+      "scanned_at": "2026-03-12T04:43:55.913009+00:00",
+      "summary": {
+        "total": 48,
+        "critical": 5,
+        "high": 10,
+        "medium": 10,
+        "low": 23,
+        "info": 0,
+        "product_readiness_score": 71,
+        "scanned_at": "2026-03-12T04:43:55.913009+00:00"
+      },
+      "findings": [
+        {
+          "id": "PROD-001",
+          "severity": "critical",
+          "category": "feature-gap",
+          "title": "Email allowlist validation missing for gallery access control",
+          "file": "lambda/auth_view/handler.py",
+          "line": 251,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-002",
+          "severity": "critical",
+          "category": "feature-gap",
+          "title": "DynamoDB 400KB item size limit blocks galleries with >1000 photos",
+          "file": "lambda/admin/handler.py",
+          "line": 595,
+          "effort": "large",
+          "fixable": false,
+          "status": "open"
+        },
+        {
+          "id": "PROD-003",
+          "severity": "critical",
+          "category": "technical-debt",
+          "title": "No timeout awareness in Lambda handlers \u2014 requests hang until hard kill",
+          "file": "lambda/admin/handler.py",
+          "line": 5333,
+          "effort": "large",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-004",
+          "severity": "critical",
+          "category": "technical-debt",
+          "title": "Gallery admin JWT has no revocation mechanism",
+          "file": "lambda/admin/handler.py",
+          "line": 3736,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-005",
+          "severity": "critical",
+          "category": "feature-gap",
+          "title": "Rebuild-optimized job timeout leaves gallery in unrecoverable zombie state",
+          "file": "lambda/admin/handler.py",
+          "line": 1988,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-006",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "No per-photo metadata editing API \u2014 only binary toggles available",
+          "file": "lambda/admin/handler.py",
+          "line": 2927,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-007",
+          "severity": "high",
+          "category": "ux-improvement",
+          "title": "No upload progress feedback for photographers \u2014 spinner only",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-008",
+          "severity": "high",
+          "category": "ux-improvement",
+          "title": "Staging review UI lacks side-by-side comparison for before/after grading",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-009",
+          "severity": "high",
+          "category": "ux-improvement",
+          "title": "Client gallery lightbox lacks keyboard navigation and mobile gestures",
+          "file": "frontend/gallery.html",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-010",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "No HEIC/HEIF image support for modern iPhones",
+          "file": "lambda/admin/handler.py",
+          "line": 40,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-011",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "No photo ordering or drag-to-reorder interface",
+          "file": "lambda/admin/handler.py",
+          "line": 881,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-012",
+          "severity": "high",
+          "category": "feature-gap",
+          "title": "Client PIN-protected download not protected by rate limiting in initial design",
+          "file": "lambda/auth_download/handler.py",
+          "line": 44,
           "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-013",
-          "severity": "medium",
-          "category": "ux-improvement",
-          "title": "First-time visitors hit a version selection gate before seeing the product",
-          "file": "src/app/page.tsx",
-          "line": 31,
-          "effort": "medium",
+          "severity": "high",
+          "category": "technical-debt",
+          "title": "Multiple Lambda functions don't have timeout context awareness",
+          "file": "lambda/auth_view/handler.py",
+          "line": 1,
+          "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-014",
-          "severity": "low",
-          "category": "ux-improvement",
-          "title": "Journal tag input is basic \u2014 no typeahead or tag management",
-          "file": "src/app/journal/page.tsx",
+          "severity": "high",
+          "category": "technical-debt",
+          "title": "Admin Lambda memory allocation insufficient for large galleries (512MB \u2192 1024MB recommended)",
+          "file": "terraform/lambda.tf",
           "line": 1,
-          "effort": "medium",
+          "effort": "tiny",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-015",
-          "severity": "low",
-          "category": "ux-improvement",
-          "title": "Wallpaper generation limited to Daily Verse only",
-          "file": "src/app/daily/page.tsx",
-          "line": 92,
-          "effort": "small",
+          "severity": "high",
+          "category": "technical-debt",
+          "title": "Maintenance Lambda sequential task execution doesn't respect time budget",
+          "file": "lambda/maintenance/handler.py",
+          "line": 1,
+          "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-016",
           "severity": "medium",
-          "category": "technical-debt",
-          "title": "Bookmarks storage inconsistency \u2014 bypasses storage abstraction",
-          "file": "src/app/bookmarks/page.tsx",
-          "line": 96,
-          "effort": "small",
+          "category": "documentation",
+          "title": "No API documentation or OpenAPI schema for admin endpoints",
+          "file": "lambda/admin/handler.py",
+          "line": 1,
+          "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-017",
-          "severity": "low",
+          "severity": "medium",
           "category": "technical-debt",
-          "title": "Unused Compass import in home page",
-          "file": "src/app/page.tsx",
-          "line": 5,
-          "effort": "tiny",
+          "title": "Test coverage at 52.3% \u2014 critical paths untested",
+          "file": "tests/",
+          "line": 1,
+          "effort": "large",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-018",
           "severity": "medium",
-          "category": "technical-debt",
-          "title": "No React Error Boundary for crash recovery",
-          "file": "src/app/layout.tsx",
+          "category": "ux-improvement",
+          "title": "Error messages are too generic \u2014 no actionable guidance for users",
+          "file": "frontend/admin.html",
           "line": 1,
-          "effort": "small",
+          "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-019",
-          "severity": "low",
-          "category": "technical-debt",
-          "title": "Bolls.Life API base URL is hardcoded",
-          "file": "src/lib/bible-api.ts",
-          "line": 3,
-          "effort": "tiny",
+          "severity": "medium",
+          "category": "ux-improvement",
+          "title": "No real-time progress tracking for async operations (optimize, zip generation)",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-020",
           "severity": "medium",
-          "category": "technical-debt",
-          "title": "No caching strategy for Bible text \u2014 fresh fetch on every load",
-          "file": "src/lib/bible-api.ts",
-          "line": 3,
+          "category": "ux-improvement",
+          "title": "Client gallery doesn't show photo counts or gallery size information",
+          "file": "frontend/gallery.html",
+          "line": 1,
           "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-021",
-          "severity": "low",
+          "severity": "medium",
           "category": "technical-debt",
-          "title": "Service worker is minimal \u2014 no asset or API caching",
-          "file": "public/sw.js",
-          "line": 1,
-          "effort": "medium",
-          "fixable": true,
+          "title": "JWT in response body instead of httpOnly cookie \u2014 XSS vector",
+          "file": "lambda/admin/handler.py",
+          "line": 336,
+          "effort": "large",
+          "fixable": false,
           "status": "open"
         },
         {
           "id": "PROD-022",
           "severity": "medium",
           "category": "technical-debt",
-          "title": "API URL falls back to empty string causing silent failures",
-          "file": "src/app/login/page.tsx",
-          "line": 36,
+          "title": "Shared JWT signing secret across multiple Lambda services \u2014 should be per-service",
+          "file": "lambda/admin/handler.py",
+          "line": 322,
           "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-023",
-          "severity": "high",
-          "category": "growth-opportunity",
-          "title": "Backend data sync for cross-device access \u2014 infrastructure is ready",
-          "file": "terraform/dynamodb.tf",
+          "severity": "medium",
+          "category": "feature-gap",
+          "title": "No bulk photo selection/deselection in admin UI",
+          "file": "frontend/admin.html",
           "line": 1,
-          "effort": "large",
-          "fixable": false,
+          "effort": "medium",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-024",
           "severity": "medium",
-          "category": "growth-opportunity",
-          "title": "Verse-of-the-day email digest for retention",
-          "file": "terraform/lambda.tf",
+          "category": "feature-gap",
+          "title": "No client favorites/selection feature for proofing workflows",
+          "file": "frontend/gallery.html",
           "line": 1,
-          "effort": "large",
-          "fixable": false,
+          "effort": "medium",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-025",
           "severity": "medium",
-          "category": "growth-opportunity",
-          "title": "User-created and shared reading plans",
-          "file": "src/data/reading-plans.ts",
-          "line": 1,
-          "effort": "large",
-          "fixable": false,
+          "category": "technical-debt",
+          "title": "Hardcoded configuration constants should be environment-driven",
+          "file": "lambda/admin/handler.py",
+          "line": 84,
+          "effort": "small",
+          "fixable": true,
           "status": "open"
         },
         {
           "id": "PROD-026",
-          "severity": "medium",
+          "severity": "low",
           "category": "growth-opportunity",
-          "title": "AI study features could be significantly expanded",
-          "file": "src/components/StudyChat.tsx",
-          "line": 114,
+          "title": "Opportunity: Batch API for bulk photo operations to reduce request count and latency",
+          "file": "lambda/admin/handler.py",
+          "line": 3385,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-027",
+          "severity": "low",
+          "category": "growth-opportunity",
+          "title": "Opportunity: Photographer insights dashboard to surface engagement metrics",
+          "file": "lambda/admin/handler.py",
+          "line": 595,
+          "effort": "large",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-028",
+          "severity": "low",
+          "category": "growth-opportunity",
+          "title": "Opportunity: Automated email notifications for gallery events",
+          "file": "lambda/admin/handler.py",
+          "line": 76,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-029",
+          "severity": "low",
+          "category": "growth-opportunity",
+          "title": "Opportunity: Public gallery showcase/portfolio feature for photographers",
+          "file": "frontend/",
+          "line": 1,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-030",
+          "severity": "low",
+          "category": "growth-opportunity",
+          "title": "Opportunity: API/Webhook support for third-party integrations",
+          "file": "lambda/admin/handler.py",
+          "line": 1,
           "effort": "large",
           "fixable": false,
           "status": "open"
         },
         {
-          "id": "PROD-027",
-          "severity": "info",
+          "id": "PROD-031",
+          "severity": "low",
           "category": "growth-opportunity",
-          "title": "No analytics or usage tracking for product decisions",
-          "file": "src/app/layout.tsx",
-          "line": 1,
+          "title": "Opportunity: Watermark preview in staging UI before approval",
+          "file": "lambda/admin/handler.py",
+          "line": 2664,
           "effort": "small",
-          "fixable": false,
+          "fixable": true,
           "status": "open"
         },
         {
-          "id": "PROD-028",
-          "severity": "info",
-          "category": "growth-opportunity",
-          "title": "Data import functionality \u2014 export exists but no restore",
-          "file": "src/app/settings/page.tsx",
+          "id": "PROD-032",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "Admin gallery list pagination or lazy-loading not implemented",
+          "file": "lambda/admin/handler.py",
+          "line": 757,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-033",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "No keyboard shortcuts for power users in admin interface",
+          "file": "frontend/admin.html",
           "line": 1,
           "effort": "small",
           "fixable": true,
           "status": "open"
         },
         {
-          "id": "PROD-029",
-          "severity": "info",
-          "category": "growth-opportunity",
-          "title": "Prayer request tracking with answered/ongoing status",
-          "file": "src/app/journal/page.tsx",
-          "line": 1,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-030",
+          "id": "PROD-034",
           "severity": "low",
           "category": "documentation",
-          "title": "README is default Next.js boilerplate, not Selah product documentation",
+          "title": "README lacks photographer onboarding guide and feature walkthrough",
           "file": "README.md",
           "line": 1,
           "effort": "small",
@@ -355,380 +855,184 @@
           "status": "open"
         },
         {
-          "id": "PROD-031",
-          "severity": "medium",
-          "category": "infrastructure",
-          "title": "No monitoring or alerting for production services",
-          "file": "terraform/lambda.tf",
+          "id": "PROD-035",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "No empty state guidance in gallery list for new photographers",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-036",
+          "severity": "low",
+          "category": "technical-debt",
+          "title": "S3 storage lifecycle policy too broad \u2014 should scope to specific folders",
+          "file": "terraform/s3.tf",
+          "line": 1,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-037",
+          "severity": "low",
+          "category": "technical-debt",
+          "title": "Duplicate code: style variant rendering implemented twice (optimize + admin)",
+          "file": "lambda/optimize/handler.py",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-038",
+          "severity": "low",
+          "category": "technical-debt",
+          "title": "CloudFront signed URL generation duplicated across handlers",
+          "file": "lambda/admin/handler.py",
+          "line": 1,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-039",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "No confirmation dialog before destructive actions (delete gallery, trash photos)",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-040",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "No dark mode support \u2014 app is light-only",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-041",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "Gallery expiration date not prominently displayed in admin UI",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-042",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "No undo functionality for approval/rejection of photos",
+          "file": "lambda/admin/handler.py",
+          "line": 2301,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-043",
+          "severity": "low",
+          "category": "feature-gap",
+          "title": "No scheduled gallery publishing (publish at specific time/date)",
+          "file": "lambda/admin/handler.py",
+          "line": 791,
+          "effort": "small",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-044",
+          "severity": "low",
+          "category": "feature-gap",
+          "title": "No bulk export of gallery data or metadata for backup/archival",
+          "file": "lambda/admin/handler.py",
           "line": 1,
           "effort": "medium",
           "fixable": true,
           "status": "open"
         },
         {
-          "id": "PROD-032",
+          "id": "PROD-045",
           "severity": "low",
-          "category": "infrastructure",
-          "title": "No staging or preview environment",
-          "file": ".github/workflows/cd.yml",
+          "category": "ux-improvement",
+          "title": "No image count or storage usage summary on gallery cards in list view",
+          "file": "frontend/admin.html",
           "line": 1,
+          "effort": "tiny",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-046",
+          "severity": "low",
+          "category": "growth-opportunity",
+          "title": "Opportunity: Multi-gallery bulk operations (approve all galleries, export all, etc.)",
+          "file": "lambda/admin/handler.py",
+          "line": 2301,
           "effort": "medium",
-          "fixable": false,
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-047",
+          "severity": "low",
+          "category": "feature-gap",
+          "title": "No photo tagging or categorization system",
+          "file": "lambda/admin/handler.py",
+          "line": 881,
+          "effort": "medium",
+          "fixable": true,
+          "status": "open"
+        },
+        {
+          "id": "PROD-048",
+          "severity": "low",
+          "category": "ux-improvement",
+          "title": "Admin gallery list sorting options missing (by date, size, name, status)",
+          "file": "frontend/admin.html",
+          "line": 1,
+          "effort": "small",
+          "fixable": true,
           "status": "open"
         }
       ],
       "categories": {
         "feature_gap": {
-          "score": 55,
-          "issues": 8
+          "score": 68,
+          "issues": 12
         },
         "ux_improvement": {
-          "score": 76,
-          "issues": 6
-        },
-        "technical_debt": {
-          "score": 70,
-          "issues": 7
-        },
-        "growth_opportunity": {
-          "score": 81,
-          "issues": 7
-        },
-        "documentation": {
-          "score": 70,
-          "issues": 2
-        },
-        "infrastructure": {
-          "score": 70,
-          "issues": 2
-        }
-      }
-    },
-    {
-      "name": "codyjo.com",
-      "scanned_at": "2026-03-10T18:04:02.372329+00:00",
-      "summary": {
-        "total": 26,
-        "critical": 2,
-        "high": 6,
-        "medium": 8,
-        "low": 6,
-        "info": 4,
-        "product_readiness_score": 62,
-        "scanned_at": "2026-03-10T18:04:02.372329+00:00"
-      },
-      "findings": [
-        {
-          "id": "PROD-001",
-          "severity": "critical",
-          "category": "technical-debt",
-          "title": "demo.html exists outside Astro build pipeline with duplicated styles and Google Fonts CDN",
-          "file": "public/demo.html",
-          "line": 1,
-          "effort": "medium",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-002",
-          "severity": "critical",
-          "category": "technical-debt",
-          "title": "Two different hardcoded API endpoints with no .env configuration",
-          "file": "src/pages/index.astro",
-          "line": 439,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-003",
-          "severity": "high",
-          "category": "technical-debt",
-          "title": "Canonical URL mismatch: Astro config uses non-www, deployment targets www",
-          "file": "astro.config.mjs",
-          "line": 6,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-004",
-          "severity": "high",
-          "category": "technical-debt",
-          "title": "Font files served as TTF (~3.6MB total) instead of WOFF2",
-          "file": "src/styles/fonts.css",
-          "line": 4,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-005",
-          "severity": "high",
-          "category": "feature-gap",
-          "title": "No pricing page or business model communication",
-          "file": "src/pages/features.astro",
-          "line": 244,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-006",
-          "severity": "high",
-          "category": "ux-improvement",
-          "title": "Gallery strip animation only scrolls subset of images (known bug)",
-          "file": "src/pages/index.astro",
-          "line": 1014,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-007",
-          "severity": "high",
-          "category": "feature-gap",
-          "title": "Missing standard product pages: Terms of Service, Docs, Changelog",
-          "file": "src/components/Footer.astro",
-          "line": 26,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-008",
-          "severity": "high",
-          "category": "ux-improvement",
-          "title": "No interactive before/after demo of ChromaHaus on marketing site",
-          "file": "src/pages/index.astro",
-          "line": 231,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-009",
-          "severity": "medium",
-          "category": "feature-gap",
-          "title": "Blog has only one post \u2014 Journal section feels incomplete",
-          "file": "src/content/blog/hello-world.md",
-          "line": 1,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-010",
-          "severity": "medium",
-          "category": "technical-debt",
-          "title": "Duplicated CSS across page files \u2014 shared styles not extracted",
-          "file": "src/pages/index.astro",
-          "line": 804,
-          "effort": "medium",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-011",
-          "severity": "medium",
-          "category": "infrastructure",
-          "title": "No analytics or conversion tracking on marketing site",
-          "file": "src/layouts/Base.astro",
-          "line": 52,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-012",
-          "severity": "medium",
-          "category": "feature-gap",
-          "title": "Blog missing RSS feed, tags, and reading time",
-          "file": "src/content.config.ts",
-          "line": 4,
-          "effort": "medium",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-013",
-          "severity": "medium",
-          "category": "ux-improvement",
-          "title": "Comparison table has poor mobile experience \u2014 requires horizontal scroll",
-          "file": "src/pages/features.astro",
-          "line": 172,
-          "effort": "medium",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-014",
-          "severity": "medium",
-          "category": "documentation",
-          "title": "Privacy policy incorrectly references Google Fonts as third-party service",
-          "file": "src/pages/privacy.astro",
-          "line": 109,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-015",
-          "severity": "medium",
-          "category": "ux-improvement",
-          "title": "Contact form success state is too subtle \u2014 small text below button",
-          "file": "src/pages/index.astro",
-          "line": 493,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-016",
-          "severity": "medium",
-          "category": "ux-improvement",
-          "title": "No social media links or social proof anywhere on site",
-          "file": "src/components/Footer.astro",
-          "line": 22,
-          "effort": "small",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-017",
-          "severity": "low",
-          "category": "feature-gap",
-          "title": "No email capture or newsletter/waitlist for non-demo visitors",
-          "file": "src/pages/index.astro",
-          "line": 352,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-018",
-          "severity": "low",
-          "category": "feature-gap",
-          "title": "No Terms of Service page",
-          "file": "src/pages",
-          "line": 0,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-019",
-          "severity": "low",
-          "category": "infrastructure",
-          "title": "No test suite \u2014 CI only validates build",
-          "file": ".github/workflows/ci.yml",
-          "line": 19,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-020",
-          "severity": "low",
-          "category": "ux-improvement",
-          "title": "Blog post template missing engagement features",
-          "file": "src/pages/blog/[id].astro",
-          "line": 36,
-          "effort": "medium",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-021",
-          "severity": "low",
-          "category": "documentation",
-          "title": "PROJECT-LOG.md references 38 UAT bugs, 0 fixed \u2014 stale documentation",
-          "file": "PROJECT-LOG.md",
-          "line": 8,
-          "effort": "small",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-022",
-          "severity": "low",
-          "category": "feature-gap",
-          "title": "Missing structured data on secondary pages",
-          "file": "src/pages/features.astro",
-          "line": 9,
-          "effort": "small",
-          "fixable": true,
-          "status": "open"
-        },
-        {
-          "id": "PROD-023",
-          "severity": "info",
-          "category": "growth-opportunity",
-          "title": "Photography portfolio/showcase section to demonstrate ChromaHaus results",
-          "file": "src/pages/features.astro",
-          "line": 84,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-024",
-          "severity": "info",
-          "category": "growth-opportunity",
-          "title": "Embeddable gallery widget for photographer websites",
-          "file": "src/pages/features.astro",
-          "line": 57,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-025",
-          "severity": "info",
-          "category": "growth-opportunity",
-          "title": "SEO content strategy: photography workflow guides targeting high-intent keywords",
-          "file": "src/content/blog/hello-world.md",
-          "line": 1,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        },
-        {
-          "id": "PROD-026",
-          "severity": "info",
-          "category": "growth-opportunity",
-          "title": "Print fulfillment integration opportunity",
-          "file": "src/pages/features.astro",
-          "line": 244,
-          "effort": "large",
-          "fixable": false,
-          "status": "open"
-        }
-      ],
-      "categories": {
-        "feature_gap": {
-          "score": 62,
-          "issues": 8
-        },
-        "ux_improvement": {
-          "score": 73,
-          "issues": 5
-        },
-        "technical_debt": {
-          "score": 42,
-          "issues": 5
-        },
-        "growth_opportunity": {
           "score": 72,
+          "issues": 14
+        },
+        "technical_debt": {
+          "score": 65,
+          "issues": 16
+        },
+        "growth_opportunity": {
+          "score": 60,
           "issues": 4
         },
         "documentation": {
-          "score": 88,
+          "score": 80,
           "issues": 2
         },
         "infrastructure": {
-          "score": 92,
-          "issues": 2
+          "score": 62,
+          "issues": 0
         }
       }
     },
