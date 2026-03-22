@@ -26,6 +26,7 @@ This is the Cody Jo Method Back Office: a multi-department operating system of A
 ## Project Structure
 
 ```
+backoffice/       — Primary Python package (CLI, API, workflow, sync, config)
 agents/           — Shell scripts that launch department agents
 agents/prompts/   — System prompts for each agent type
 config/           — Target repo configuration (gitignored)
@@ -40,12 +41,19 @@ dashboard/        — Static HTML dashboards (one per department + HQ)
   product.html    — Product Roadmap dashboard
   jobs.html       — Real-time job progress dashboard
 results/          — Findings and fix status (gitignored, synced to S3)
-scripts/          — Setup, deploy, and cron scripts
+scripts/          — Shell scripts (setup, deploy, cron) and parse-config.py wrapper
 terraform/        — AWS infrastructure (S3 + CloudFront)
 lib/              — Standards references and severity definitions
 ```
 
 ## Commands
+
+### CLI
+The `backoffice` package is the primary interface:
+- `python -m backoffice list-targets` — List configured audit targets
+- `python -m backoffice audit <target>` — Run all department audits for a target
+- `python -m backoffice sync` — Aggregate results and push dashboards to S3
+- `python -m backoffice config show` — Print resolved configuration
 
 ### Individual Department Scans
 - `make qa TARGET=/path/to/repo` — Run QA scan
@@ -73,7 +81,7 @@ lib/              — Standards references and severity definitions
 1. Agent scripts launch the configured coding agent with department-specific prompts
 2. Each agent writes findings to `results/<repo-name>/<department>-findings.json`
 3. Dashboard HTML files read from `<department>-data.json` files
-4. `scripts/sync-dashboard.sh` aggregates results and pushes to S3
+4. `backoffice.aggregate` aggregates results; `backoffice.sync` pushes to S3
 5. CloudFront serves the dashboards
 
 ## Adding a New Department
