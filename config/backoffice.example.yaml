@@ -1,0 +1,85 @@
+# Back Office — Unified Configuration (Example / Template)
+# Copy to config/backoffice.yaml and fill in your values.
+# DO NOT commit backoffice.yaml — it contains secrets and local paths.
+
+runner:
+  # Shell command used to invoke the AI coding agent
+  command: "claude --model haiku"
+  # Agent output mode: claude-print | claude-json | custom
+  mode: "claude-print"
+
+api:
+  # Port the local API server listens on
+  port: 8070
+  # API key for authenticating dashboard requests (leave empty to disable auth)
+  # Generate one: python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+  api_key: ""
+  # CORS origins allowed to call the API
+  allowed_origins:
+    - "https://admin.yoursite.com"
+    - "http://localhost:8070"
+
+deploy:
+  provider: aws
+  aws:
+    region: us-east-1
+    # Each dashboard_target deploys dashboards to a separate S3 bucket.
+    # filter_repo: only show findings for this repo (null = show all).
+    dashboard_targets:
+      - bucket: "admin-yoursite-bucket"
+        base_path: ""
+        distribution_id: "XXXXXXXXXXXXXXX"
+        subdomain: "admin.yoursite.com"
+        filter_repo: "yoursite"
+        allow_public_read: false
+      # Add more targets as needed...
+
+scan:
+  run_linter: true
+  run_tests: true
+  security_audit: true
+  performance_review: true
+  code_quality: true
+  min_severity: low
+  max_findings: 200
+  exclude_patterns:
+    - "node_modules/**"
+    - "venv/**"
+    - ".git/**"
+    - "*.min.js"
+
+fix:
+  auto_fix_severity: high
+  run_tests_after_fix: true
+  run_linter_after_fix: true
+  max_parallel_fixes: 4
+  auto_commit: true
+  auto_push: false
+
+notifications:
+  sync_to_s3: true
+
+targets:
+  # Each key is the repo/target name used in CLI commands and dashboard filters.
+  my-project:
+    path: /path/to/my-project
+    language: python        # python | typescript | astro | terraform | ...
+    default_departments: [qa, seo, ada, compliance, monetization, product]
+    lint_command: "ruff check ."
+    test_command: "python3 -m pytest"
+    coverage_command: "python3 -m pytest --cov=. --cov-report=json:coverage.json"
+    deploy_command: "bash scripts/deploy.sh"
+    context: |
+      Brief description of this project for the AI agent.
+      Focus areas, tech stack, known constraints, and product priorities.
+
+  my-frontend:
+    path: /path/to/my-frontend
+    language: typescript
+    default_departments: [qa, seo, ada]
+    lint_command: "npm run lint"
+    test_command: "npm test && npm run typecheck"
+    coverage_command: "npm run test:coverage"
+    deploy_command: "npm run build"
+    context: |
+      Description of the frontend project.
