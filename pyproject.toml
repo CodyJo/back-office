@@ -1,0 +1,13 @@
+[project]
+name = "backoffice"
+version = "1.0.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["backoffice"]
+
+[tool.coverage.report]
+show_missing = true
