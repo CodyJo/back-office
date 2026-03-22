@@ -69,7 +69,11 @@ python -m backoffice tasks list [--repo name] [--status ready]
 python -m backoffice tasks show --id <id>
 python -m backoffice tasks create --repo <repo> --title "..."
 python -m backoffice tasks start --id <id>
+python -m backoffice tasks block --id <id> --note "reason"
+python -m backoffice tasks review --id <id>
 python -m backoffice tasks complete --id <id>
+python -m backoffice tasks cancel --id <id> --note "reason"
+python -m backoffice tasks sync
 ```
 
 **Testing & Regression:**
@@ -78,11 +82,13 @@ python -m backoffice regression
 python -m backoffice scaffold --target <name>
 ```
 
-**Config & Setup:**
+**Admin & Servers:**
 ```
 python -m backoffice setup
 python -m backoffice config show
 python -m backoffice config shell-export
+python -m backoffice serve --port 8070       # local dev dashboard server
+python -m backoffice api-server --port 8070  # production API server
 ```
 
 Also include the `make` targets as a convenience reference (they delegate to the CLI):
@@ -102,12 +108,14 @@ What the dashboards show. List each department dashboard with a one-sentence des
 #### Section 6: Configuration
 
 Explain `config/backoffice.yaml` — the unified config file. Show the key sections:
-- `runner:` — which AI agent to use
-- `deploy:` — where dashboards are deployed
-- `targets:` — repos to audit with their commands
+- `runner:` — which AI agent to use (command + mode)
+- `api:` — production API server settings (port, API key, CORS origins)
+- `deploy:` — where dashboards are deployed (provider, S3 buckets, CloudFront, `filter_repo`)
+- `targets:` — repos to audit with their commands and context
 - `scan:` / `fix:` — audit behavior settings
+- `notifications:` — sync-to-S3 toggle
 
-Reference `config/backoffice.example.yaml` as the starting point.
+Show a snippet from `config/backoffice.example.yaml` using the actual field names (`distribution_id`, `filter_repo`, etc.). Reference the example file as the starting point.
 
 #### Section 7: Architecture
 
@@ -139,7 +147,7 @@ Update the project structure section to show `backoffice/` package instead of `s
 
 ### 3. WORKFLOW-ARCHITECTURE.md — Update
 
-Replace all `python3 scripts/backoffice-cli.py` references with `python -m backoffice`. Replace `scripts/local_audit_workflow.py` with `backoffice/workflow.py`. Update any diagrams that reference old script names. Keep the document's structure and purpose (detailed topology for technical readers).
+Replace all `python3 scripts/backoffice-cli.py` references with `python -m backoffice`. Replace `scripts/local_audit_workflow.py` with `backoffice/workflow.py`. Update any diagrams that reference old script names. Remove the cross-reference to `docs/CLI-REFERENCE.md` (which is being deleted). Keep the document's structure and purpose (detailed topology for technical readers).
 
 ### 4. CLI-REFERENCE.md — Delete
 
