@@ -19,6 +19,7 @@ import os
 import subprocess
 import threading
 import time
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -228,6 +229,17 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
+    def do_GET(self) -> None:
+        path = urlparse(self.path).path
+
+        if path == "/api/ops/status":
+            self._handle_ops_status()
+        elif path == "/api/ops/backends":
+            self._handle_ops_backends()
+        else:
+            # Fall through to SimpleHTTPRequestHandler for static files
+            super().do_GET()
+
     def do_POST(self) -> None:
         path = urlparse(self.path).path
 
@@ -239,6 +251,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_run_regression()
         elif path == "/api/manual-item":
             self._handle_manual_item()
+        elif path == "/api/ops/audit":
+            self._handle_ops_audit()
+        elif path == "/api/ops/overnight/start":
+            self._handle_ops_overnight_start()
+        elif path == "/api/ops/overnight/stop":
+            self._handle_ops_overnight_stop()
+        elif path == "/api/ops/product/add":
+            self._handle_ops_product_add()
         else:
             self.send_error(404, "Not found")
 
@@ -420,6 +440,410 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         _save_manual_items(items, root=self._root)
         logger.info("Manual item added id=%s title=%r", new_id, title)
         self._json_response(200, {"ok": True, "items": items})
+
+    # ------------------------------------------------------------------
+    # Ops GET handlers
+    # ------------------------------------------------------------------
+
+    def _handle_ops_status(self) -> None:
+        """GET /api/ops/status — current operational status."""
+        r = self._root
+        results_dir = r / "results"
+
+        # Jobs
+        jobs: dict = {}
+        jobs_file = results_dir / ".jobs.json"
+        if jobs_file.exists():
+            try:
+                with open(jobs_file) as f:
+                    jobs = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                jobs = {}
+
+        # Jobs history — last 10 entries
+        jobs_history: list = []
+        jobs_history_file = results_dir / ".jobs-history.json"
+        if jobs_history_file.exists():
+            try:
+                with open(jobs_history_file) as f:
+                    raw = json.load(f)
+                if isinstance(raw, list):
+                    jobs_history = raw[-10:]
+                elif isinstance(raw, dict):
+                    jobs_history = raw.get("history", [])[-10:]
+            except (json.JSONDecodeError, OSError):
+                jobs_history = []
+
+        # Overnight
+        stop_file = results_dir / ".overnight-stop"
+        overnight_plan: dict | None = None
+        plan_file = results_dir / "overnight-plan.json"
+        if plan_file.exists():
+            try:
+                with open(plan_file) as f:
+                    overnight_plan = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                overnight_plan = None
+
+        overnight_history: list = []
+        history_file = results_dir / "overnight-history.json"
+        if history_file.exists():
+            try:
+                with open(history_file) as f:
+                    raw = json.load(f)
+                if isinstance(raw, list):
+                    overnight_history = raw[-5:]
+                elif isinstance(raw, dict):
+                    overnight_history = raw.get("history", [])[-5:]
+            except (json.JSONDecodeError, OSError):
+                overnight_history = []
+
+        # Backends
+        backends: dict = {}
+        try:
+            from backoffice.backends import get_backend  # noqa: PLC0415
+            from backoffice.config import load_config  # noqa: PLC0415
+            cfg = load_config()
+            for name, backend_cfg in cfg.agent_backends.items():
+                be = get_backend(name, {
+                    "command": backend_cfg.command,
+                    "model": backend_cfg.model,
+                    "mode": backend_cfg.mode,
+                    "local_budget": backend_cfg.local_budget,
+                })
+                health = be.health_check()
+                caps = be.capabilities()
+                limits = be.check_limits()
+                backends[name] = {
+                    "healthy": health.healthy,
+                    "status": limits.status,
+                    "capabilities": asdict(caps),
+                    "limits": asdict(limits),
+                }
+        except Exception as exc:
+            logger.warning("Could not load backends for ops/status: %s", exc)
+            # Fall back to showing known backends as unavailable
+            for name in ("claude", "codex"):
+                backends[name] = {
+                    "healthy": False,
+                    "status": "unavailable",
+                    "capabilities": {},
+                    "limits": {},
+                }
+
+        # Targets — load from config
+        targets: list = []
+        try:
+            from backoffice.config import load_config  # noqa: PLC0415
+            cfg = load_config()
+            for name, target in cfg.targets.items():
+                targets.append({
+                    "name": name,
+                    "path": target.path,
+                    "language": target.language,
+                    "departments": target.default_departments,
+                })
+        except Exception as exc:
+            logger.warning("Could not load targets for ops/status: %s", exc)
+
+        self._json_response(200, {
+            "jobs": jobs,
+            "jobs_history": jobs_history,
+            "overnight": {
+                "running": False,  # Best-effort: no PID tracking currently
+                "stop_file_exists": stop_file.exists(),
+                "plan": overnight_plan,
+                "history": overnight_history,
+            },
+            "backends": backends,
+            "targets": targets,
+        })
+
+    def _handle_ops_backends(self) -> None:
+        """GET /api/ops/backends — backend health and routing info."""
+        backends: dict = {}
+        routing_policy: dict = {}
+        try:
+            from backoffice.backends import get_backend  # noqa: PLC0415
+            from backoffice.config import load_config  # noqa: PLC0415
+            cfg = load_config()
+            routing_policy = dict(cfg.routing_policy.fallback_order)
+            for name, backend_cfg in cfg.agent_backends.items():
+                be = get_backend(name, {
+                    "command": backend_cfg.command,
+                    "model": backend_cfg.model,
+                    "mode": backend_cfg.mode,
+                    "local_budget": backend_cfg.local_budget,
+                })
+                health = be.health_check()
+                caps = be.capabilities()
+                limits = be.check_limits()
+                backends[name] = {
+                    "healthy": health.healthy,
+                    "capabilities": asdict(caps),
+                    "limits": asdict(limits),
+                }
+        except Exception as exc:
+            logger.warning("Could not load backends for ops/backends: %s", exc)
+            self._json_response(500, {"error": f"Failed to load backends: {exc}"})
+            return
+
+        self._json_response(200, {
+            "backends": backends,
+            "routing_policy": routing_policy,
+        })
+
+    # ------------------------------------------------------------------
+    # Ops POST handlers
+    # ------------------------------------------------------------------
+
+    def _handle_ops_audit(self) -> None:
+        """POST /api/ops/audit — trigger an audit run."""
+        body = self._read_body()
+        if not body:
+            self._json_response(400, {"error": "Request body required"})
+            return
+
+        target_name = (body.get("target") or "").strip()
+        if not target_name:
+            self._json_response(400, {"error": "target is required"})
+            return
+
+        departments: list[str] = body.get("departments") or ALL_DEPTS
+        if isinstance(departments, str):
+            departments = [d.strip() for d in departments.split(",") if d.strip()]
+        invalid_depts = [d for d in departments if d not in DEPT_SCRIPTS]
+        if invalid_depts:
+            self._json_response(400, {
+                "error": f"Unknown departments: {', '.join(invalid_depts)}",
+                "valid": ALL_DEPTS,
+            })
+            return
+
+        mode = (body.get("mode") or "parallel").strip()
+        if mode not in ("parallel", "sequential", "full-scan"):
+            self._json_response(400, {
+                "error": f"Invalid mode: {mode}",
+                "valid": ["parallel", "sequential", "full-scan"],
+            })
+            return
+
+        # Resolve target path from config
+        target_path = ""
+        try:
+            from backoffice.config import load_config  # noqa: PLC0415
+            cfg = load_config()
+            t = cfg.targets.get(target_name)
+            if t and t.path:
+                target_path = t.path
+        except Exception:
+            pass
+
+        if not target_path:
+            self._json_response(400, {
+                "error": f"Unknown target: {target_name}. Register it in config/backoffice.yaml",
+            })
+            return
+
+        # Build the make command
+        if mode == "parallel":
+            make_target = "audit-all-parallel"
+        elif mode == "full-scan":
+            make_target = "full-scan"
+        else:
+            make_target = "audit-all"
+
+        cmd_str = f"make {make_target} TARGET={target_path}"
+
+        try:
+            subprocess.Popen(
+                ["make", make_target, f"TARGET={target_path}"],
+                cwd=str(self._root),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as exc:
+            self._json_response(500, {"error": f"Failed to launch audit: {exc}"})
+            return
+
+        logger.info("ops/audit started: %s", cmd_str)
+        self._json_response(200, {
+            "status": "started",
+            "command": cmd_str,
+            "target": target_name,
+            "target_path": target_path,
+            "departments": departments,
+            "mode": mode,
+        })
+
+    def _handle_ops_overnight_start(self) -> None:
+        """POST /api/ops/overnight/start — start the overnight loop."""
+        body = self._read_body()
+
+        interval = int(body.get("interval") or 120)
+        targets_str = (body.get("targets") or "").strip()
+        dry_run = bool(body.get("dry_run", False))
+
+        overnight_script = self._root / "scripts" / "overnight.sh"
+        if not overnight_script.exists():
+            self._json_response(500, {"error": "scripts/overnight.sh not found"})
+            return
+
+        cmd_parts = ["bash", str(overnight_script), "--interval", str(interval)]
+        if targets_str:
+            cmd_parts += ["--targets", targets_str]
+        if dry_run:
+            cmd_parts.append("--dry-run")
+
+        cmd_str = " ".join(cmd_parts)
+
+        try:
+            subprocess.Popen(
+                cmd_parts,
+                cwd=str(self._root),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as exc:
+            self._json_response(500, {"error": f"Failed to launch overnight loop: {exc}"})
+            return
+
+        logger.info("ops/overnight/start: %s", cmd_str)
+        self._json_response(200, {
+            "status": "started",
+            "command": cmd_str,
+            "interval": interval,
+            "targets": targets_str or "all",
+            "dry_run": dry_run,
+        })
+
+    def _handle_ops_overnight_stop(self) -> None:
+        """POST /api/ops/overnight/stop — stop the overnight loop gracefully."""
+        stop_file = self._root / "results" / ".overnight-stop"
+        try:
+            stop_file.parent.mkdir(parents=True, exist_ok=True)
+            stop_file.touch()
+        except OSError as exc:
+            self._json_response(500, {"error": f"Failed to create stop file: {exc}"})
+            return
+
+        logger.info("ops/overnight/stop: stop file created at %s", stop_file)
+        self._json_response(200, {
+            "status": "stop_requested",
+            "stop_file": str(stop_file),
+            "message": "Overnight loop will stop after the current phase completes.",
+        })
+
+    def _handle_ops_product_add(self) -> None:
+        """POST /api/ops/product/add — add a new product/target."""
+        body = self._read_body()
+        if not body:
+            self._json_response(400, {"error": "Request body required"})
+            return
+
+        name = (body.get("name") or "").strip()
+        if not name:
+            self._json_response(400, {"error": "name is required"})
+            return
+
+        source = (body.get("source") or "local").strip()
+        github_repo = (body.get("github_repo") or "").strip()
+        local_path = (body.get("local_path") or "").strip()
+        language = (body.get("language") or "").strip()
+        departments: list[str] = body.get("departments") or ALL_DEPTS
+        if isinstance(departments, str):
+            departments = [d.strip() for d in departments.split(",") if d.strip()]
+        autonomy: dict = body.get("autonomy") or {}
+
+        if source in ("github", "both"):
+            if not github_repo:
+                self._json_response(400, {
+                    "error": "github_repo is required when source is 'github' or 'both'"
+                })
+                return
+            # Determine clone destination
+            clone_dest = local_path or str(
+                Path.home() / "projects" / name
+            )
+            clone_dest_path = Path(clone_dest)
+            if not clone_dest_path.exists():
+                try:
+                    result = subprocess.run(
+                        ["gh", "repo", "clone", github_repo, clone_dest],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                    )
+                    if result.returncode != 0:
+                        # Fall back to git clone
+                        result = subprocess.run(
+                            [
+                                "git", "clone",
+                                f"https://github.com/{github_repo}.git",
+                                clone_dest,
+                            ],
+                            capture_output=True,
+                            text=True,
+                            timeout=120,
+                        )
+                    if result.returncode != 0:
+                        self._json_response(500, {
+                            "error": f"Clone failed: {result.stderr.strip()}"
+                        })
+                        return
+                except subprocess.TimeoutExpired:
+                    self._json_response(500, {"error": "Clone timed out after 120s"})
+                    return
+                except OSError as exc:
+                    self._json_response(500, {"error": f"Clone failed: {exc}"})
+                    return
+            resolved_path = clone_dest
+        else:
+            resolved_path = local_path or str(Path.home() / "projects" / name)
+
+        # Build the new YAML entry
+        depts_yaml = ", ".join(f'"{d}"' for d in departments)
+        autonomy_block = ""
+        if autonomy:
+            lines = ["    autonomy:"]
+            for k, v in autonomy.items():
+                lines.append(f"      {k}: {'true' if v else 'false'}")
+            autonomy_block = "\n" + "\n".join(lines)
+
+        new_entry = (
+            f"\n  {name}:\n"
+            f"    path: {resolved_path}\n"
+            f"    language: {language or 'unknown'}\n"
+            f"    default_departments: [{depts_yaml}]\n"
+            f"    lint_command: \"\"\n"
+            f"    test_command: \"\"\n"
+            f"    deploy_command: \"\"\n"
+            f"    context: |\n"
+            f"      {name} — added via Back Office Operations panel.\n"
+            f"{autonomy_block}"
+        )
+
+        # Append to config/backoffice.yaml
+        config_path = self._root / "config" / "backoffice.yaml"
+        try:
+            with open(config_path, "a", encoding="utf-8") as f:
+                f.write(new_entry)
+        except OSError as exc:
+            self._json_response(500, {"error": f"Failed to update config: {exc}"})
+            return
+
+        logger.info("ops/product/add: added target %s at %s", name, resolved_path)
+        self._json_response(200, {
+            "status": "added",
+            "name": name,
+            "path": resolved_path,
+            "language": language or "unknown",
+            "departments": departments,
+            "next_steps": [
+                f"Run initial audit: make audit-all-parallel TARGET={resolved_path}",
+                "Refresh dashboard: python -m backoffice refresh",
+            ],
+        })
 
     # ------------------------------------------------------------------
     # Logging
