@@ -1,1234 +1,2064 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cody Jo Method — Back Office</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="site-branding.js"></script>
-  <style>
-    :root {
-      --bg: #0a0a0f;
-      --surface: #12121a;
-      --surface-2: #1a1a26;
-      --surface-3: #22222e;
-      --border: #2a2a3a;
-      --text: #e4e4ef;
-      --text-dim: #8888a0;
-      --text-muted: #8888a0;
-      --accent: #c4944a;
-      --accent-2: #6c5ce7;
-      --critical: #ff4757;
-      --high: #ff8c42;
-      --medium: #ffd166;
-      --low: #4ecdc4;
-      --info: #74b9ff;
-      --success: #2ed573;
-      --radius: 14px;
-      --radius-sm: 10px;
-      --mono: 'JetBrains Mono', monospace;
-      --sans: 'Inter', -apple-system, sans-serif;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
-    a { color: inherit; }
-    .container { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    .skip-link {
-      position: absolute; left: 1rem; top: -3rem; z-index: 999;
-      background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
-      border-radius: 999px; padding: 0.65rem 0.9rem; text-decoration: none;
-    }
-    .skip-link:focus { top: 1rem; }
-    header {
-      display: flex; justify-content: space-between; align-items: flex-start; gap: 1.25rem;
-      margin-bottom: 1.5rem; padding: 1.4rem; border: 1px solid var(--border);
-      border-radius: var(--radius); background: var(--surface);
-    }
-    .page-kicker {
-      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--accent); margin-bottom: 0.65rem;
-    }
-    .page-title { font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -0.04em; }
-    .page-copy {
-      margin-top: 0.7rem; max-width: 58ch; color: var(--text-dim);
-      font-size: 0.92rem; line-height: 1.7;
-    }
-    .updated {
-      color: var(--text-dim); font-size: 0.82rem; text-align: right;
-      min-width: 180px;
-    }
-    .nav { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .nav a {
-      text-decoration: none; padding: 0.52rem 0.85rem; border-radius: var(--radius-sm);
-      border: 1px solid var(--border); background: var(--surface-2); font-size: 0.78rem;
-    }
-    .nav a.active { border-color: rgba(196, 148, 74, 0.35); color: var(--accent); background: rgba(196, 148, 74, 0.08); }
-    .toolbar {
-      display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 400px); gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; }
-    .toolbar h2 { font-size: 1.35rem; letter-spacing: -0.03em; margin-bottom: 0.35rem; }
-    .toolbar p { color: var(--text-dim); font-size: 0.9rem; max-width: 62ch; }
-    .select-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.4rem; }
-    select {
-      width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 0.85rem 0.9rem; font-family: var(--sans); font-size: 0.92rem;
-    }
-    .stats {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 1.5rem;
-    }
-    .stat .label { color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.45rem; }
-    .stat .value { font-family: var(--mono); font-size: 1.8rem; font-weight: 700; }
-    .stat .sub { color: var(--text-dim); font-size: 0.75rem; margin-top: 0.25rem; }
-    .sections { display: grid; gap: 1.25rem; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.85rem; }
-    .section-header h3 { font-size: 1rem; }
-    .badge { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-    .grid-2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1rem; }
-    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-    .grid-3 { display: grid; grid-template-columns: 1.1fr 1.2fr 1fr; gap: 1rem; }
-    .dept-grid, .employee-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
-    }
-    .dept-card, .employee-card, .finding-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem;
-    }
-    .dept-top, .employee-top { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.7rem; }
-    .dept-name, .employee-name { font-weight: 600; font-size: 0.95rem; }
-    .dept-purpose, .employee-bio { color: var(--text-dim); font-size: 0.82rem; line-height: 1.5; }
-    .score-pill {
-      min-width: 72px; text-align: center; padding: 0.42rem 0.6rem; border-radius: 999px;
-      font-family: var(--mono); font-size: 0.84rem; font-weight: 700; background: var(--surface-3);
-    }
-    .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.8rem; }
-    .chip {
-      font-size: 0.68rem; color: var(--text-dim); padding: 0.2rem 0.45rem; border-radius: 999px;
-      background: var(--surface-2); border: 1px solid var(--border);
-    }
-    .employee-title { color: var(--accent); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem; }
-    .resume { color: var(--text-dim); font-size: 0.8rem; line-height: 1.5; margin-top: 0.55rem; }
-    .finding-list { display: grid; gap: 0.75rem; }
-    .finding-top { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
-    .severity { font-size: 0.64rem; padding: 0.18rem 0.45rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-    .severity.critical { background: rgba(255,71,87,0.12); color: var(--critical); }
-    .severity.high { background: rgba(255,140,66,0.12); color: var(--high); }
-    .severity.medium { background: rgba(255,209,102,0.12); color: var(--medium); }
-    .severity.low { background: rgba(78,205,196,0.12); color: var(--low); }
-    .severity.info { background: rgba(116,185,255,0.12); color: var(--info); }
-    .finding-id { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); }
-    .finding-card h4 { font-size: 0.92rem; margin-bottom: 0.25rem; line-height: 1.35; }
-    .finding-meta, .finding-desc { color: var(--text-dim); font-size: 0.8rem; line-height: 1.5; }
-    .finding-meta { margin-bottom: 0.4rem; }
-    .task-list, .criteria-list { display: grid; gap: 0.8rem; }
-    .task-card, .criteria-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem;
-    }
-    .task-top, .criteria-top { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.45rem; align-items: flex-start; }
-    .task-owner, .criteria-owner { color: var(--accent); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .task-meta, .criteria-meta { color: var(--text-dim); font-size: 0.76rem; line-height: 1.5; margin-top: 0.35rem; }
-    .status-pill {
-      display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 999px;
-      border: 1px solid var(--border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
-      background: var(--surface-2); color: var(--text-dim); font-weight: 600;
-    }
-    .status-pill.good { color: var(--success); border-color: rgba(46, 213, 115, 0.3); background: rgba(46, 213, 115, 0.08); }
-    .status-pill.warn { color: var(--medium); border-color: rgba(255, 209, 102, 0.3); background: rgba(255, 209, 102, 0.08); }
-    .status-pill.bad { color: var(--critical); border-color: rgba(255, 71, 87, 0.3); background: rgba(255, 71, 87, 0.08); }
-    .status-pill.info { color: var(--info); border-color: rgba(116, 185, 255, 0.3); background: rgba(116, 185, 255, 0.08); }
-    .mini-list { margin-top: 0.55rem; color: var(--text-dim); font-size: 0.78rem; line-height: 1.55; }
-    .foot { text-align: center; color: var(--text-muted); font-size: 0.72rem; margin-top: 2rem; }
-    @media (max-width: 1080px) {
-      .grid-1, .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 900px) {
-      .stats, .dept-grid, .employee-grid { grid-template-columns: repeat(2, 1fr); }
-      .toolbar { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 640px) {
-      .container { padding: 1.25rem 1rem 3rem; }
-      header { flex-direction: column; }
-      .stats, .dept-grid, .employee-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Office — HQ Dashboard</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --surface-3: #22222e;
+    --border: #2a2a3a;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --accent: #c4944a;
+    --accent-2: #6c5ce7;
+    --critical: #ff4757;
+    --high: #ff8c42;
+    --medium: #ffd166;
+    --low: #4ecdc4;
+    --info: #74b9ff;
+    --success: #2ed573;
+    --radius: 12px;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-top: 49px;
+  }
+
+  /* Top Bar */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  .logo {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+  .product-select {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    cursor: pointer;
+    outline: none;
+  }
+  .product-select:focus { border-color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+  .topbar-btn {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    font-family: var(--sans);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .topbar-btn:hover { border-color: var(--accent); color: var(--text); }
+  .timestamp { font-size: 0.72rem; color: var(--text-dim); }
+  .stale-warning { font-size: 0.68rem; color: var(--high); margin-left: 0.25rem; }
+
+  /* Container */
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Section Label */
+  .section-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Score Cards */
+  .score-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 100px;
+  }
+  .score-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .score-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  .score-card-name {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .score-card-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+  .score-card-trend { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.15rem; }
+  .trend-up { color: var(--success); }
+  .trend-down { color: var(--critical); }
+  .score-card-error { font-size: 0.78rem; color: var(--high); margin-top: 0.5rem; }
+  .sparkline { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+  .sparkline span {
+    width: 4px;
+    border-radius: 1px;
+    background: var(--accent);
+    opacity: 0.4;
+    transition: height 0.3s;
+  }
+  .sparkline span:last-child { opacity: 1; }
+
+  /* Skeleton Loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 6px;
+  }
+  .skeleton-score { width: 48px; height: 28px; margin-bottom: 4px; }
+  .skeleton-trend { width: 72px; height: 12px; }
+  .skeleton-row { height: 52px; margin-bottom: 0.5rem; border-radius: 10px; }
+  .skeleton-cell { display: inline-block; width: 44px; height: 30px; border-radius: 6px; }
+
+  /* Matrix Table */
+  .matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .matrix th {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    background: var(--surface-2);
+    font-weight: 500;
+  }
+  .matrix th:first-child { text-align: left; padding-left: 1rem; min-width: 140px; }
+  .matrix td { padding: 0.5rem; text-align: center; border-top: 1px solid var(--border); }
+  .matrix td:first-child { text-align: left; padding-left: 1rem; font-size: 0.82rem; font-weight: 500; }
+  .matrix tr:hover td { background: rgba(255,255,255,0.02); }
+  .cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 30px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cell:hover { transform: scale(1.1); box-shadow: 0 0 12px rgba(0,0,0,0.3); }
+  .cell.green { background: rgba(46,213,115,0.15); color: #2ed573; }
+  .cell.yellow { background: rgba(255,209,102,0.15); color: #ffd166; }
+  .cell.orange { background: rgba(255,140,66,0.15); color: #ff8c42; }
+  .cell.red { background: rgba(255,71,87,0.15); color: #ff4757; }
+  .cell.gray { background: rgba(136,136,160,0.1); color: #5a5a70; cursor: default; }
+  .cell.gray:hover { transform: none; box-shadow: none; }
+
+  /* Needs Attention Feed */
+  .finding-row {
+    display: grid;
+    grid-template-columns: 60px 70px 1fr 120px 80px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    margin-bottom: 0.5rem;
+  }
+  .finding-row:hover { border-color: rgba(196,148,74,0.3); }
+  .finding-dept {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sev {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .sev.critical { background: rgba(255,71,87,0.15); color: var(--critical); }
+  .sev.high { background: rgba(255,140,66,0.15); color: var(--high); }
+  .sev.medium { background: rgba(255,209,102,0.12); color: var(--medium); }
+  .sev.low { background: rgba(78,205,196,0.12); color: var(--low); }
+  .sev.info { background: rgba(116,185,255,0.12); color: var(--info); }
+  .finding-title {
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .finding-repo {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .finding-effort { font-size: 0.68rem; color: var(--text-dim); text-align: right; }
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6rem;
+    background: rgba(108,92,231,0.15);
+    color: #6c5ce7;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Empty / Error States */
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .score-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .score-row { grid-template-columns: repeat(2, 1fr); }
+    .finding-row { grid-template-columns: 50px 60px 1fr 80px; }
+    .finding-effort { display: none; }
+    .matrix { font-size: 0.75rem; }
+    .topbar { padding: 0.5rem 1rem; }
+    .container { padding: 1rem; }
+    .slideover { width: 100%; right: -100%; }
+    .detail-panel { width: 100%; right: -100%; }
+  }
+
+  /* Overlay + Slide-Over */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+
+  .slideover { position: fixed; top: 0; right: -65%; width: 65%; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 101; transition: right 0.3s ease; overflow-y: auto; display: flex; flex-direction: column; }
+  .slideover.open { right: 0; }
+  .slideover-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .slideover-title { font-size: 1.1rem; font-weight: 600; }
+  .slideover-subtitle { font-size: 0.78rem; color: var(--text-dim); }
+  .slideover-close { background: none; border: 1px solid var(--border); color: var(--text-dim); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+  .slideover-close:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Filters bar */
+  .filters-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; flex-wrap: wrap; }
+  .filter-select { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.72rem; font-family: var(--sans); outline: none; }
+  .filter-select:focus { border-color: var(--accent); }
+  .filter-search { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.72rem; font-family: var(--sans); flex: 1; min-width: 140px; outline: none; }
+  .filter-search::placeholder { color: var(--text-dim); }
+  .filter-search:focus { border-color: var(--accent); }
+  .filter-toggle { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-dim); cursor: pointer; padding: 0.35rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); }
+  .filter-toggle.active { border-color: #6c5ce7; color: #6c5ce7; background: rgba(108,92,231,0.08); }
+  .filter-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  .slideover-body { padding: 1.5rem; flex: 1; overflow-y: auto; }
+  .slideover-score-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .slideover-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; text-align: center; }
+  .slideover-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.35rem; }
+  .slideover-stat-value { font-size: 1.3rem; font-weight: 700; }
+
+  /* Finding Detail Panel (nested slide-over) */
+  .detail-panel { position: fixed; top: 0; right: -45%; width: 45%; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 102; transition: right 0.3s ease; overflow-y: auto; }
+  .detail-panel.open { right: 0; }
+  .detail-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .detail-header-left { flex: 1; }
+  .detail-id { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); margin-bottom: 0.35rem; }
+  .detail-title { font-size: 1rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.5rem; }
+  .detail-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .detail-tag { font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+  .detail-body { padding: 1.5rem; }
+  .detail-section { margin-bottom: 1.25rem; }
+  .detail-section-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .detail-text { font-size: 0.88rem; line-height: 1.65; color: var(--text); }
+  .detail-code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-family: var(--mono); font-size: 0.78rem; color: var(--medium); line-height: 1.5; overflow-x: auto; margin-top: 0.4rem; white-space: pre-wrap; word-break: break-word; }
+  .detail-fix { background: rgba(46,213,115,0.06); border: 1px solid rgba(46,213,115,0.15); border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.85rem; line-height: 1.6; color: var(--text); }
+  .detail-fix-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--success); margin-bottom: 0.4rem; }
+  .detail-file { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.85rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); margin-top: 0.4rem; }
+  .detail-file-icon { color: var(--accent); }
+  .ai-fix-banner { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1rem; background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); border-radius: 8px; margin-bottom: 1.25rem; }
+  .ai-fix-banner-icon { font-size: 1rem; }
+  .ai-fix-banner-text { font-size: 0.82rem; color: #b8a9f0; }
+  .ai-fix-banner-text strong { color: #6c5ce7; }
+  .ai-fix-cmd { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); background: var(--surface-2); padding: 0.3rem 0.6rem; border-radius: 4px; margin-left: 0.5rem; cursor: pointer; border: 1px solid var(--border); display: inline-block; }
+  .ai-fix-cmd:hover { border-color: #6c5ce7; color: #6c5ce7; }
+  .backlog-info { font-size: 0.78rem; color: var(--text-dim); padding: 0.6rem 0.85rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 0.4rem; }
+
+  /* Support Panels (Jobs / FAQ / Docs) */
+  .support-panel-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+
+  /* Jobs panel */
+  .jobs-run {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 0.85rem; overflow: hidden;
+  }
+  .jobs-run-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .jobs-run-title { font-size: 0.85rem; font-weight: 600; }
+  .jobs-run-meta { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.15rem; }
+  .jobs-run-status {
+    font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .jobs-run-status.complete { background: rgba(46,213,115,0.12); color: var(--success); }
+  .jobs-run-status.running { background: rgba(116,185,255,0.12); color: var(--info); }
+  .jobs-run-status.failed { background: rgba(255,71,87,0.12); color: var(--critical); }
+  .jobs-run-status.queued { background: rgba(255,209,102,0.12); color: var(--medium); }
+
+  .jobs-dept-list { padding: 0.5rem 0; }
+  .jobs-dept-row {
+    display: grid; grid-template-columns: 100px 70px 60px 70px 1fr;
+    align-items: center; gap: 0.5rem; padding: 0.4rem 1rem;
+    font-size: 0.78rem;
+  }
+  .jobs-dept-row:hover { background: rgba(255,255,255,0.02); }
+  .jobs-dept-name { font-weight: 500; text-transform: capitalize; }
+  .jobs-dept-status { font-size: 0.65rem; font-weight: 600; }
+  .jobs-dept-status.complete { color: var(--success); }
+  .jobs-dept-status.running { color: var(--info); }
+  .jobs-dept-status.failed { color: var(--critical); }
+  .jobs-dept-status.queued { color: var(--medium); }
+  .jobs-dept-score { font-family: var(--mono); font-size: 0.75rem; text-align: right; }
+  .jobs-dept-findings { font-size: 0.72rem; color: var(--text-dim); text-align: right; }
+  .jobs-dept-elapsed { font-size: 0.68rem; color: var(--text-dim); }
+
+  /* Support content containers */
+  .support-content-wrap { min-height: 200px; }
+  .support-loading { padding: 2rem; text-align: center; color: var(--text-dim); font-size: 0.85rem; }
+</style>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Skip to content</a>
-  <main class="container" id="main-content">
-    <header>
-      <div>
-        <div class="page-kicker">Portfolio HQ</div>
-        <h1 class="page-title">Back Office HQ</h1>
-        <p class="page-copy">
-          Product-level reporting across QA, SEO, accessibility, compliance, privacy,
-          monetization, product, and delivery readiness.
-        </p>
-      </div>
-      <div class="updated" id="updatedAt">Loading dashboard...</div>
-    </header>
 
-    <nav class="nav">
-      <a href="index.html" class="active">HQ</a>
-      <a href="metrics.html">Metrics</a>
-      <a href="regression.html">Regression</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="jobs.html">Jobs</a>
-      <a href="faq.html">Scoring</a>
-    </nav>
+<!-- Top Bar (fixed) -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="index-new.html">Back Office</a>
+    <select class="product-select" id="productSelect" aria-label="Select product">
+    </select>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn" id="jobsBtn">Jobs</button>
+    <button class="topbar-btn" id="docsBtn">Docs</button>
+    <button class="topbar-btn" id="faqBtn">FAQ</button>
+    <span class="timestamp" id="lastScan">Last scan: --</span>
+    <span class="stale-warning" id="staleWarning" hidden>Data may be stale</span>
+  </div>
+</div>
 
-    <section class="toolbar">
-      <div class="card">
-        <h2>One Back Office for the whole estate.</h2>
-        <p>
-          This admin surface reports by product, not by random repo. Choose a product below to see the
-          matching repos, department signals, active findings, engineering coverage, and HR view.
-        </p>
-      </div>
-      <div class="card">
-        <div class="select-label">Reporting On</div>
-        <select id="productSelect" aria-label="Select product"></select>
-        <div class="resume" id="productSummary" style="margin-top:0.7rem;"></div>
-      </div>
-    </section>
+<div class="container">
+  <!-- Score Cards -->
+  <div class="score-row" id="scoreRow"></div>
 
-    <section class="stats" id="stats"></section>
+  <!-- Product x Department Matrix -->
+  <div class="section-label">Product x Department</div>
+  <table class="matrix" id="matrixTable">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>QA</th>
+        <th>SEO</th>
+        <th>ADA</th>
+        <th>Compliance</th>
+        <th>Monetization</th>
+        <th>Product</th>
+      </tr>
+    </thead>
+    <tbody id="matrixBody"></tbody>
+  </table>
 
-    <div class="sections">
-      <section class="grid-1">
-        <div class="card">
-          <div class="section-header">
-            <h3>Departments</h3>
-            <div class="badge" id="repoBadge">Loading repos...</div>
-          </div>
-          <div class="dept-grid" id="departmentGrid"></div>
-        </div>
-      </section>
+  <!-- Needs Attention -->
+  <div class="section-label">Needs Attention</div>
+  <div id="needsAttention"></div>
+</div>
 
-      <section class="grid-2">
-        <div class="card">
-          <div class="section-header">
-            <h3>Recent Findings</h3>
-            <div class="badge" id="findingBadge">0 items</div>
-          </div>
-          <div class="finding-list" id="findingList"></div>
-        </div>
-        <div class="card">
-          <div class="section-header">
-            <h3>HR Department</h3>
-            <div class="badge">Employee roster</div>
-          </div>
-          <div class="employee-grid" id="employeeGrid"></div>
-        </div>
-      </section>
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
 
-      <section class="grid-3">
-        <div class="card">
-          <div class="section-header">
-            <h3>Studio Product Lead</h3>
-            <div class="badge">Acceptance and handoff</div>
-          </div>
-          <div id="productLeadBrief"></div>
-        </div>
-        <div class="card">
-          <div class="section-header">
-            <h3>Assigned Work</h3>
-            <div class="badge" id="assignmentBadge">0 assignments</div>
-          </div>
-          <div class="task-list" id="assignmentList"></div>
-        </div>
-        <div class="card">
-          <div class="section-header">
-            <h3>Acceptance Checks</h3>
-            <div class="badge" id="criteriaBadge">0 checks</div>
-          </div>
-          <div class="criteria-list" id="criteriaList"></div>
-        </div>
-      </section>
-
-      <section class="grid-2">
-        <div class="card">
-          <div class="section-header">
-            <h3>Recently Fixed</h3>
-            <div class="badge" id="fixedBadge">0 fixes</div>
-          </div>
-          <div class="task-list" id="fixedList"></div>
-        </div>
-        <div class="card">
-          <div class="section-header">
-            <h3>Sprint Plan</h3>
-            <div class="badge" id="sprintBadge">0 lanes</div>
-          </div>
-          <div class="criteria-list" id="sprintList"></div>
-        </div>
-      </section>
-
-      <section class="grid-2">
-        <div class="card">
-          <div class="section-header">
-            <h3>Delivery Pipeline</h3>
-            <div class="badge" id="pipelineBadge">0 repos</div>
-          </div>
-          <div class="criteria-list" id="pipelineList"></div>
-        </div>
-        <div class="card">
-          <div class="section-header">
-            <h3>Overnight Factory</h3>
-            <div class="badge" id="overnightBadge">0 candidates</div>
-          </div>
-          <div class="task-list" id="overnightList"></div>
-        </div>
-      </section>
-
-      <section class="grid-1">
-        <div class="card">
-          <div class="section-header">
-            <h3>Manual Log</h3>
-            <div class="badge" id="manualBadge">0 items</div>
-          </div>
-          <form id="manualForm" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.6rem;margin-bottom:0.9rem;">
-            <div>
-              <label class="select-label" for="manualTitle">Title</label>
-              <input id="manualTitle" name="title" type="text" placeholder="Brief title" required
-                     style="width:100%;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.6rem 0.7rem;font-size:0.9rem;">
-            </div>
-            <div>
-              <label class="select-label" for="manualRepo">Repo</label>
-              <select id="manualRepo" name="repo" aria-label="Manual item repo"></select>
-            </div>
-            <div>
-              <label class="select-label" for="manualDepartment">Department</label>
-              <select id="manualDepartment" name="department" aria-label="Manual item department"></select>
-            </div>
-            <div>
-              <label class="select-label" for="manualSeverity">Severity</label>
-              <select id="manualSeverity" name="severity" aria-label="Manual item severity">
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium" selected>Medium</option>
-                <option value="low">Low</option>
-                <option value="info">Info</option>
-              </select>
-            </div>
-            <div>
-              <label class="select-label" for="manualCategories">Categories</label>
-              <input id="manualCategories" name="categories" type="text" placeholder="qa, seo, ada..."
-                     style="width:100%;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.6rem 0.7rem;font-size:0.9rem;">
-            </div>
-            <div>
-              <label class="select-label" for="manualBucket">Bucket</label>
-              <input id="manualBucket" name="bucket" type="text" placeholder="Sprint 1, backlog..."
-                     style="width:100%;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.6rem 0.7rem;font-size:0.9rem;">
-            </div>
-            <div style="grid-column:1/-1;">
-              <label class="select-label" for="manualNotes">Notes</label>
-              <textarea id="manualNotes" name="notes" rows="2" placeholder="Details, acceptance criteria, links..."
-                        style="width:100%;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.6rem 0.7rem;font-size:0.9rem;resize:vertical;"></textarea>
-            </div>
-            <div style="grid-column:1/-1;display:flex;justify-content:flex-end;">
-              <button type="submit"
-                      style="border:1px solid var(--accent);background:rgba(196,148,74,0.15);color:var(--accent);border-radius:999px;padding:0.5rem 1.1rem;font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">
-                Add Manual Item
-              </button>
-            </div>
-          </form>
-          <div class="task-list" id="manualList"></div>
-        </div>
-      </section>
+<!-- Department Slide-Over -->
+<div class="slideover" id="slideover">
+  <div class="slideover-header">
+    <div>
+      <div class="slideover-title" id="slideoverTitle"></div>
+      <div class="slideover-subtitle" id="slideoverSubtitle"></div>
     </div>
-
-    <div class="foot"><span id="footer-brand">Cody Jo Method</span> Back Office</div>
-  </main>
-
-  <script>
-    const DEPARTMENT_SOURCES = [
-      { key: 'qa', name: 'Quality Assurance', file: 'qa-data.json' },
-      { key: 'seo', name: 'SEO & Discoverability', file: 'seo-data.json' },
-      { key: 'ada', name: 'ADA Compliance', file: 'ada-data.json' },
-      { key: 'compliance', name: 'Regulatory Compliance', file: 'compliance-data.json' },
-      { key: 'privacy', name: 'Privacy Specialist', file: 'privacy-data.json' },
-      { key: 'monetization', name: 'Monetization', file: 'monetization-data.json' },
-      { key: 'product', name: 'Product Roadmap', file: 'product-data.json' },
-      { key: 'self-audit', name: 'Self-Audit', file: 'self-audit-data.json' }
-    ];
-
-    let orgData = null;
-    let deptData = {};
-    let automationData = { targets: [] };
-    let manualItems = [];
-    let selectedProductKey = 'all';
-    const SEVERITY_WEIGHT = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
-
-    function esc(value) {
-      return String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-    }
-
-    function scoreClass(value) {
-      if (value >= 85) return 'var(--success)';
-      if (value >= 65) return 'var(--medium)';
-      if (value > 0) return 'var(--high)';
-      return 'var(--text-dim)';
-    }
-
-    async function loadJson(file) {
-      try {
-        const resp = await fetch(file, { cache: 'no-store' });
-        if (!resp.ok) return null;
-        return await resp.json();
-      } catch {
-        return null;
-      }
-    }
-
-    async function boot() {
-      const [org, automation, manual, ...rest] = await Promise.all([
-        loadJson('org-data.json'),
-        loadJson('automation-data.json'),
-        loadJson('manual-items.json'),
-        ...DEPARTMENT_SOURCES.map(source => loadJson(source.file))
-      ]);
-
-      orgData = org;
-      automationData = automation || { targets: [] };
-      manualItems = Array.isArray(manual?.items) ? manual.items : [];
-      selectedProductKey = getInitialProductKey();
-      DEPARTMENT_SOURCES.forEach((source, index) => {
-        deptData[source.key] = rest[index];
-      });
-
-      initProductSelect();
-      render();
-      setInterval(refreshDepartments, 60000);
-    }
-
-    async function refreshDepartments() {
-      const [automation, ...refreshed] = await Promise.all([
-        loadJson('automation-data.json'),
-        ...DEPARTMENT_SOURCES.map(source => loadJson(source.file))
-      ]);
-      if (automation) automationData = automation;
-      DEPARTMENT_SOURCES.forEach((source, index) => {
-        if (refreshed[index]) deptData[source.key] = refreshed[index];
-      });
-      render();
-    }
-
-    function initProductSelect() {
-      const select = document.getElementById('productSelect');
-      select.innerHTML = orgData.products.map(product => `<option value="${product.key}">${product.name}</option>`).join('');
-      select.addEventListener('change', (event) => {
-        selectedProductKey = event.target.value;
-        syncProductInUrl();
-        render();
-      });
-    }
-
-    function getInitialProductKey() {
-      const params = new URLSearchParams(window.location.search);
-      const requestedKey = (params.get('product') || '').trim().toLowerCase();
-      if (!requestedKey) return 'all';
-
-      const aliases = {
-        analogify: 'analogify-studio'
-      };
-      const normalizedKey = aliases[requestedKey] || requestedKey;
-      const match = (orgData?.products || []).find(product => product.key === normalizedKey);
-      return match ? match.key : 'all';
-    }
-
-    function syncProductInUrl() {
-      const url = new URL(window.location.href);
-      if (selectedProductKey === 'all') {
-        url.searchParams.delete('product');
-      } else {
-        url.searchParams.set('product', selectedProductKey);
-      }
-      window.history.replaceState({}, '', url);
-    }
-
-    function getSelectedProduct() {
-      return orgData.products.find(product => product.key === selectedProductKey) || orgData.products[0];
-    }
-
-    function repoMatches(repoName) {
-      const product = getSelectedProduct();
-      if (product.key === 'all') return true;
-      return product.repos.includes(repoName);
-    }
-
-    function normalizeSelfAudit(data) {
-      if (!data || data.repo !== 'back-office') return [];
-      return [{
-        name: data.repo,
-        findings: data.findings || [],
-        summary: {
-          total: data.summary?.total_findings || 0,
-          total_findings: data.summary?.total_findings || 0,
-          critical: data.summary?.by_severity?.critical || 0,
-          high: data.summary?.by_severity?.high || 0,
-          medium: data.summary?.by_severity?.medium || 0,
-          low: data.summary?.by_severity?.low || 0,
-          info: data.summary?.by_severity?.info || 0,
-          score: data.summary?.health_score || 0
-        }
-      }];
-    }
-
-    function getReposForDepartment(sourceKey) {
-      const data = deptData[sourceKey];
-      if (!data) return [];
-      if (Array.isArray(data.repos)) return data.repos.filter(repo => repoMatches(repo.name));
-      if (sourceKey === 'self-audit') return normalizeSelfAudit(data).filter(repo => repoMatches(repo.name));
-      return [];
-    }
-
-    function getDepartmentScore(sourceKey) {
-      const repos = getReposForDepartment(sourceKey);
-      if (!repos.length) return 0;
-
-      const vals = repos.map(repo => {
-        const summary = repo.summary || {};
-        if (sourceKey === 'seo') return summary.seo_score;
-        if (sourceKey === 'ada') return summary.compliance_score || summary.score;
-        if (sourceKey === 'compliance') return summary.compliance_score;
-        if (sourceKey === 'privacy') return summary.privacy_score;
-        if (sourceKey === 'monetization') return summary.monetization_readiness_score;
-        if (sourceKey === 'product') return summary.product_readiness_score;
-        if (sourceKey === 'qa' || sourceKey === 'self-audit') {
-          const total = summary.total || summary.total_findings || (repo.findings || []).length || 0;
-          const critical = summary.critical || 0;
-          const high = summary.high || 0;
-          const medium = summary.medium || 0;
-          const low = summary.low || 0;
-          if (!total) return 100;
-          return Math.max(0, 100 - critical * 15 - high * 8 - medium * 3 - low);
-        }
-        return null;
-      }).filter(v => v != null);
-
-      return vals.length ? Math.round(vals.reduce((sum, value) => sum + value, 0) / vals.length) : 0;
-    }
-
-    function getDepartmentFindingCount(sourceKey) {
-      return getReposForDepartment(sourceKey).reduce((sum, repo) => sum + ((repo.summary?.total || repo.summary?.total_findings || (repo.findings || []).length || 0)), 0);
-    }
-
-    function collectFindings() {
-      const findings = [];
-      DEPARTMENT_SOURCES.forEach(source => {
-        getReposForDepartment(source.key).forEach(repo => {
-          (repo.findings || []).forEach(finding => {
-            findings.push({
-              ...finding,
-              department: source.name,
-              repo: repo.name
-            });
-          });
-        });
-      });
-      return findings.sort((left, right) => {
-        const sevDelta = (SEVERITY_WEIGHT[(left.severity || 'info').toLowerCase()] ?? 99) - (SEVERITY_WEIGHT[(right.severity || 'info').toLowerCase()] ?? 99);
-        if (sevDelta !== 0) return sevDelta;
-        return String(left.id || '').localeCompare(String(right.id || ''));
-      });
-    }
-
-    function getEmployeesForSelection() {
-      const product = getSelectedProduct();
-      return orgData.employees
-        .filter(employee => product.key === 'all' || employee.projects.includes(product.key) || employee.repos.some(repo => product.repos.includes(repo)))
-        .sort((a, b) => b.daily_score - a.daily_score);
-    }
-
-    function getSourceKeyForDepartment(department) {
-      return department.source_key || null;
-    }
-
-    function getDepartmentSource(sourceKey) {
-      return DEPARTMENT_SOURCES.find(source => source.key === sourceKey) || null;
-    }
-
-    function getEmployeeFindingCount(employee) {
-      const sourceKey = getSourceKeyForDepartment(orgData.departments.find(dept => dept.key === employee.department) || {});
-      if (!sourceKey) return 0;
-      return getReposForDepartment(sourceKey)
-        .filter(repo => employee.repos.includes(repo.name))
-        .reduce((sum, repo) => sum + ((repo.findings || []).length), 0);
-    }
-
-    function findEmployeeByDepartment(departmentKey) {
-      return (orgData.employees || []).find(employee => employee.department === departmentKey);
-    }
-
-    function getRepoNamesForSelection() {
-      const product = getSelectedProduct();
-      if (product.key === 'all') {
-        return Array.from(new Set(orgData.products.flatMap(item => item.repos))).filter(Boolean);
-      }
-      return [...product.repos];
-    }
-
-    function getQaRepoMap() {
-      const map = new Map();
-      getReposForDepartment('qa').forEach(repo => map.set(repo.name, repo));
-      return map;
-    }
-
-    function getAutomationRecord(repoName) {
-      const targets = automationData?.targets || [];
-      return targets.find(target => target.repo === repoName) || null;
-    }
-
-    function collectDocsSignals(repoName) {
-      const docFindings = [];
-      ['qa', 'product', 'self-audit'].forEach(sourceKey => {
-        getReposForDepartment(sourceKey)
-          .filter(repo => repo.name === repoName)
-          .forEach(repo => {
-            (repo.findings || []).forEach(finding => {
-              const haystack = `${finding.category || ''} ${finding.title || ''} ${finding.description || ''}`.toLowerCase();
-              if (haystack.includes('doc') || haystack.includes('readme') || haystack.includes('jsdoc') || haystack.includes('setup')) {
-                docFindings.push({ ...finding, department: sourceKey });
-              }
-            });
-          });
-      });
-      return docFindings;
-    }
-
-    function evaluateAcceptance(repoName) {
-      const qaRepo = getQaRepoMap().get(repoName);
-      const automation = getAutomationRecord(repoName);
-      const tests = qaRepo?.tests || {};
-      const lint = qaRepo?.lint || {};
-      const findings = qaRepo?.findings || [];
-      const openCritical = findings.filter(finding => ['critical', 'high'].includes((finding.severity || '').toLowerCase()) && finding.status !== 'fixed').length;
-      const testingFindings = findings.filter(finding => String(finding.category || '').toLowerCase().includes('testing')).length;
-      const docsFindings = collectDocsSignals(repoName);
-      const hasTests = Number(tests.total || 0) > 0;
-      const testsPassing = !!tests.passed && Number(tests.failed || 0) === 0 && Number(tests.errors || 0) === 0;
-      const hasLintSignal = Object.keys(lint || {}).length > 0;
-      const lintPassing = !hasLintSignal || !!lint.passed;
-
-      const checks = [
-        {
-          label: 'Acceptance criteria defined',
-          status: openCritical === 0 ? 'good' : 'warn',
-          summary: openCritical === 0 ? 'No critical blockers on the current acceptance path.' : `${openCritical} critical or high blockers still open.`,
-        },
-        {
-          label: 'QA test cases exist',
-          status: hasTests ? 'good' : 'bad',
-          summary: hasTests ? `${tests.total} automated tests are on record.` : 'No automated tests were recorded for this repo.',
-        },
-        {
-          label: 'QA test run is green',
-          status: hasTests ? (testsPassing ? 'good' : 'bad') : 'warn',
-          summary: hasTests ? `${tests.failed || 0} failed, ${tests.errors || 0} errors.` : 'Build-only verification is acting as a proxy right now.',
-        },
-        {
-          label: 'Lint and build checks exist',
-          status: hasLintSignal ? (lintPassing ? 'good' : 'bad') : 'warn',
-          summary: hasLintSignal ? `${lint.errors || 0} errors, ${lint.warnings || 0} warnings.` : 'No lint/typecheck signal was captured yet.',
-        },
-        {
-          label: 'Documentation path exists',
-          status: docsFindings.length === 0 ? 'good' : (docsFindings.length > 2 ? 'bad' : 'warn'),
-          summary: docsFindings.length === 0 ? 'No active README/docs gaps detected in the current findings.' : `${docsFindings.length} documentation-related findings still need work.`,
-        },
-        {
-          label: 'Privacy gate respected',
-          status: getDepartmentFindingCount('privacy') > 0 ? 'info' : 'good',
-          summary: 'Product and monetization changes should remain gated by privacy review findings.',
-        },
-        {
-          label: 'CI workflow configured',
-          status: automation?.workflows?.ci?.configured ? 'good' : 'bad',
-          summary: automation?.workflows?.ci?.configured ? `Workflow: ${automation.workflows.ci.workflow}` : 'No PR validation workflow detected.',
-        },
-        {
-          label: 'Preview environment configured',
-          status: automation?.workflows?.preview?.configured ? 'good' : 'warn',
-          summary: automation?.workflows?.preview?.configured ? `Workflow: ${automation.workflows.preview.workflow}` : 'No preview or staging workflow detected.',
-        },
-        {
-          label: 'Production deploy gated',
-          status: automation?.workflows?.cd?.configured ? 'good' : 'warn',
-          summary: automation?.workflows?.cd?.configured ? `Workflow: ${automation.workflows.cd.workflow}` : 'No production deploy workflow detected.',
-        },
-        {
-          label: 'Nightly Back Office lane exists',
-          status: automation?.workflows?.nightly?.configured ? 'good' : 'warn',
-          summary: automation?.workflows?.nightly?.configured ? `Workflow: ${automation.workflows.nightly.workflow}` : 'No scheduled nightly workflow detected.',
-        }
-      ];
-
-      const readiness = Math.max(0, 100
-        - (hasTests ? 0 : 25)
-        - (testsPassing || !hasTests ? 0 : 20)
-        - (lintPassing ? 0 : 10)
-        - (openCritical * 10)
-        - (docsFindings.length * 4)
-        - (testingFindings * 4));
-
-      return {
-        repoName,
-        qaRepo,
-        tests,
-        lint,
-        checks,
-        docsFindings,
-        testingFindings,
-        openCritical,
-        readiness: Math.max(0, Math.min(100, readiness))
-      };
-    }
-
-    function buildAssignments() {
-      const repoNames = getRepoNamesForSelection();
-      const assignments = [];
-      const ownerBySource = {
-        qa: findEmployeeByDepartment('qa'),
-        ada: findEmployeeByDepartment('frontend'),
-        seo: findEmployeeByDepartment('seo'),
-        compliance: findEmployeeByDepartment('platform'),
-        privacy: findEmployeeByDepartment('privacy'),
-        monetization: findEmployeeByDepartment('product'),
-        product: findEmployeeByDepartment('product'),
-        'self-audit': findEmployeeByDepartment('platform')
-      };
-
-      DEPARTMENT_SOURCES.forEach(source => {
-        getReposForDepartment(source.key)
-          .filter(repo => repoNames.includes(repo.name))
-          .forEach(repo => {
-            const topFinding = [...(repo.findings || [])]
-              .sort((left, right) => (SEVERITY_WEIGHT[(left.severity || 'info').toLowerCase()] ?? 99) - (SEVERITY_WEIGHT[(right.severity || 'info').toLowerCase()] ?? 99))[0];
-            if (!topFinding) return;
-            const automation = getAutomationRecord(repo.name);
-            assignments.push({
-              repo: repo.name,
-              product: getSelectedProduct().name,
-              department: source.name,
-              owner: ownerBySource[source.key]?.name || 'Unassigned',
-              ownerTitle: ownerBySource[source.key]?.title || 'Department Owner Needed',
-              title: topFinding.title || `Review ${source.name}`,
-              severity: (topFinding.severity || 'info').toLowerCase(),
-              details: topFinding.description || topFinding.fix || 'No details available.',
-              file: topFinding.file || 'n/a',
-              pipeline: automation?.pr_status || 'workflow-missing'
-            });
-          });
-      });
-
-      return assignments.sort((left, right) => (SEVERITY_WEIGHT[left.severity] ?? 99) - (SEVERITY_WEIGHT[right.severity] ?? 99)).slice(0, 12);
-    }
-
-    function getSprintLane(finding) {
-      const phase = String(finding.priority_phase || '').toLowerCase();
-      if (phase === 'must-have') return 'Sprint 1';
-      if (phase === 'should-have') return 'Sprint 2';
-      if (phase === 'nice-to-have') return 'Sprint 3';
-      if (phase === 'future') return 'Backlog';
-      return 'Ideas';
-    }
-
-    function getSprintOwner(finding) {
-      const haystack = `${finding.file || ''} ${finding.category || ''} ${finding.title || ''} ${finding.description || ''}`.toLowerCase();
-      if (haystack.includes('privacy') || haystack.includes('consent') || haystack.includes('retention')) {
-        return findEmployeeByDepartment('privacy');
-      }
-      if (haystack.includes('lambda') || haystack.includes('api') || haystack.includes('auth') || haystack.includes('dynamo')) {
-        return findEmployeeByDepartment('backend');
-      }
-      if (haystack.includes('terraform') || haystack.includes('cloudfront') || haystack.includes('deploy')) {
-        return findEmployeeByDepartment('platform');
-      }
-      if (haystack.includes('readme') || haystack.includes('roadmap') || haystack.includes('growth') || haystack.includes('pricing')) {
-        return findEmployeeByDepartment('product');
-      }
-      return findEmployeeByDepartment('frontend');
-    }
-
-    function buildSprintPlan() {
-      const sprintMap = new Map();
-      const repoNames = getRepoNamesForSelection();
-
-      repoNames.forEach(repoName => {
-        const automation = getAutomationRecord(repoName);
-        if (automation?.sprints?.length) {
-          automation.sprints.forEach(lane => {
-            const items = sprintMap.get(lane.lane) || [];
-            lane.items.forEach(item => {
-              const owner = getSprintOwner(item);
-              items.push({
-                repo: item.repo || repoName,
-                title: item.title || 'Untitled finding',
-                severity: (item.severity || 'info').toLowerCase(),
-                effort: item.effort || 'unknown',
-                owner: owner?.name || 'Unassigned',
-                ownerTitle: owner?.title || 'Owner needed',
-                summary: item.summary || 'No details available.',
-              });
-            });
-            sprintMap.set(lane.lane, items);
-          });
-          return;
-        }
-
-        const productRepo = getReposForDepartment('product').find(repo => repo.name === repoName);
-        (productRepo?.findings || []).forEach(finding => {
-          const lane = getSprintLane(finding);
-          const owner = getSprintOwner(finding);
-          const items = sprintMap.get(lane) || [];
-          items.push({
-            repo: productRepo.name,
-            title: finding.title || 'Untitled finding',
-            severity: (finding.severity || 'info').toLowerCase(),
-            effort: finding.effort || 'unknown',
-            owner: owner?.name || 'Unassigned',
-            ownerTitle: owner?.title || 'Owner needed',
-            summary: finding.fix || finding.description || 'No details available.',
-          });
-          sprintMap.set(lane, items);
-        });
-      });
-
-      const ordered = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog', 'Ideas'];
-      return ordered
-        .filter(lane => sprintMap.has(lane))
-        .map(lane => ({
-          lane,
-          items: sprintMap.get(lane)
-            .sort((left, right) => (SEVERITY_WEIGHT[left.severity] ?? 99) - (SEVERITY_WEIGHT[right.severity] ?? 99))
-            .slice(0, lane === 'Ideas' ? 3 : 5),
-        }));
-    }
-
-    function collectFixedItems() {
-      const repos = getReposForDepartment('qa');
-      const items = [];
-      repos.forEach(repo => {
-        (repo.findings || [])
-          .filter(finding => finding.status === 'fixed')
-          .forEach(finding => {
-            items.push({
-              repo: repo.name,
-              id: finding.id,
-              title: finding.title || 'Untitled fix',
-              commit: finding.commit || '',
-              fixedAt: finding.fixed_at || '',
-              file: finding.file || 'n/a',
-            });
-          });
-      });
-      return items
-        .sort((left, right) => String(right.fixedAt || '').localeCompare(String(left.fixedAt || '')))
-        .slice(0, 10);
-    }
-
-    function renderStats() {
-      const product = getSelectedProduct();
-      const repos = product.key === 'all' ? new Set(orgData.products.flatMap(item => item.repos)) : new Set(product.repos);
-      const findings = collectFindings();
-      const scores = DEPARTMENT_SOURCES.map(source => getDepartmentScore(source.key)).filter(value => value > 0);
-      const avgScore = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0;
-      const urgent = findings.filter(finding => ['critical', 'high'].includes((finding.severity || '').toLowerCase())).length;
-
-      document.getElementById('stats').innerHTML = `
-        <div class="card stat">
-          <div class="label">Repos in Scope</div>
-          <div class="value" style="color:var(--accent)">${repos.size}</div>
-          <div class="sub">${product.key === 'all' ? 'Across the workspace' : product.repos.join(', ')}</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Departments Reporting</div>
-          <div class="value" style="color:var(--info)">${DEPARTMENT_SOURCES.filter(source => getReposForDepartment(source.key).length > 0).length}</div>
-          <div class="sub">Filtered to the selected product</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Visible Findings</div>
-          <div class="value" style="color:${urgent ? 'var(--critical)' : 'var(--text)'}">${findings.length}</div>
-          <div class="sub">${urgent} urgent today</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Average Health</div>
-          <div class="value" style="color:${scoreClass(avgScore)}">${avgScore}%</div>
-          <div class="sub">Across active departments</div>
-        </div>
-      `;
-    }
-
-    function renderDepartments() {
-      const repoBadge = document.getElementById('repoBadge');
-      const selected = getSelectedProduct();
-      repoBadge.textContent = selected.key === 'all' ? 'All repos' : selected.repos.join(', ');
-
-      document.getElementById('departmentGrid').innerHTML = orgData.departments.map(dept => {
-        const sourceKey = getSourceKeyForDepartment(dept);
-        const sourceMeta = sourceKey ? getDepartmentSource(sourceKey) : null;
-        const score = sourceKey ? getDepartmentScore(sourceKey) : Math.round(getEmployeesForSelection().reduce((sum, emp) => sum + emp.daily_score, 0) / Math.max(getEmployeesForSelection().length, 1));
-        const findings = sourceKey ? getDepartmentFindingCount(sourceKey) : getEmployeesForSelection().length;
-        const departmentHref = sourceKey
-          ? `${sourceKey}.html${selected.key !== 'all' ? `?product=${encodeURIComponent(selected.key)}` : ''}`
-          : '';
-        const displayName = sourceMeta ? sourceMeta.name : dept.name;
-        const displayPersona = sourceMeta ? `${dept.name} ownership for ${sourceMeta.name.toLowerCase()} findings and reporting.` : dept.persona;
-        return `
-          <article class="dept-card"${departmentHref ? ` onclick="window.location.href='${departmentHref}'" style="cursor:pointer;"` : ''}>
-            <div class="dept-top">
-              <div>
-                <div class="dept-name">${esc(displayName)}</div>
-                <div class="dept-purpose">${esc(displayPersona)}</div>
-              </div>
-              <div class="score-pill" style="color:${scoreClass(score)}">${score || 'n/a'}</div>
-            </div>
-            <div class="resume">${esc(dept.purpose)}</div>
-            <div class="resume" style="margin-top:0.5rem;">Findings / capacity signal: ${findings}</div>
-            ${sourceMeta && dept.name !== displayName ? `<div class="resume" style="margin-top:0.5rem;">Team owner: ${esc(dept.name)}</div>` : ''}
-            ${departmentHref ? `<div class="resume" style="margin-top:0.5rem;"><a href="${departmentHref}" style="color:var(--accent);text-decoration:none;">Open department dashboard</a></div>` : ''}
-            <div class="chips">${dept.skills.slice(0, 5).map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
-          </article>
-        `;
-      }).join('');
-    }
-
-    function renderEmployees() {
-      const employees = getEmployeesForSelection();
-      document.getElementById('employeeGrid').innerHTML = employees.length ? employees.map(employee => `
-        <article class="employee-card">
-          <div class="employee-top">
-            <div>
-              <div class="employee-name">${esc(employee.name)}</div>
-              <div class="employee-title">${esc(employee.title)}</div>
-            </div>
-            <div class="score-pill" style="color:${scoreClass(employee.daily_score)}">${employee.daily_score}</div>
-          </div>
-          <div class="employee-bio">${esc(employee.bio)}</div>
-          <div class="resume"><strong>Resume:</strong> ${esc(employee.resume)}</div>
-          <div class="resume"><strong>Active findings:</strong> ${getEmployeeFindingCount(employee)}</div>
-          <div class="resume"><strong>Findings focus:</strong> ${esc(employee.finding_focus.join(', '))}</div>
-          <div class="chips">${employee.skills.slice(0, 6).map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
-        </article>
-      `).join('') : '<div class="resume">No employees are mapped to this product yet.</div>';
-    }
-
-    function renderFindings() {
-      const findings = collectFindings();
-      document.getElementById('findingBadge').textContent = `${findings.length} visible`;
-      document.getElementById('findingList').innerHTML = findings.length ? findings.slice(0, 10).map(finding => `
-        <article class="finding-card">
-          <div class="finding-top">
-            <span class="severity ${esc((finding.severity || 'info').toLowerCase())}">${esc(finding.severity || 'info')}</span>
-            <span class="finding-id">${esc(finding.id || '')}</span>
-          </div>
-          <h4>${esc(finding.title || 'Untitled finding')}</h4>
-          <div class="finding-meta">${esc(finding.department)} · ${esc(finding.repo)} · ${esc(finding.file || 'no file')}</div>
-          <div class="finding-desc">${esc(finding.description || finding.fix || 'No description available.')}</div>
-        </article>
-      `).join('') : '<div class="resume">No findings match this product yet.</div>';
-    }
-
-    function renderProductLead() {
-      const lead = (orgData.employees || []).find(employee => employee.id === 'jordan-mercer') || findEmployeeByDepartment('product');
-      const repoChecks = getRepoNamesForSelection().map(evaluateAcceptance);
-      const avgReadiness = repoChecks.length ? Math.round(repoChecks.reduce((sum, item) => sum + item.readiness, 0) / repoChecks.length) : 0;
-      const missingTests = repoChecks.filter(item => !Number(item.tests?.total || 0)).length;
-      const openBlockers = repoChecks.reduce((sum, item) => sum + item.openCritical, 0);
-
-      document.getElementById('productLeadBrief').innerHTML = lead ? `
-        <div class="employee-top">
-          <div>
-            <div class="employee-name">${esc(lead.name)}</div>
-            <div class="employee-title">${esc(lead.title)}</div>
-          </div>
-          <div class="score-pill" style="color:${scoreClass(lead.daily_score)}">${lead.daily_score}</div>
-        </div>
-        <div class="employee-bio">${esc(lead.bio)}</div>
-        <div class="resume"><strong>Operating rule:</strong> ${esc(lead.persona)}</div>
-        <div class="mini-list">
-          <div>Average readiness: <strong>${avgReadiness}%</strong></div>
-          <div>Repos missing automated tests: <strong>${missingTests}</strong></div>
-          <div>Critical / high blockers in scope: <strong>${openBlockers}</strong></div>
-        </div>
-        <div class="chips">${lead.skills.map(skill => `<span class="chip">${esc(skill)}</span>`).join('')}</div>
-      ` : '<div class="resume">No product lead is configured yet.</div>';
-    }
-
-    function renderAssignments() {
-      const assignments = buildAssignments();
-      document.getElementById('assignmentBadge').textContent = `${assignments.length} assignments`;
-      document.getElementById('assignmentList').innerHTML = assignments.length ? assignments.map(task => `
-        <article class="task-card">
-          <div class="task-top">
-            <div>
-              <div class="employee-name">${esc(task.title)}</div>
-              <div class="task-owner">${esc(task.owner)} · ${esc(task.ownerTitle)}</div>
-            </div>
-            <span class="status-pill ${task.severity === 'critical' || task.severity === 'high' ? 'bad' : task.severity === 'medium' ? 'warn' : 'info'}">${esc(task.severity)}</span>
-          </div>
-          <div class="finding-meta">${esc(task.department)} · ${esc(task.repo)} · ${esc(task.file)}</div>
-          <div class="finding-desc">${esc(task.details)}</div>
-          <div class="task-meta">PR lane: <strong>${esc(task.pipeline)}</strong></div>
-        </article>
-      `).join('') : '<div class="resume">No assignments are in scope for this product yet.</div>';
-    }
-
-    function renderCriteria() {
-      const checks = getRepoNamesForSelection().map(evaluateAcceptance);
-      document.getElementById('criteriaBadge').textContent = `${checks.length} repos`;
-      document.getElementById('criteriaList').innerHTML = checks.length ? checks.map(item => `
-        <article class="criteria-card">
-          <div class="criteria-top">
-            <div>
-              <div class="employee-name">${esc(item.repoName)}</div>
-              <div class="criteria-owner">Readiness ${item.readiness}%</div>
-            </div>
-            <span class="status-pill ${item.readiness >= 85 ? 'good' : item.readiness >= 65 ? 'warn' : 'bad'}">${item.readiness >= 85 ? 'ready-ish' : item.readiness >= 65 ? 'needs work' : 'blocked'}</span>
-          </div>
-          <div class="mini-list">
-            ${item.checks.map(check => `<div><span class="status-pill ${check.status}">${esc(check.label)}</span> ${esc(check.summary)}</div>`).join('')}
-          </div>
-        </article>
-      `).join('') : '<div class="resume">No repo coverage is mapped to this selection yet.</div>';
-    }
-
-    function renderFixedItems() {
-      const items = collectFixedItems();
-      document.getElementById('fixedBadge').textContent = `${items.length} fixes`;
-      document.getElementById('fixedList').innerHTML = items.length ? items.map(item => `
-        <article class="task-card">
-          <div class="task-top">
-            <div>
-              <div class="employee-name">${esc(item.title)}</div>
-              <div class="task-owner">${esc(item.repo)} · ${esc(item.file)}</div>
-            </div>
-            <span class="status-pill good">fixed</span>
-          </div>
-          <div class="task-meta">
-            ${item.commit ? `<div>Commit: <strong>${esc(item.commit)}</strong></div>` : ''}
-            ${item.fixedAt ? `<div>Fixed at: <strong>${esc(item.fixedAt)}</strong></div>` : '<div>Fix timestamp not recorded yet.</div>'}
-          </div>
-        </article>
-      `).join('') : '<div class="resume">No fixed QA items are visible for this selection yet.</div>';
-    }
-
-    function renderSprintPlan() {
-      const lanes = buildSprintPlan();
-      document.getElementById('sprintBadge').textContent = `${lanes.length} lanes`;
-      document.getElementById('sprintList').innerHTML = lanes.length ? lanes.map(lane => `
-        <article class="criteria-card">
-          <div class="criteria-top">
-            <div>
-              <div class="employee-name">${esc(lane.lane)}</div>
-              <div class="criteria-owner">${lane.items.length} priorities</div>
-            </div>
-            <span class="status-pill ${lane.lane === 'Sprint 1' ? 'bad' : lane.lane === 'Sprint 2' ? 'warn' : 'info'}">${esc(lane.lane)}</span>
-          </div>
-          <div class="mini-list">
-            ${lane.items.map(item => `
-              <div>
-                <strong>${esc(item.title)}</strong><br>
-                ${esc(item.repo)} · ${esc(item.owner)} · ${esc(item.ownerTitle)} · ${esc(item.effort)}
-              </div>
-            `).join('')}
-          </div>
-        </article>
-      `).join('') : '<div class="resume">No sprint priorities are in scope for this product yet.</div>';
-    }
-
-    function renderPipeline() {
-      const repoNames = getRepoNamesForSelection();
-      const items = repoNames.map(repoName => {
-        const automation = getAutomationRecord(repoName);
-        return {
-          repoName,
-          automation
-        };
-      });
-      document.getElementById('pipelineBadge').textContent = `${items.length} repos`;
-      document.getElementById('pipelineList').innerHTML = items.length ? items.map(item => {
-        const automation = item.automation;
-        const readiness = automation?.delivery_readiness ?? 0;
-        return `
-          <article class="criteria-card">
-            <div class="criteria-top">
-              <div>
-                <div class="employee-name">${esc(item.repoName)}</div>
-                <div class="criteria-owner">Delivery readiness ${readiness}%</div>
-              </div>
-              <span class="status-pill ${readiness >= 80 ? 'good' : readiness >= 60 ? 'warn' : 'bad'}">${automation ? 'tracked' : 'missing'}</span>
-            </div>
-            <div class="mini-list">
-              <div><span class="status-pill ${automation?.workflows?.ci?.configured ? 'good' : 'bad'}">CI</span> ${esc(automation?.workflows?.ci?.workflow || 'missing')}</div>
-              <div><span class="status-pill ${automation?.workflows?.preview?.configured ? 'good' : 'warn'}">Preview</span> ${esc(automation?.preview_status || 'missing')}</div>
-              <div><span class="status-pill ${automation?.workflows?.cd?.configured ? 'good' : 'warn'}">Production</span> ${esc(automation?.production_status || 'missing')}</div>
-              <div><span class="status-pill ${automation?.workflows?.nightly?.configured ? 'good' : 'info'}">Nightly</span> ${esc(automation?.nightly_status || 'missing')}</div>
-            </div>
-          </article>
-        `;
-      }).join('') : '<div class="resume">No delivery pipeline data is available yet.</div>';
-    }
-
-    function renderOvernightFactory() {
-      const repoNames = new Set(getRepoNamesForSelection());
-      const candidates = (automationData?.targets || [])
-        .filter(target => repoNames.has(target.repo))
-        .flatMap(target => (target.overnight?.safe_candidates || []).map(item => ({
-          ...item,
-          repo: target.repo
-        })))
-        .sort((left, right) => (SEVERITY_WEIGHT[left.severity] ?? 99) - (SEVERITY_WEIGHT[right.severity] ?? 99))
-        .slice(0, 10);
-
-      document.getElementById('overnightBadge').textContent = `${candidates.length} candidates`;
-      document.getElementById('overnightList').innerHTML = candidates.length ? candidates.map(item => `
-        <article class="task-card">
-          <div class="task-top">
-            <div>
-              <div class="employee-name">${esc(item.title)}</div>
-              <div class="task-owner">${esc(item.repo)} · ${esc(item.department)} · ${esc(item.bucket)}</div>
-            </div>
-            <span class="status-pill ${item.bucket === 'Overnight Now' ? 'good' : item.bucket === 'Next Overnight' ? 'warn' : 'info'}">${esc(item.effort)}</span>
-          </div>
-          <div class="finding-meta">${esc(item.file || 'no file')}</div>
-          <div class="finding-desc">${esc(item.reason)}</div>
-        </article>
-      `).join('') : '<div class="resume">No safe unattended candidates are currently in scope for this product.</div>';
-    }
-
-    function getManualItemsForSelection() {
-      const product = getSelectedProduct();
-      const repos = new Set(product.key === 'all' ? orgData.products.flatMap(item => item.repos) : product.repos);
-      return (manualItems || []).filter(item => {
-        if (item.product_key && item.product_key !== product.key) return false;
-        if (item.repo && !repos.has(item.repo)) return false;
-        return true;
-      });
-    }
-
-    function renderManualLog() {
-      const items = getManualItemsForSelection();
-      document.getElementById('manualBadge').textContent = `${items.length} items`;
-      document.getElementById('manualList').innerHTML = items.length ? items.map(item => `
-        <article class="task-card">
-          <div class="task-top">
-            <div>
-              <div class="employee-name">${esc(item.title)}</div>
-              <div class="task-owner">
-                ${esc(item.repo || 'unmapped repo')}
-                ${item.department ? ` · ${esc(item.department)}` : ''}
-                ${item.bucket ? ` · ${esc(item.bucket)}` : ''}
-              </div>
-            </div>
-            <span class="status-pill ${item.severity === 'critical' || item.severity === 'high' ? 'bad' : item.severity === 'medium' ? 'warn' : 'info'}">
-              ${esc(item.severity || 'info')}
-            </span>
-          </div>
-          <div class="finding-meta">
-            ${Array.isArray(item.categories) && item.categories.length
-              ? item.categories.map(cat => `<span class="chip">${esc(cat)}</span>`).join(' ')
-              : 'No categories assigned yet.'}
-          </div>
-          <div class="finding-desc">${esc(item.notes || 'No additional notes recorded.')}</div>
-        </article>
-      `).join('') : '<div class="resume">No manual items are logged for this product yet.</div>';
-    }
-
-    function initManualForm() {
-      const form = document.getElementById('manualForm');
-      if (!form) return;
-
-      const repoSelect = document.getElementById('manualRepo');
-      const deptSelect = document.getElementById('manualDepartment');
-
-      // Populate repo and department options once orgData is available.
-      const allRepos = Array.from(new Set(orgData.products.flatMap(item => item.repos))).filter(Boolean);
-      repoSelect.innerHTML = [''].concat(allRepos).map(name =>
-        `<option value="${name}">${name || 'Unassigned'}</option>`
-      ).join('');
-
-      deptSelect.innerHTML = orgData.departments.map(dept =>
-        `<option value="${dept.key}">${dept.name}</option>`
-      ).join('');
-
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const titleEl = document.getElementById('manualTitle');
-        const title = titleEl.value.trim();
-        if (!title) {
-          alert('Title is required for a manual item.');
-          return;
-        }
-        const repo = document.getElementById('manualRepo').value.trim();
-        const departmentKey = document.getElementById('manualDepartment').value.trim();
-        const severity = document.getElementById('manualSeverity').value.trim().toLowerCase() || 'medium';
-        const categoriesRaw = document.getElementById('manualCategories').value;
-        const bucket = document.getElementById('manualBucket').value.trim();
-        const notes = document.getElementById('manualNotes').value.trim();
-
-        const categories = (categoriesRaw || '').split(',').map(c => c.trim()).filter(Boolean);
-        const department = departmentKey || '';
-        const product = getSelectedProduct();
-
-        try {
-          const resp = await fetch('api/manual-item', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title,
-              repo,
-              department,
-              severity,
-              categories,
-              bucket,
-              notes,
-              product_key: product.key,
-            }),
-          });
-          if (!resp.ok) throw new Error('Failed to save manual item');
-          const data = await resp.json();
-          if (Array.isArray(data.items)) {
-            manualItems = data.items;
-            renderManualLog();
-          }
-          form.reset();
-        } catch (error) {
-          alert('Could not save manual item. Check local server logs.');
+    <button class="slideover-close" id="slideoverCloseBtn">&times;</button>
+  </div>
+
+  <div class="filters-bar">
+    <select class="filter-select" id="filterSeverity" aria-label="Filter by severity">
+      <option value="all">All Severities</option>
+      <option value="critical">Critical</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+      <option value="info">Info</option>
+    </select>
+    <select class="filter-select" id="filterStatus" aria-label="Filter by status">
+      <option value="all">All Status</option>
+      <option value="open">Open</option>
+      <option value="fixed">Fixed</option>
+      <option value="presumed_fixed">Presumed Fixed</option>
+    </select>
+    <select class="filter-select" id="filterEffort" aria-label="Filter by effort">
+      <option value="all">All Effort</option>
+      <option value="easy">Easy</option>
+      <option value="moderate">Moderate</option>
+      <option value="hard">Hard</option>
+      <option value="unknown">Unknown</option>
+    </select>
+    <div class="filter-toggle" id="filterAiFixable">
+      <span class="dot"></span> AI Fixable
+    </div>
+    <input class="filter-search" id="filterSearch" placeholder="Search findings..." type="text" aria-label="Search findings">
+  </div>
+
+  <div class="slideover-body" id="slideoverBody"></div>
+</div>
+
+<!-- Finding Detail Panel (nested) -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <div class="detail-header-left" id="detailHeaderLeft"></div>
+    <button class="slideover-close" id="detailCloseBtn">&times;</button>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── Constants ── */
+  var DEPT_KEYS = ['qa', 'seo', 'ada', 'compliance', 'monetization', 'product'];
+  var DEPT_LABELS = {
+    qa: 'QA', seo: 'SEO', ada: 'ADA',
+    compliance: 'Compliance', monetization: 'Monetization', product: 'Product'
+  };
+  var DEPT_SOURCES = {
+    qa:           {url: 'qa-data.json',           scoreField: null},
+    seo:          {url: 'seo-data.json',          scoreField: 'seo_score'},
+    ada:          {url: 'ada-data.json',           scoreField: 'compliance_score'},
+    compliance:   {url: 'compliance-data.json',    scoreField: 'compliance_score'},
+    monetization: {url: 'monetization-data.json',  scoreField: 'monetization_readiness_score'},
+    product:      {url: 'product-data.json',       scoreField: 'product_readiness_score'}
+  };
+  var SEV_ORDER  = {critical: 0, high: 1, medium: 2, low: 3, info: 4};
+  var EFFORT_ORDER = {easy: 0, moderate: 1, hard: 2};
+  var STALE_MS = 24 * 60 * 60 * 1000;
+
+  /* ── State ── */
+  var orgData = null;
+  var deptData = {};
+  var deptErrors = {};
+  var backlogData = null;
+  var historyData = null;
+  var selectedProduct = 'all';
+
+  /* ── Helpers ── */
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+
+  function scoreColor(s) {
+    if (s == null) return 'gray';
+    if (s >= 85) return 'green';
+    if (s >= 65) return 'yellow';
+    if (s >= 50) return 'orange';
+    return 'red';
+  }
+
+  function scoreColorVar(s) {
+    if (s == null) return 'var(--text-dim)';
+    if (s >= 85) return 'var(--success)';
+    if (s >= 65) return 'var(--medium)';
+    if (s >= 50) return 'var(--high)';
+    return 'var(--critical)';
+  }
+
+  function deriveQaScore(summary) {
+    if (!summary) return null;
+    var c = summary.critical || 0;
+    var h = summary.high || 0;
+    var m = summary.medium || 0;
+    var l = summary.low || 0;
+    return Math.max(0, Math.min(100, 100 - c * 15 - h * 8 - m * 3 - l));
+  }
+
+  function getRepoScore(dept, repoObj) {
+    if (!repoObj || !repoObj.summary) return null;
+    if (dept === 'qa') return deriveQaScore(repoObj.summary);
+    var field = DEPT_SOURCES[dept].scoreField;
+    if (!field) return null;
+    var val = repoObj.summary[field];
+    return val != null ? val : null;
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '--';
+    var ms = Date.now() - new Date(dateStr).getTime();
+    if (ms < 0) ms = 0;
+    var min = Math.floor(ms / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return min + ' min ago';
+    var hrs = Math.floor(min / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+  }
+
+  function isStale(dateStr) {
+    if (!dateStr) return true;
+    return (Date.now() - new Date(dateStr).getTime()) > STALE_MS;
+  }
+
+  function getProductRepos(productKey) {
+    if (!orgData || !orgData.products) return [];
+    if (productKey === 'all') {
+      var allRepos = {};
+      DEPT_KEYS.forEach(function(dept) {
+        if (deptData[dept] && deptData[dept].repos) {
+          deptData[dept].repos.forEach(function(r) { allRepos[r.name] = true; });
         }
       });
+      return Object.keys(allRepos).sort();
     }
+    var prod = orgData.products.find(function(p) { return p.key === productKey; });
+    return prod ? (prod.repos || []) : [];
+  }
 
-    function renderProductSummary() {
-      const product = getSelectedProduct();
-      const domains = product.domains.length ? ` Domains: ${product.domains.join(', ')}.` : '';
-      const repoText = product.key === 'all' ? 'Repos: all tracked repos.' : `Repos: ${product.repos.join(', ')}.`;
-      document.getElementById('productSummary').textContent = `${product.description}${domains} ${repoText}`;
-      document.getElementById('updatedAt').textContent = `Reporting on ${product.name}`;
-      document.getElementById('productSelect').value = product.key;
+  function findRepo(dept, repoName) {
+    if (!deptData[dept] || !deptData[dept].repos) return null;
+    return deptData[dept].repos.find(function(r) { return r.name === repoName; }) || null;
+  }
+
+  function getAvgScore(dept) {
+    var repos = getProductRepos(selectedProduct);
+    if (repos.length === 0 && selectedProduct === 'all') {
+      if (!deptData[dept] || !deptData[dept].repos) return null;
+      repos = deptData[dept].repos.map(function(r) { return r.name; });
     }
-
-    function render() {
-      renderProductSummary();
-      renderStats();
-      renderDepartments();
-      renderEmployees();
-      renderFindings();
-      renderProductLead();
-      renderAssignments();
-      renderCriteria();
-      renderFixedItems();
-      renderSprintPlan();
-      renderPipeline();
-      renderOvernightFactory();
-      renderManualLog();
-    }
-
-    boot().then(() => {
-      initManualForm();
+    var scores = [];
+    repos.forEach(function(repoName) {
+      var s = getRepoScore(dept, findRepo(dept, repoName));
+      if (s != null) scores.push(s);
     });
-  </script>
+    if (scores.length === 0) return null;
+    return Math.round(scores.reduce(function(a, b) { return a + b; }, 0) / scores.length);
+  }
+
+  function getSparkline(dept) {
+    if (!historyData || !historyData.snapshots) return [];
+    var repos = getProductRepos(selectedProduct);
+    return historyData.snapshots.slice(-5).map(function(snap) {
+      if (!snap.scores) return null;
+      var vals = [];
+      if (repos.length === 0 && selectedProduct === 'all') {
+        Object.keys(snap.scores).forEach(function(rk) {
+          var v = snap.scores[rk][dept];
+          if (v != null) vals.push(v);
+        });
+      } else {
+        repos.forEach(function(repoName) {
+          var sk = Object.keys(snap.scores).find(function(k) {
+            return k === repoName || k.replace(/-/g, '') === repoName.replace(/-/g, '');
+          });
+          if (sk && snap.scores[sk][dept] != null) vals.push(snap.scores[sk][dept]);
+        });
+      }
+      if (vals.length === 0) return null;
+      return Math.round(vals.reduce(function(a, b) { return a + b; }, 0) / vals.length);
+    });
+  }
+
+  function computeTrend(sparkVals, currentScore) {
+    if (!sparkVals || sparkVals.length < 2 || currentScore == null) return {label: '', cls: ''};
+    var prev = null;
+    for (var i = sparkVals.length - 2; i >= 0; i--) {
+      if (sparkVals[i] != null) { prev = sparkVals[i]; break; }
+    }
+    if (prev == null) return {label: '', cls: ''};
+    var delta = currentScore - prev;
+    if (delta > 0) return {label: '+' + delta + ' from last scan', cls: 'trend-up'};
+    if (delta < 0) return {label: delta + ' from last scan', cls: 'trend-down'};
+    return {label: 'no change', cls: ''};
+  }
+
+  function getLatestTimestamp() {
+    var latest = null;
+    DEPT_KEYS.forEach(function(dept) {
+      if (deptData[dept] && deptData[dept].generated_at) {
+        var t = new Date(deptData[dept].generated_at).getTime();
+        if (!latest || t > latest) latest = t;
+      }
+    });
+    return latest ? new Date(latest).toISOString() : null;
+  }
+
+  /* ── DOM builders (safe — no innerHTML with user data) ── */
+
+  function clearChildren(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function(k) {
+        if (k === 'className') node.className = attrs[k];
+        else if (k === 'textContent') node.textContent = attrs[k];
+        else if (k === 'style') node.setAttribute('style', attrs[k]);
+        else if (k === 'hidden') { if (attrs[k]) node.hidden = true; }
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    if (children) {
+      children.forEach(function(c) {
+        if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+        else if (c) node.appendChild(c);
+      });
+    }
+    return node;
+  }
+
+  function buildSparkline(sparkVals) {
+    var wrap = el('div', {className: 'sparkline'});
+    if (!sparkVals || sparkVals.length === 0) return wrap;
+    sparkVals.forEach(function(v) {
+      var bar = document.createElement('span');
+      if (v == null) {
+        bar.setAttribute('style', 'height:2px;opacity:0.15;');
+      } else {
+        var h = Math.max(3, Math.round((v / 100) * 20));
+        bar.setAttribute('style', 'height:' + h + 'px;');
+      }
+      wrap.appendChild(bar);
+    });
+    return wrap;
+  }
+
+  /* ── Render functions ── */
+
+  function renderSkeletons() {
+    var row = document.getElementById('scoreRow');
+    clearChildren(row);
+    DEPT_KEYS.forEach(function(dept) {
+      var card = el('div', {className: 'score-card', 'data-dept': dept}, [
+        el('div', {className: 'score-card-header'}, [
+          el('span', {className: 'score-card-name', textContent: DEPT_LABELS[dept]})
+        ]),
+        el('div', {className: 'skeleton skeleton-score'}),
+        el('div', {className: 'skeleton skeleton-trend'})
+      ]);
+      row.appendChild(card);
+    });
+
+    var mb = document.getElementById('matrixBody');
+    clearChildren(mb);
+    for (var i = 0; i < 4; i++) {
+      var tr = el('tr', null, [
+        el('td', null, [el('div', {className: 'skeleton', style: 'width:80px;height:14px;'})])
+      ]);
+      DEPT_KEYS.forEach(function() {
+        tr.appendChild(el('td', null, [el('div', {className: 'skeleton skeleton-cell'})]));
+      });
+      mb.appendChild(tr);
+    }
+
+    var na = document.getElementById('needsAttention');
+    clearChildren(na);
+    for (var j = 0; j < 5; j++) {
+      na.appendChild(el('div', {className: 'skeleton skeleton-row'}));
+    }
+  }
+
+  function renderScoreCards() {
+    var row = document.getElementById('scoreRow');
+    clearChildren(row);
+
+    DEPT_KEYS.forEach(function(dept) {
+      var card = el('div', {className: 'score-card', 'data-dept': dept});
+
+      if (deptErrors[dept]) {
+        card.appendChild(
+          el('div', {className: 'score-card-header'}, [
+            el('span', {className: 'score-card-name', textContent: DEPT_LABELS[dept]})
+          ])
+        );
+        card.appendChild(
+          el('div', {className: 'score-card-error', textContent: 'Failed to load ' + DEPT_LABELS[dept] + ' data'})
+        );
+        row.appendChild(card);
+        return;
+      }
+
+      var score = getAvgScore(dept);
+      var sparkVals = getSparkline(dept);
+      var trend = computeTrend(sparkVals, score);
+      var colorStyle = score != null ? 'color:' + scoreColorVar(score) : 'color:var(--text-dim)';
+
+      card.appendChild(
+        el('div', {className: 'score-card-header'}, [
+          el('span', {className: 'score-card-name', textContent: DEPT_LABELS[dept]}),
+          buildSparkline(sparkVals)
+        ])
+      );
+      card.appendChild(
+        el('div', {className: 'score-card-value', style: colorStyle, textContent: score != null ? String(score) : '--'})
+      );
+      if (trend.label) {
+        card.appendChild(
+          el('div', {className: 'score-card-trend' + (trend.cls ? ' ' + trend.cls : ''), textContent: trend.label})
+        );
+      }
+      row.appendChild(card);
+    });
+  }
+
+  function renderMatrix() {
+    var mb = document.getElementById('matrixBody');
+    clearChildren(mb);
+
+    var repoNames;
+    if (selectedProduct === 'all') {
+      // Gather all unique repo names across all dept data
+      var allRepos = {};
+      DEPT_KEYS.forEach(function(dept) {
+        if (deptData[dept] && deptData[dept].repos) {
+          deptData[dept].repos.forEach(function(r) { allRepos[r.name] = true; });
+        }
+      });
+      repoNames = Object.keys(allRepos).sort();
+    } else {
+      repoNames = getProductRepos(selectedProduct);
+    }
+
+    if (repoNames.length === 0) {
+      var tr = el('tr', null, [
+        el('td', {colspan: '7', style: 'text-align:center;color:var(--text-dim);padding:1.5rem;', textContent: 'No repos found for this product'})
+      ]);
+      mb.appendChild(tr);
+      return;
+    }
+
+    repoNames.forEach(function(repoName) {
+      var tr = el('tr');
+      tr.appendChild(el('td', {textContent: repoName}));
+
+      DEPT_KEYS.forEach(function(dept) {
+        var td = el('td');
+        var repoObj = findRepo(dept, repoName);
+        var score = getRepoScore(dept, repoObj);
+
+        if (score == null) {
+          var gray = el('span', {className: 'cell gray'});
+          gray.appendChild(document.createTextNode('\u2014'));
+          td.appendChild(gray);
+        } else {
+          var cls = 'cell ' + scoreColor(score);
+          var cell = el('span', {className: cls, textContent: String(score), 'data-dept': dept, 'data-repo': repoName});
+          td.appendChild(cell);
+        }
+        tr.appendChild(td);
+      });
+
+      mb.appendChild(tr);
+    });
+  }
+
+  function renderNeedsAttention() {
+    var container = document.getElementById('needsAttention');
+    clearChildren(container);
+
+    var productRepos = getProductRepos(selectedProduct);
+
+    // Collect findings across all depts
+    var allFindings = [];
+    DEPT_KEYS.forEach(function(dept) {
+      if (!deptData[dept] || !deptData[dept].repos) return;
+      deptData[dept].repos.forEach(function(repo) {
+        if (selectedProduct !== 'all' && productRepos.indexOf(repo.name) === -1) return;
+        if (!repo.findings) return;
+        repo.findings.forEach(function(f) {
+          // Lookup backlog audit_count
+          var auditCount = 0;
+          if (backlogData && backlogData.findings) {
+            var keys = Object.keys(backlogData.findings);
+            for (var bi = 0; bi < keys.length; bi++) {
+              var bf = backlogData.findings[keys[bi]];
+              if (bf.current_finding &&
+                  bf.current_finding.department === (f.department || dept) &&
+                  bf.current_finding.repo === (f.repo || repo.name) &&
+                  bf.current_finding.title === f.title) {
+                auditCount = bf.audit_count || 0;
+                break;
+              }
+            }
+          }
+
+          allFindings.push({
+            department: f.department || dept,
+            severity: f.severity || 'info',
+            title: f.title || '',
+            repo: f.repo || repo.name,
+            effort: f.effort || 'moderate',
+            fixable_by_agent: f.fixable_by_agent || false,
+            audit_count: auditCount,
+            id: f.id || '',
+            file: f.file || ''
+          });
+        });
+      });
+    });
+
+    // Sort: severity asc, audit_count desc, effort asc
+    allFindings.sort(function(a, b) {
+      var sa = SEV_ORDER[a.severity] != null ? SEV_ORDER[a.severity] : 99;
+      var sb = SEV_ORDER[b.severity] != null ? SEV_ORDER[b.severity] : 99;
+      if (sa !== sb) return sa - sb;
+      if (b.audit_count !== a.audit_count) return b.audit_count - a.audit_count;
+      var ea = EFFORT_ORDER[a.effort] != null ? EFFORT_ORDER[a.effort] : 99;
+      var eb = EFFORT_ORDER[b.effort] != null ? EFFORT_ORDER[b.effort] : 99;
+      return ea - eb;
+    });
+
+    var top = allFindings.slice(0, 15);
+
+    if (top.length === 0) {
+      container.appendChild(el('div', {className: 'empty-state', textContent: 'No findings match current filters'}));
+      return;
+    }
+
+    top.forEach(function(f) {
+      var titleSpan = el('span', {className: 'finding-title'});
+      titleSpan.appendChild(document.createTextNode(f.title));
+      if (f.fixable_by_agent) {
+        titleSpan.appendChild(el('span', {className: 'ai-badge', textContent: 'AI fixable'}));
+      }
+
+      var row = el('div', {
+        className: 'finding-row',
+        'data-finding': f.id,
+        'data-dept': f.department,
+        'data-repo': f.repo
+      }, [
+        el('span', {className: 'finding-dept', textContent: DEPT_LABELS[f.department] || f.department}),
+        el('span', {className: 'sev ' + f.severity, textContent: f.severity}),
+        titleSpan,
+        el('span', {className: 'finding-repo', textContent: f.repo}),
+        el('span', {className: 'finding-effort', textContent: f.effort})
+      ]);
+
+      container.appendChild(row);
+    });
+  }
+
+  function updateTimestamp() {
+    var ts = getLatestTimestamp();
+    var scanEl = document.getElementById('lastScan');
+    var staleEl = document.getElementById('staleWarning');
+    if (ts) {
+      scanEl.textContent = 'Last scan: ' + timeAgo(ts);
+      staleEl.hidden = !isStale(ts);
+    } else {
+      scanEl.textContent = 'Last scan: --';
+      staleEl.hidden = true;
+    }
+  }
+
+  /* ── URL Deep Linking ── */
+
+  function readProductFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get('product') || 'all';
+  }
+
+  function updateUrl() {
+    var params = new URLSearchParams(window.location.search);
+    if (selectedProduct === 'all') {
+      params.delete('product');
+    } else {
+      params.set('product', selectedProduct);
+    }
+    var qs = params.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function populateProductSelector() {
+    var sel = document.getElementById('productSelect');
+    clearChildren(sel);
+
+    if (!orgData || !orgData.products) {
+      sel.appendChild(el('option', {value: 'all', textContent: 'All Products'}));
+      return;
+    }
+
+    orgData.products.forEach(function(p) {
+      var opt = el('option', {value: p.key, textContent: p.name});
+      if (p.key === selectedProduct) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    sel.addEventListener('change', function() {
+      selectedProduct = sel.value;
+      updateUrl();
+      renderAll();
+    });
+  }
+
+  function renderAll() {
+    renderScoreCards();
+    renderMatrix();
+    renderNeedsAttention();
+    updateTimestamp();
+  }
+
+  /* ── Data Loading ── */
+
+  function fetchJson(url) {
+    return fetch(url + '?t=' + Date.now()).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  function loadAll() {
+    renderSkeletons();
+
+    var promises = [];
+
+    promises.push(
+      fetchJson('org-data.json').then(function(d) { orgData = d; }).catch(function() { orgData = null; })
+    );
+    promises.push(
+      fetchJson('score-history.json').then(function(d) { historyData = d; }).catch(function() { historyData = null; })
+    );
+    promises.push(
+      fetchJson('backlog.json').then(function(d) { backlogData = d; }).catch(function() { backlogData = null; })
+    );
+
+    DEPT_KEYS.forEach(function(dept) {
+      promises.push(
+        fetchJson(DEPT_SOURCES[dept].url)
+          .then(function(d) { deptData[dept] = d; deptErrors[dept] = false; })
+          .catch(function() { deptData[dept] = null; deptErrors[dept] = true; })
+      );
+    });
+
+    Promise.all(promises).then(function() {
+      selectedProduct = readProductFromUrl();
+      populateProductSelector();
+      renderAll();
+    });
+  }
+
+  /* ── Init ── */
+  loadAll();
+
+  /* ─────────────────────────────────────────────────────────
+     SLIDE-OVER PANEL SYSTEM (Tasks 7-9)
+     ───────────────────────────────────────────────────────── */
+
+  /* ── Panel State ── */
+  var panelDept = null;        // currently open department
+  var panelRepoFilter = null;  // null = all repos for product
+  var panelFindings = [];      // filtered findings for current panel
+  var panelAllFindings = [];   // unfiltered findings for current panel
+  var currentFinding = null;   // finding shown in detail panel
+
+  var filterSeverity = 'all';
+  var filterStatus   = 'all';
+  var filterEffort   = 'all';
+  var filterAiFixable = false;
+  var filterSearch   = '';
+
+  /* ── SHA-256 hash (matches Python: sha256 of dept:repo:title:file lowercase trimmed, first 16 hex) ── */
+  function findingHash(dept, repo, title, filePath) {
+    var key = [dept, repo, title, filePath].map(function(s) { return (s || '').trim().toLowerCase(); }).join(':');
+    // Use SubtleCrypto if available, else fallback to simple hash
+    // For sync use, implement a simple sha256
+    return simplesha256(key).substring(0, 16);
+  }
+
+  // Minimal synchronous SHA-256 (matches Python hashlib.sha256)
+  function simplesha256(msg) {
+    function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    function ch(x, y, z) { return (x & y) ^ (~x & z); }
+    function maj(x, y, z) { return (x & y) ^ (x & z) ^ (y & z); }
+    function sigma0(x) { return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22); }
+    function sigma1(x) { return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25); }
+    function gamma0(x) { return rotr(x, 7) ^ rotr(x, 18) ^ (x >>> 3); }
+    function gamma1(x) { return rotr(x, 17) ^ rotr(x, 19) ^ (x >>> 10); }
+    var K = [
+      0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+      0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+      0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+      0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+      0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+      0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+      0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+      0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+    ];
+    var bytes = [];
+    for (var i = 0; i < msg.length; i++) {
+      var c = msg.charCodeAt(i);
+      if (c < 0x80) bytes.push(c);
+      else if (c < 0x800) { bytes.push(0xc0 | (c >> 6)); bytes.push(0x80 | (c & 0x3f)); }
+      else { bytes.push(0xe0 | (c >> 12)); bytes.push(0x80 | ((c >> 6) & 0x3f)); bytes.push(0x80 | (c & 0x3f)); }
+    }
+    var bitLen = bytes.length * 8;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    bytes.push(0, 0, 0, 0);
+    bytes.push((bitLen >>> 24) & 0xff, (bitLen >>> 16) & 0xff, (bitLen >>> 8) & 0xff, bitLen & 0xff);
+    var H0=0x6a09e667,H1=0xbb67ae85,H2=0x3c6ef372,H3=0xa54ff53a,H4=0x510e527f,H5=0x9b05688c,H6=0x1f83d9ab,H7=0x5be0cd19;
+    for (var off = 0; off < bytes.length; off += 64) {
+      var W = new Array(64);
+      for (var t = 0; t < 16; t++) W[t] = (bytes[off+t*4]<<24)|(bytes[off+t*4+1]<<16)|(bytes[off+t*4+2]<<8)|bytes[off+t*4+3];
+      for (var t = 16; t < 64; t++) W[t] = (gamma1(W[t-2]) + W[t-7] + gamma0(W[t-15]) + W[t-16]) | 0;
+      var a=H0,b=H1,c=H2,d=H3,e=H4,f=H5,g=H6,h=H7;
+      for (var t = 0; t < 64; t++) {
+        var T1 = (h + sigma1(e) + ch(e,f,g) + K[t] + W[t]) | 0;
+        var T2 = (sigma0(a) + maj(a,b,c)) | 0;
+        h=g; g=f; f=e; e=(d+T1)|0; d=c; c=b; b=a; a=(T1+T2)|0;
+      }
+      H0=(H0+a)|0; H1=(H1+b)|0; H2=(H2+c)|0; H3=(H3+d)|0; H4=(H4+e)|0; H5=(H5+f)|0; H6=(H6+g)|0; H7=(H7+h)|0;
+    }
+    function hex32(v) { return ('00000000' + (v >>> 0).toString(16)).slice(-8); }
+    return hex32(H0)+hex32(H1)+hex32(H2)+hex32(H3)+hex32(H4)+hex32(H5)+hex32(H6)+hex32(H7);
+  }
+
+  /* ── Dept-specific 4th stat ── */
+  function getDeptSpecificStat(dept, repos) {
+    var label, value, color;
+    switch (dept) {
+      case 'qa':
+        // Fixed count
+        var fixedCount = 0;
+        repos.forEach(function(r) {
+          if (r.findings) r.findings.forEach(function(f) {
+            if ((f.status || '').toLowerCase() === 'fixed') fixedCount++;
+          });
+        });
+        label = 'Fixed'; value = String(fixedCount); color = 'var(--success)';
+        break;
+      case 'seo':
+        // Overall seo_score (avg)
+        var seoScores = [];
+        repos.forEach(function(r) {
+          if (r.summary && r.summary.seo_score != null) seoScores.push(r.summary.seo_score);
+        });
+        var avgSeo = seoScores.length > 0 ? Math.round(seoScores.reduce(function(a,b){return a+b;},0)/seoScores.length) : null;
+        label = 'SEO Score'; value = avgSeo != null ? String(avgSeo) : '--'; color = avgSeo != null ? scoreColorVar(avgSeo) : 'var(--text-dim)';
+        break;
+      case 'ada':
+        // WCAG level
+        var adaScores = [];
+        var hasCritHigh = false, hasMed = false;
+        repos.forEach(function(r) {
+          var s = getRepoScore('ada', r);
+          if (s != null) adaScores.push(s);
+          if (r.findings) r.findings.forEach(function(f) {
+            var sev = (f.severity || '').toLowerCase();
+            if (sev === 'critical' || sev === 'high') hasCritHigh = true;
+            if (sev === 'medium') hasMed = true;
+          });
+        });
+        var avgAda = adaScores.length > 0 ? Math.round(adaScores.reduce(function(a,b){return a+b;},0)/adaScores.length) : null;
+        var wcagLevel = '--';
+        if (avgAda != null) {
+          if (avgAda >= 95 && !hasCritHigh && !hasMed) wcagLevel = 'AAA';
+          else if (avgAda >= 70 && !hasCritHigh) wcagLevel = 'AA';
+          else if (avgAda >= 40) wcagLevel = 'A';
+          else wcagLevel = 'Below A';
+        }
+        label = 'WCAG Level'; value = wcagLevel; color = wcagLevel === 'AAA' ? 'var(--success)' : wcagLevel === 'AA' ? 'var(--medium)' : 'var(--high)';
+        break;
+      case 'compliance':
+      case 'privacy':
+        // Framework count
+        var frameworks = {};
+        repos.forEach(function(r) {
+          if (r.findings) r.findings.forEach(function(f) {
+            if (f.category) frameworks[f.category] = true;
+            if (f.framework) frameworks[f.framework] = true;
+          });
+        });
+        var fwCount = Object.keys(frameworks).length;
+        label = 'Frameworks'; value = String(fwCount); color = 'var(--text)';
+        break;
+      case 'monetization':
+        // Revenue estimate sum
+        var revSum = 0;
+        repos.forEach(function(r) {
+          if (r.findings) r.findings.forEach(function(f) {
+            if (f.revenue_estimate) {
+              var num = parseFloat(String(f.revenue_estimate).replace(/[^0-9.]/g, ''));
+              if (!isNaN(num)) revSum += num;
+            }
+          });
+        });
+        label = 'Revenue Est.'; value = revSum > 0 ? '$' + revSum.toLocaleString() : '$0'; color = 'var(--success)';
+        break;
+      case 'product':
+        // Backlog items count
+        var backlogCount = 0;
+        repos.forEach(function(r) {
+          if (r.findings) backlogCount += r.findings.length;
+        });
+        label = 'Backlog Items'; value = String(backlogCount); color = 'var(--text)';
+        break;
+      default:
+        label = 'Items'; value = '--'; color = 'var(--text-dim)';
+    }
+    return {label: label, value: value, color: color};
+  }
+
+  /* ── Gather findings for a department ── */
+  function gatherDeptFindings(dept, repoFilter) {
+    var source = dept === 'privacy' ? deptData['privacy'] : deptData[dept];
+    if (!source || !source.repos) return [];
+    var productRepos = getProductRepos(selectedProduct);
+    var findings = [];
+    source.repos.forEach(function(repo) {
+      if (repoFilter && repo.name !== repoFilter) return;
+      if (!repoFilter && selectedProduct !== 'all' && productRepos.indexOf(repo.name) === -1) return;
+      if (!repo.findings) return;
+      repo.findings.forEach(function(f) {
+        findings.push({
+          department: f.department || dept,
+          severity: (f.severity || 'info').toLowerCase(),
+          title: f.title || '',
+          repo: f.repo || repo.name,
+          effort: (f.effort || 'unknown').toLowerCase(),
+          fixable_by_agent: f.fixable_by_agent || false,
+          id: f.id || '',
+          file: f.file || '',
+          line: f.line || null,
+          description: f.description || '',
+          evidence: f.evidence || '',
+          impact: f.impact || '',
+          fix_suggestion: f.fix_suggestion || '',
+          category: f.category || '',
+          status: (f.status || 'open').toLowerCase(),
+          revenue_estimate: f.revenue_estimate || null,
+          framework: f.framework || ''
+        });
+      });
+    });
+    // Sort by severity desc
+    findings.sort(function(a, b) {
+      var sa = SEV_ORDER[a.severity] != null ? SEV_ORDER[a.severity] : 99;
+      var sb = SEV_ORDER[b.severity] != null ? SEV_ORDER[b.severity] : 99;
+      return sa - sb;
+    });
+    return findings;
+  }
+
+  /* ── Apply client-side filters ── */
+  function applyFilters() {
+    var q = filterSearch.toLowerCase();
+    panelFindings = panelAllFindings.filter(function(f) {
+      if (filterSeverity !== 'all' && f.severity !== filterSeverity) return false;
+      if (filterStatus !== 'all' && f.status !== filterStatus.toLowerCase().replace(/ /g, '_')) return false;
+      if (filterEffort !== 'all' && f.effort !== filterEffort.toLowerCase()) return false;
+      if (filterAiFixable && !f.fixable_by_agent) return false;
+      if (q) {
+        var haystack = [f.title, f.description, f.file, f.id, f.repo].join(' ').toLowerCase();
+        if (haystack.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    renderFindingsList();
+  }
+
+  /* ── Render the findings list inside slideover body ── */
+  function renderFindingsList() {
+    var listContainer = document.getElementById('slideoverFindings');
+    if (!listContainer) return;
+    clearChildren(listContainer);
+
+    if (panelFindings.length === 0) {
+      listContainer.appendChild(el('div', {className: 'empty-state', textContent: 'No findings match current filters'}));
+      return;
+    }
+
+    panelFindings.forEach(function(f) {
+      var titleSpan = el('span', {className: 'finding-title'});
+      titleSpan.appendChild(document.createTextNode(f.title));
+      if (f.fixable_by_agent) {
+        titleSpan.appendChild(el('span', {className: 'ai-badge', textContent: 'AI fixable'}));
+      }
+
+      var row = el('div', {className: 'finding-row'}, [
+        el('span', {className: 'sev ' + f.severity, textContent: f.severity}),
+        titleSpan,
+        el('span', {className: 'finding-effort', textContent: f.effort})
+      ]);
+
+      row.addEventListener('click', function() { openFindingDetail(f); });
+      listContainer.appendChild(row);
+    });
+  }
+
+  /* ── Render Department Panel (Task 8) ── */
+  function renderDeptPanel(dept, repoFilter) {
+    var body = document.getElementById('slideoverBody');
+    clearChildren(body);
+
+    // Get filtered repos
+    var source = dept === 'privacy' ? deptData['privacy'] : deptData[dept];
+    var repos = [];
+    if (source && source.repos) {
+      var productRepos = getProductRepos(selectedProduct);
+      source.repos.forEach(function(r) {
+        if (repoFilter && r.name !== repoFilter) return;
+        if (!repoFilter && selectedProduct !== 'all' && productRepos.indexOf(r.name) === -1) return;
+        repos.push(r);
+      });
+    }
+
+    // Compute stats
+    var scores = [];
+    repos.forEach(function(r) {
+      var s = getRepoScore(dept === 'privacy' ? 'compliance' : dept, r);
+      if (s != null) scores.push(s);
+    });
+    var avgScore = scores.length > 0 ? Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length) : null;
+
+    var totalFindings = 0;
+    var aiFixableCount = 0;
+    repos.forEach(function(r) {
+      if (r.findings) {
+        totalFindings += r.findings.length;
+        r.findings.forEach(function(f) {
+          if (f.fixable_by_agent) aiFixableCount++;
+        });
+      }
+    });
+
+    var deptStat = getDeptSpecificStat(dept, repos);
+
+    // Stats row
+    var statsRow = el('div', {className: 'slideover-score-row'}, [
+      el('div', {className: 'slideover-stat'}, [
+        el('div', {className: 'slideover-stat-label', textContent: 'Score'}),
+        el('div', {className: 'slideover-stat-value', style: 'color:' + (avgScore != null ? scoreColorVar(avgScore) : 'var(--text-dim)'), textContent: avgScore != null ? String(avgScore) : '--'})
+      ]),
+      el('div', {className: 'slideover-stat'}, [
+        el('div', {className: 'slideover-stat-label', textContent: 'Findings'}),
+        el('div', {className: 'slideover-stat-value', textContent: String(totalFindings)})
+      ]),
+      el('div', {className: 'slideover-stat'}, [
+        el('div', {className: 'slideover-stat-label', textContent: 'AI Fixable'}),
+        el('div', {className: 'slideover-stat-value', style: 'color:#6c5ce7', textContent: String(aiFixableCount)})
+      ]),
+      el('div', {className: 'slideover-stat'}, [
+        el('div', {className: 'slideover-stat-label', textContent: deptStat.label}),
+        el('div', {className: 'slideover-stat-value', style: 'color:' + deptStat.color, textContent: deptStat.value})
+      ])
+    ]);
+    body.appendChild(statsRow);
+
+    // Findings list container
+    var listContainer = el('div', {id: 'slideoverFindings'});
+    body.appendChild(listContainer);
+
+    // Gather + apply
+    panelAllFindings = gatherDeptFindings(dept, repoFilter);
+    applyFilters();
+  }
+
+  /* ── Render Finding Detail (Task 9) ── */
+  function renderFindingDetail(finding) {
+    var body = document.getElementById('detailBody');
+    clearChildren(body);
+
+    // AI Fix Banner
+    if (finding.fixable_by_agent) {
+      var cmdText = 'make fix TARGET=' + (finding.repo || 'repo');
+      var cmdSpan = el('span', {className: 'ai-fix-cmd', title: 'Click to copy', textContent: cmdText});
+      cmdSpan.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(cmdText);
+          cmdSpan.textContent = 'Copied!';
+          setTimeout(function() { cmdSpan.textContent = cmdText; }, 1500);
+        }
+      });
+
+      var bannerTextDiv = el('div', {className: 'ai-fix-banner-text'});
+      var strong = el('strong', {textContent: 'AI can fix this.'});
+      bannerTextDiv.appendChild(strong);
+      bannerTextDiv.appendChild(document.createTextNode(' The Back Office fix agent can resolve this automatically. '));
+      bannerTextDiv.appendChild(cmdSpan);
+
+      body.appendChild(el('div', {className: 'ai-fix-banner'}, [
+        el('span', {className: 'ai-fix-banner-icon', textContent: '\u26A1'}),
+        bannerTextDiv
+      ]));
+    }
+
+    // Description
+    if (finding.description) {
+      body.appendChild(el('div', {className: 'detail-section'}, [
+        el('div', {className: 'detail-section-title', textContent: 'Description'}),
+        el('div', {className: 'detail-text', textContent: finding.description})
+      ]));
+    }
+
+    // Evidence
+    if (finding.evidence) {
+      body.appendChild(el('div', {className: 'detail-section'}, [
+        el('div', {className: 'detail-section-title', textContent: 'Evidence'}),
+        el('div', {className: 'detail-code', textContent: finding.evidence})
+      ]));
+    }
+
+    // Impact
+    if (finding.impact) {
+      body.appendChild(el('div', {className: 'detail-section'}, [
+        el('div', {className: 'detail-section-title', textContent: 'Impact'}),
+        el('div', {className: 'detail-text', textContent: finding.impact})
+      ]));
+    }
+
+    // File
+    if (finding.file) {
+      var fileText = finding.file;
+      if (finding.line) fileText += ':' + finding.line;
+      body.appendChild(el('div', {className: 'detail-section'}, [
+        el('div', {className: 'detail-section-title', textContent: 'File'}),
+        el('div', {className: 'detail-file'}, [
+          el('span', {className: 'detail-file-icon', textContent: '\uD83D\uDCC4'}),
+          document.createTextNode(fileText)
+        ])
+      ]));
+    }
+
+    // Recommended Fix
+    if (finding.fix_suggestion) {
+      body.appendChild(el('div', {className: 'detail-section'}, [
+        el('div', {className: 'detail-fix-title', textContent: 'Recommended Fix'}),
+        el('div', {className: 'detail-fix', textContent: finding.fix_suggestion})
+      ]));
+    }
+
+    // Backlog Info
+    if (backlogData && backlogData.findings) {
+      var hash = findingHash(finding.department, finding.repo, finding.title, finding.file);
+      var entry = backlogData.findings[hash];
+      if (entry) {
+        var firstSeen = entry.first_seen ? new Date(entry.first_seen).toLocaleDateString() : 'Unknown';
+        var lastSeen = entry.last_seen ? new Date(entry.last_seen).toLocaleDateString() : 'Unknown';
+        var auditCount = entry.audit_count || 1;
+        var infoText = 'First seen: ' + firstSeen + '  \u00B7  Seen in ' + auditCount + ' audit' + (auditCount !== 1 ? 's' : '') + '  \u00B7  Last seen: ' + lastSeen;
+        body.appendChild(el('div', {className: 'detail-section'}, [
+          el('div', {className: 'detail-section-title', textContent: 'Backlog'}),
+          el('div', {className: 'backlog-info', textContent: infoText})
+        ]));
+      }
+    }
+  }
+
+  /* ── Panel open/close functions ── */
+  function openDeptPanel(department, repo) {
+    panelDept = department;
+    panelRepoFilter = repo || null;
+
+    // Reset filters
+    filterSeverity = 'all';
+    filterStatus   = 'all';
+    filterEffort   = 'all';
+    filterAiFixable = false;
+    filterSearch   = '';
+
+    // Reset filter UI
+    var sevSel = document.getElementById('filterSeverity');
+    var statusSel = document.getElementById('filterStatus');
+    var effortSel = document.getElementById('filterEffort');
+    var aiToggle = document.getElementById('filterAiFixable');
+    var searchInput = document.getElementById('filterSearch');
+    if (sevSel) sevSel.value = 'all';
+    if (statusSel) statusSel.value = 'all';
+    if (effortSel) effortSel.value = 'all';
+    if (aiToggle) aiToggle.classList.remove('active');
+    if (searchInput) searchInput.value = '';
+
+    // Header
+    var deptLabel = DEPT_LABELS[department] || department;
+    document.getElementById('slideoverTitle').textContent = deptLabel;
+
+    // Subtitle
+    var source = department === 'privacy' ? deptData['privacy'] : deptData[department];
+    if (repo) {
+      var repoObj = source && source.repos ? source.repos.find(function(r) { return r.name === repo; }) : null;
+      var fCount = repoObj && repoObj.findings ? repoObj.findings.length : 0;
+      document.getElementById('slideoverSubtitle').textContent = repo + ' \u2014 ' + fCount + ' finding' + (fCount !== 1 ? 's' : '');
+    } else {
+      var productRepos = getProductRepos(selectedProduct);
+      var repoCount = 0, findingCount = 0;
+      if (source && source.repos) {
+        source.repos.forEach(function(r) {
+          if (selectedProduct !== 'all' && productRepos.indexOf(r.name) === -1) return;
+          repoCount++;
+          findingCount += (r.findings ? r.findings.length : 0);
+        });
+      }
+      document.getElementById('slideoverSubtitle').textContent = repoCount + ' repo' + (repoCount !== 1 ? 's' : '') + ' \u00B7 ' + findingCount + ' finding' + (findingCount !== 1 ? 's' : '');
+    }
+
+    // Render content
+    renderDeptPanel(department, repo);
+
+    // Open panels
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('slideover').classList.add('open');
+    closeFindingDetail();
+
+    // Update URL
+    var params = new URLSearchParams(window.location.search);
+    if (selectedProduct !== 'all') params.set('product', selectedProduct);
+    params.set('dept', department);
+    if (repo) params.set('repo', repo);
+    var qs = params.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function closeDeptPanel() {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('slideover').classList.remove('open');
+    document.getElementById('detailPanel').classList.remove('open');
+    panelDept = null;
+    panelRepoFilter = null;
+    currentFinding = null;
+
+    // Remove dept/repo from URL, keep product
+    var params = new URLSearchParams(window.location.search);
+    params.delete('dept');
+    params.delete('repo');
+    if (selectedProduct === 'all') params.delete('product');
+    else params.set('product', selectedProduct);
+    var qs = params.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function openFindingDetail(finding) {
+    currentFinding = finding;
+
+    // Populate header
+    var headerLeft = document.getElementById('detailHeaderLeft');
+    clearChildren(headerLeft);
+
+    // ID
+    headerLeft.appendChild(el('div', {className: 'detail-id', textContent: finding.id || findingHash(finding.department, finding.repo, finding.title, finding.file)}));
+
+    // Title
+    headerLeft.appendChild(el('div', {className: 'detail-title', textContent: finding.title}));
+
+    // Meta tags
+    var meta = el('div', {className: 'detail-meta'});
+    meta.appendChild(el('span', {className: 'sev ' + finding.severity, textContent: finding.severity}));
+    if (finding.category) meta.appendChild(el('span', {className: 'detail-tag', textContent: finding.category}));
+    if (finding.effort) meta.appendChild(el('span', {className: 'detail-tag', textContent: finding.effort}));
+    if (finding.fixable_by_agent) {
+      meta.appendChild(el('span', {className: 'detail-tag', style: 'background:rgba(108,92,231,0.1);color:#6c5ce7;border-color:rgba(108,92,231,0.2);', textContent: 'AI Fixable'}));
+    }
+    headerLeft.appendChild(meta);
+
+    // Render body
+    renderFindingDetail(finding);
+
+    // Open
+    document.getElementById('detailPanel').classList.add('open');
+  }
+
+  function closeFindingDetail() {
+    document.getElementById('detailPanel').classList.remove('open');
+    currentFinding = null;
+  }
+
+  /* ── Keyboard & overlay handlers ── */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (document.getElementById('detailPanel').classList.contains('open')) {
+        closeFindingDetail();
+      } else if (document.getElementById('slideover').classList.contains('open')) {
+        closeDeptPanel();
+      }
+    }
+  });
+
+  document.getElementById('overlay').addEventListener('click', function() {
+    closeDeptPanel();
+  });
+
+  document.getElementById('slideoverCloseBtn').addEventListener('click', function() {
+    closeDeptPanel();
+  });
+
+  document.getElementById('detailCloseBtn').addEventListener('click', function() {
+    closeFindingDetail();
+  });
+
+  /* ── Wire score card clicks ── */
+  document.getElementById('scoreRow').addEventListener('click', function(e) {
+    var card = e.target.closest('.score-card');
+    if (!card) return;
+    var dept = card.getAttribute('data-dept');
+    if (dept) openDeptPanel(dept, null);
+  });
+
+  /* ── Wire matrix cell clicks ── */
+  document.getElementById('matrixTable').addEventListener('click', function(e) {
+    var cell = e.target.closest('.cell');
+    if (!cell || cell.classList.contains('gray')) return;
+    var dept = cell.getAttribute('data-dept');
+    var repo = cell.getAttribute('data-repo');
+    if (dept) openDeptPanel(dept, repo);
+  });
+
+  /* ── Wire needs attention finding clicks ── */
+  document.getElementById('needsAttention').addEventListener('click', function(e) {
+    var row = e.target.closest('.finding-row');
+    if (!row) return;
+    var dept = row.getAttribute('data-dept');
+    var repo = row.getAttribute('data-repo');
+    var findingId = row.getAttribute('data-finding');
+
+    // Try to find the actual finding object
+    if (dept && deptData[dept] && deptData[dept].repos) {
+      var found = null;
+      deptData[dept].repos.forEach(function(r) {
+        if (found) return;
+        if (r.findings) r.findings.forEach(function(f) {
+          if (found) return;
+          if (findingId && (f.id === findingId)) { found = f; found.repo = found.repo || r.name; found.department = found.department || dept; }
+        });
+      });
+
+      // If not found by id, try by title from the row
+      if (!found) {
+        var titleEl = row.querySelector('.finding-title');
+        var titleText = titleEl ? titleEl.textContent.replace('AI fixable', '').trim() : '';
+        deptData[dept].repos.forEach(function(r) {
+          if (found) return;
+          if (r.findings) r.findings.forEach(function(f) {
+            if (found) return;
+            if (f.title === titleText) {
+              found = {
+                department: f.department || dept,
+                severity: (f.severity || 'info').toLowerCase(),
+                title: f.title || '',
+                repo: f.repo || r.name,
+                effort: (f.effort || 'unknown').toLowerCase(),
+                fixable_by_agent: f.fixable_by_agent || false,
+                id: f.id || '',
+                file: f.file || '',
+                line: f.line || null,
+                description: f.description || '',
+                evidence: f.evidence || '',
+                impact: f.impact || '',
+                fix_suggestion: f.fix_suggestion || '',
+                category: f.category || '',
+                status: (f.status || 'open').toLowerCase()
+              };
+            }
+          });
+        });
+      }
+
+      if (found) {
+        // Open the dept panel first, then detail
+        openDeptPanel(dept, repo || found.repo);
+        openFindingDetail(found);
+        return;
+      }
+    }
+
+    // Fallback: just open dept panel
+    if (dept) openDeptPanel(dept, repo);
+  });
+
+  /* ── Wire filter controls ── */
+  document.getElementById('filterSeverity').addEventListener('change', function() {
+    filterSeverity = this.value;
+    applyFilters();
+  });
+  document.getElementById('filterStatus').addEventListener('change', function() {
+    filterStatus = this.value;
+    applyFilters();
+  });
+  document.getElementById('filterEffort').addEventListener('change', function() {
+    filterEffort = this.value;
+    applyFilters();
+  });
+  document.getElementById('filterAiFixable').addEventListener('click', function() {
+    this.classList.toggle('active');
+    filterAiFixable = this.classList.contains('active');
+    applyFilters();
+  });
+  document.getElementById('filterSearch').addEventListener('input', function() {
+    filterSearch = this.value;
+    applyFilters();
+  });
+
+  /* ── Deep link: open panel from URL on load ── */
+  function checkDeepLink() {
+    var params = new URLSearchParams(window.location.search);
+    var dept = params.get('dept');
+    var repo = params.get('repo');
+    if (dept && DEPT_KEYS.indexOf(dept) !== -1) {
+      openDeptPanel(dept, repo || null);
+    }
+  }
+
+  // Hook into renderAll to check deep links after first data load
+  var _origRenderAll = renderAll;
+  var _deepLinkChecked = false;
+  renderAll = function() {
+    _origRenderAll();
+    if (!_deepLinkChecked) {
+      _deepLinkChecked = true;
+      checkDeepLink();
+    }
+  };
+
+  /* ── Load privacy data source ── */
+  fetchJson('privacy-data.json')
+    .then(function(d) { deptData['privacy'] = d; })
+    .catch(function() { deptData['privacy'] = null; });
+
+  /* ─────────────────────────────────────────────────────────
+     SUPPORT PANELS — Jobs, FAQ, Docs  (Task 10)
+     ───────────────────────────────────────────────────────── */
+
+  /* ── Support panel mode tracking ── */
+  var supportPanelMode = null; // 'jobs' | 'faq' | 'docs'
+
+  /* ── Show/hide the filters bar and swap body padding ── */
+  function setFilterBarVisible(visible) {
+    var fb = document.querySelector('.filters-bar');
+    if (fb) fb.style.display = visible ? '' : 'none';
+    var body = document.getElementById('slideoverBody');
+    if (body) {
+      if (!visible) {
+        body.style.padding = '0';
+        body.classList.add('support-panel-body');
+      } else {
+        body.style.padding = '';
+        body.classList.remove('support-panel-body');
+      }
+    }
+  }
+
+  /* ── Close helper that also resets support mode ── */
+  function closePanel() {
+    supportPanelMode = null;
+    setFilterBarVisible(true);
+    closeDeptPanel();
+  }
+
+  /* ────────────────────────────────────────────────
+     JOBS PANEL
+  ──────────────────────────────────────────────── */
+
+  function formatElapsed(sec) {
+    if (!sec) return '--';
+    if (sec < 60) return sec + 's';
+    return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+  }
+
+  function buildJobsRunEl(run) {
+    var status = (run.status || 'unknown').toLowerCase();
+    var repoName = run.repo_name || run.target || 'unknown';
+
+    var startedAt = run.started_at ? new Date(run.started_at) : null;
+    var finishedAt = run.finished_at ? new Date(run.finished_at) : null;
+    var dateStr = startedAt ? startedAt.toLocaleString() : '--';
+    var elapsed = '';
+    if (startedAt && finishedAt) {
+      var diffSec = Math.round((finishedAt - startedAt) / 1000);
+      elapsed = ' \u00B7 ' + formatElapsed(diffSec);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'jobs-run';
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'jobs-run-header';
+
+    var left = document.createElement('div');
+    var title = document.createElement('div');
+    title.className = 'jobs-run-title';
+    title.textContent = repoName;
+    var meta = document.createElement('div');
+    meta.className = 'jobs-run-meta';
+    meta.textContent = dateStr + elapsed;
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    var badge = document.createElement('span');
+    badge.className = 'jobs-run-status ' + status;
+    badge.textContent = status;
+
+    header.appendChild(left);
+    header.appendChild(badge);
+    wrap.appendChild(header);
+
+    // Department rows
+    if (run.jobs && typeof run.jobs === 'object') {
+      var deptList = document.createElement('div');
+      deptList.className = 'jobs-dept-list';
+
+      Object.keys(run.jobs).forEach(function(deptKey) {
+        var job = run.jobs[deptKey];
+        var row = document.createElement('div');
+        row.className = 'jobs-dept-row';
+
+        var dname = document.createElement('span');
+        dname.className = 'jobs-dept-name';
+        dname.textContent = DEPT_LABELS[deptKey] || deptKey;
+
+        var dstatus = document.createElement('span');
+        dstatus.className = 'jobs-dept-status ' + (job.status || 'unknown').toLowerCase();
+        dstatus.textContent = job.status || 'unknown';
+
+        var dscore = document.createElement('span');
+        dscore.className = 'jobs-dept-score';
+        dscore.style.color = job.score != null ? scoreColorVar(job.score) : 'var(--text-dim)';
+        dscore.textContent = job.score != null ? String(job.score) : '--';
+
+        var dfindings = document.createElement('span');
+        dfindings.className = 'jobs-dept-findings';
+        dfindings.textContent = job.findings_count != null ? job.findings_count + ' findings' : '';
+
+        var delapsed = document.createElement('span');
+        delapsed.className = 'jobs-dept-elapsed';
+        delapsed.textContent = job.elapsed_seconds != null ? formatElapsed(job.elapsed_seconds) : '';
+
+        row.appendChild(dname);
+        row.appendChild(dstatus);
+        row.appendChild(dscore);
+        row.appendChild(dfindings);
+        row.appendChild(delapsed);
+        deptList.appendChild(row);
+      });
+
+      wrap.appendChild(deptList);
+    }
+
+    return wrap;
+  }
+
+  function renderJobsPanel() {
+    var body = document.getElementById('slideoverBody');
+    clearChildren(body);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'support-content-wrap';
+    wrap.style.padding = '1.25rem 1.5rem';
+
+    // Load current job + history
+    var currentP = fetch('.jobs.json?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .catch(function() { return null; });
+
+    var historyP = fetch('.jobs-history.json?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .catch(function() { return null; });
+
+    var loading = document.createElement('div');
+    loading.className = 'support-loading';
+    loading.textContent = 'Loading jobs\u2026';
+    wrap.appendChild(loading);
+    body.appendChild(wrap);
+
+    Promise.all([currentP, historyP]).then(function(results) {
+      var current = results[0];
+      var history = results[1] || [];
+
+      clearChildren(wrap);
+
+      // Combine: current run at top, then history (deduplicated by run_id)
+      var runs = [];
+      var seenIds = {};
+
+      if (current && current.run_id) {
+        runs.push(current);
+        seenIds[current.run_id] = true;
+      }
+
+      if (Array.isArray(history)) {
+        history.slice().reverse().forEach(function(r) {
+          if (!seenIds[r.run_id]) {
+            runs.push(r);
+            seenIds[r.run_id] = true;
+          }
+        });
+      }
+
+      if (runs.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'No jobs found. Run an audit to see job history here.';
+        wrap.appendChild(empty);
+        return;
+      }
+
+      // Section label
+      var label = document.createElement('div');
+      label.className = 'section-label';
+      label.style.marginBottom = '0.75rem';
+      label.textContent = runs.length + ' run' + (runs.length !== 1 ? 's' : '');
+      wrap.appendChild(label);
+
+      runs.forEach(function(run) {
+        wrap.appendChild(buildJobsRunEl(run));
+      });
+    });
+  }
+
+  function openJobsPanel() {
+    supportPanelMode = 'jobs';
+
+    document.getElementById('slideoverTitle').textContent = 'Jobs';
+    document.getElementById('slideoverSubtitle').textContent = 'Recent audit runs';
+
+    setFilterBarVisible(false);
+    renderJobsPanel();
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('slideover').classList.add('open');
+    closeFindingDetail();
+  }
+
+  /* ────────────────────────────────────────────────
+     FAQ PANEL
+  ──────────────────────────────────────────────── */
+
+  var _faqHtml = null;
+
+  function renderFaqPanel() {
+    var body = document.getElementById('slideoverBody');
+    clearChildren(body);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'support-content-wrap';
+    wrap.style.padding = '1.25rem 1.5rem';
+
+    if (_faqHtml) {
+      wrap.innerHTML = _faqHtml;
+      body.appendChild(wrap);
+      return;
+    }
+
+    var loading = document.createElement('div');
+    loading.className = 'support-loading';
+    loading.textContent = 'Loading FAQ\u2026';
+    wrap.appendChild(loading);
+    body.appendChild(wrap);
+
+    fetch('faq-content.html?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.text() : Promise.reject('HTTP ' + r.status); })
+      .then(function(html) {
+        _faqHtml = html;
+        clearChildren(wrap);
+        wrap.innerHTML = html;
+      })
+      .catch(function(err) {
+        clearChildren(wrap);
+        var errEl = document.createElement('div');
+        errEl.className = 'empty-state';
+        errEl.textContent = 'Could not load FAQ content: ' + err;
+        wrap.appendChild(errEl);
+      });
+  }
+
+  function openFaqPanel() {
+    supportPanelMode = 'faq';
+
+    document.getElementById('slideoverTitle').textContent = 'FAQ';
+    document.getElementById('slideoverSubtitle').textContent = 'How scores are calculated';
+
+    setFilterBarVisible(false);
+    renderFaqPanel();
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('slideover').classList.add('open');
+    closeFindingDetail();
+  }
+
+  /* ────────────────────────────────────────────────
+     DOCS PANEL
+  ──────────────────────────────────────────────── */
+
+  var _docsHtml = null;
+
+  function renderDocsPanel() {
+    var body = document.getElementById('slideoverBody');
+    clearChildren(body);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'support-content-wrap';
+    wrap.style.padding = '1.25rem 1.5rem';
+
+    if (_docsHtml) {
+      wrap.innerHTML = _docsHtml;
+      body.appendChild(wrap);
+      // Re-run the docs tab script if needed
+      var scripts = wrap.querySelectorAll('script');
+      scripts.forEach(function(s) {
+        var ns = document.createElement('script');
+        ns.textContent = s.textContent;
+        document.body.appendChild(ns);
+        document.body.removeChild(ns);
+      });
+      return;
+    }
+
+    var loading = document.createElement('div');
+    loading.className = 'support-loading';
+    loading.textContent = 'Loading documentation\u2026';
+    wrap.appendChild(loading);
+    body.appendChild(wrap);
+
+    fetch('docs-content.html?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.text() : Promise.reject('HTTP ' + r.status); })
+      .then(function(html) {
+        _docsHtml = html;
+        clearChildren(wrap);
+        wrap.innerHTML = html;
+        // Execute inline scripts
+        var scripts = wrap.querySelectorAll('script');
+        scripts.forEach(function(s) {
+          var ns = document.createElement('script');
+          ns.textContent = s.textContent;
+          document.body.appendChild(ns);
+          document.body.removeChild(ns);
+        });
+      })
+      .catch(function(err) {
+        clearChildren(wrap);
+        var errEl = document.createElement('div');
+        errEl.className = 'empty-state';
+        errEl.textContent = 'Could not load documentation: ' + err;
+        wrap.appendChild(errEl);
+      });
+  }
+
+  function openDocsPanel() {
+    supportPanelMode = 'docs';
+
+    document.getElementById('slideoverTitle').textContent = 'Documentation';
+    document.getElementById('slideoverSubtitle').textContent = 'CLI, CI/CD, GitHub reference';
+
+    setFilterBarVisible(false);
+    renderDocsPanel();
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('slideover').classList.add('open');
+    closeFindingDetail();
+  }
+
+  /* ── Wire top-bar support buttons ── */
+  document.getElementById('jobsBtn').addEventListener('click', openJobsPanel);
+  document.getElementById('faqBtn').addEventListener('click', openFaqPanel);
+  document.getElementById('docsBtn').addEventListener('click', openDocsPanel);
+
+  /* ── Override closeDeptPanel to restore filter bar when closing support panels ── */
+  var _origCloseDeptPanel = closeDeptPanel;
+  closeDeptPanel = function() {
+    supportPanelMode = null;
+    setFilterBarVisible(true);
+    _origCloseDeptPanel();
+  };
+
+})();
+</script>
 </body>
 </html>

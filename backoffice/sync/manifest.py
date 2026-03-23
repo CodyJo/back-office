@@ -6,14 +6,9 @@ sync-dashboard.sh and quick-sync.sh file lists.
 """
 
 DASHBOARD_FILES: list[str] = [
-    "index.html", "qa.html", "backoffice.html",
-    "seo.html", "ada.html", "compliance.html", "privacy.html",
-    "monetization.html", "product.html",
-    "jobs.html", "faq.html", "self-audit.html", "admin.html", "regression.html",
-    "selah.html", "analogify.html", "chromahaus.html", "tnbm-tarot.html",
-    "back-office-hq.html",
-    "documentation.html", "documentation-github.html",
-    "documentation-cicd.html", "documentation-cli.html",
+    "index.html",
+    "faq-content.html",
+    "docs-content.html",
     "site-branding.js", "department-context.js", "favicon.svg",
 ]
 

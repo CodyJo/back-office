@@ -1,6 +1,6 @@
 {
   "department": "ada",
-  "generated_at": "2026-03-23T00:18:03.939598+00:00",
+  "generated_at": "2026-03-23T01:15:00.848881+00:00",
   "totals": {
     "critical": 13,
     "high": 31,
@@ -38,6 +38,9 @@
           "fix_suggestion": "Change the button type from 'button' to 'submit' and wrap the input in a form element. This ensures native Enter key submission: <form onsubmit=\"(e) => { e.preventDefault(); goToGallery(); }\"><input id=\"gallery-slug\" type=\"text\" /><button type=\"submit\">Continue</button></form>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button type=\"button\" onclick=\"goToGallery()\">Continue</button>",
+          "line": 25,
+          "impact": "Keyboard-only users may experience inconsistent behavior if form submission is expected but the button is not properly wired to keyboard events.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         },
@@ -54,6 +57,9 @@
           "fix_suggestion": "Wrap form inputs in a <form> element with onsubmit handler: <form id=\"feedback-form\" onsubmit=\"(e) => { e.preventDefault(); submitFeedback(); }\">...fields...</form> and change button type to 'submit'.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button id=\"fb-submit\" type=\"button\" onclick=\"submitFeedback()\">Submit report</button>",
+          "line": 38,
+          "impact": "Users relying on keyboard navigation expect to press Enter in a textarea or final input to submit a form. Without a proper form element, this standard interaction pattern breaks.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         },
@@ -70,6 +76,9 @@
           "fix_suggestion": "Add a skip link as the first element in the header: <a href=\"#main-content\" class=\"skip-link\">Skip to main content</a> and add id=\"main-content\" to the main div or section where form begins.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<header class=\"site-nav\" id=\"site-nav\">..nav links..</header>",
+          "line": 574,
+          "impact": "Keyboard users must tab through all navigation links before reaching main content, increasing cognitive load and reducing efficiency.",
           "wcag_criterion": "2.4.1",
           "wcag_level": "A"
         },
@@ -86,6 +95,9 @@
           "fix_suggestion": "After toggling visibility, programmatically move focus to the primary heading or first interactive element. Example: document.getElementById('gallery-view').classList.add('visible'); document.getElementById('gallery-title')?.focus(); Add tabindex=\"-1\" to elements that should receive focus.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "#gallery-view { display: none; } #gallery-view.visible { display: block; }",
+          "line": 347,
+          "impact": "When modals, screens, or overlays appear/disappear, keyboard users lose track of focus. Screen readers don't announce which element received focus after the transition.",
           "wcag_criterion": "2.4.3",
           "wcag_level": "A"
         },
@@ -102,6 +114,9 @@
           "fix_suggestion": "Inject alt text when creating image elements. The alt should describe the photo content (e.g., the photo title, shot type, or description from metadata). Example: const img = document.createElement('img'); img.src = photoUrl; img.alt = photo.title || 'Gallery photo'; container.appendChild(img);",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".photo-item img { } [dynamically inserted via JS without alt attribute]",
+          "line": 522,
+          "impact": "Screen reader users cannot understand the content or purpose of the gallery photos. The gallery is unusable without seeing the images or having textual descriptions.",
           "wcag_criterion": "1.1.1",
           "wcag_level": "A"
         },
@@ -118,6 +133,9 @@
           "fix_suggestion": "Add explicit <label> tags and keep placeholder for hints only. Example: <label for=\"gallery-slug\">Gallery slug</label><input id=\"gallery-slug\" placeholder=\"joanne-garrison\" />. Placeholder should reinforce the label, not replace it.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id=\"gallery-slug\" autocomplete=\"off\" placeholder=\"joanne-garrison\" />",
+          "line": 24,
+          "impact": "When users focus on an input, the placeholder text disappears, leaving users uncertain about what to enter. Screen readers may not properly announce the input purpose.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -134,6 +152,9 @@
           "fix_suggestion": "Enhance the focus indicator with a semi-transparent background or double outline: *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: 0 0 0 4px rgba(196, 148, 74, 0.15); } This adds a halo effect for better visibility.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "*:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+          "line": 115,
+          "impact": "Users with low vision may struggle to see the focus indicator, especially on complex or high-contrast backgrounds.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -150,6 +171,9 @@
           "fix_suggestion": "Add aria-invalid and aria-describedby to the input when an error occurs: const input = group.querySelector('input'); input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', `${field}-error`); errEl.id = `${field}-error`;",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "function showFieldError(field, msg) { const group = document.getElementById(`fg-${field}`); group.classList.add('has-error'); }",
+          "line": 884,
+          "impact": "Screen reader users may not know that an input has an error or what the error message is, since the error is not programmatically associated with the input.",
           "wcag_criterion": "3.3.1",
           "wcag_level": "A"
         },
@@ -166,6 +190,9 @@
           "fix_suggestion": "Increase contrast by lightening --text-muted from #5c5347 to #8a7f74 or darkening the background. Retest contrast: #8a7f74 on #050505 = 6.8:1, which meets AA. Update :root { --text-muted: #8a7f74; }",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "color: var(--text-muted); [#5c5347 on #050505]",
+          "line": 34,
+          "impact": "Users with low vision or reading difficulties struggle to read secondary text, descriptions, and helper text. Content is harder to scan.",
           "wcag_criterion": "1.4.3",
           "wcag_level": "AA"
         },
@@ -182,6 +209,9 @@
           "fix_suggestion": "For buttons without visible text or icon-only buttons, add aria-label. For style pills, the visible text is sufficient. Example: <button class=\"style-pill\" aria-label=\"Apply Vintage style\">Vintage</button>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".style-pill { } [contains visible text like 'Vintage']",
+          "line": 498,
+          "impact": "Button purpose is clear from visible text, so this is low priority. However, for consistency and to ensure all interactive elements have explicit accessible names, aria-label could be added.",
           "wcag_criterion": "2.5.3",
           "wcag_level": "A"
         },
@@ -198,6 +228,9 @@
           "fix_suggestion": "No fix needed. The hover effect is visual only and does not trigger any context changes. Consider adding focus state styling for keyboard users: .gallery-card:focus-visible { outline: ... }",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".gallery-card:hover { transform: translateY(-4px); }",
+          "line": 296,
+          "impact": "This is not a violation but a note on behavior. Hover effects should not cause unexpected focus changes. The current implementation is fine.",
           "wcag_criterion": "3.2.1",
           "wcag_level": "A"
         },
@@ -214,6 +247,9 @@
           "fix_suggestion": "Ensure all dynamically generated IDs are unique. Use timestamps or counters: const uniqueId = `element-${Date.now()}-${Math.random()}`; or use data attributes instead of IDs for JS hooks: data-field=\"name\" instead of id=\"fb-name\".",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div class=\"form-group\" id=\"fg-name\">",
+          "line": 731,
+          "impact": "If the page creates duplicate IDs dynamically, HTML parsing becomes ambiguous. Screen readers may reference the wrong element. This is a potential issue dependent on runtime behavior.",
           "wcag_criterion": "4.1.1",
           "wcag_level": "A"
         }
@@ -267,6 +303,9 @@
           "fix_suggestion": "Add explicit focus-visible styling with visible outline or box-shadow. Example: `.filter-bar select:focus, .filter-bar input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }` or use box-shadow for design consistency.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--accent); }",
+          "line": 246,
+          "impact": "Keyboard-only users cannot identify which element has focus during navigation. This creates a significant barrier for users unable to use a mouse or touchpad. The subtle border-color change may not be visible in all contexts.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -283,6 +322,9 @@
           "fix_suggestion": "Audit focus order by tabbing through each page with keyboard only. Verify tab order matches visual left-to-right, top-to-bottom flow. If needed, explicitly set tabindex=\"0\" on custom interactive elements that don't receive focus naturally.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Multiple form inputs and buttons that rely on natural tab order in complex layout structures",
+          "line": 331,
+          "impact": "Keyboard users may experience unexpected focus navigation patterns that don't match the visual layout, leading to confusion and slower navigation.",
           "wcag_criterion": "2.4.3",
           "wcag_level": "A"
         },
@@ -299,6 +341,9 @@
           "fix_suggestion": "Wrap animation in @media query: `@media (prefers-reduced-motion: reduce) { .header-meta .live-dot { animation: none; opacity: 1; } }`. Add this rule after the @keyframes definition.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".header-meta .live-dot { animation: pulse 2s infinite; } @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46,213,115,0.4); } 50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(46,213,115,0); } }",
+          "line": 85,
+          "impact": "Users with vestibular disorders, migraines triggered by motion, or other motion-sensitive conditions experience discomfort. This violates their accessibility preferences at the OS/browser level.",
           "wcag_criterion": "1.4.2",
           "wcag_level": "A"
         },
@@ -315,6 +360,9 @@
           "fix_suggestion": "For desktop, current size is acceptable. For mobile, add responsive padding: `@media (max-width: 640px) { .filter-bar input, .filter-bar select { padding: 0.75rem 1rem; min-height: 44px; } }`",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".filter-bar select, .filter-bar input { padding: 0.45rem 0.75rem; } and <input type=\"text\" style=\"padding:0.6rem 0.7rem;\">",
+          "line": 238,
+          "impact": "Users with motor impairments, tremors, or those on mobile devices may have difficulty accurately clicking or tapping small form controls, leading to input errors and frustration.",
           "wcag_criterion": "2.5.5",
           "wcag_level": "AAA"
         },
@@ -331,6 +379,9 @@
           "fix_suggestion": "If non-English content is added in future, wrap it with language attributes: `<span lang=\"es\">contenido</span>`. This is informational/preventative.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<html lang=\"en\"> is present on all files",
+          "line": 1,
+          "impact": "Screen readers use the correct English pronunciation rules for all content. No current impact, but future multilingual content would lack proper language markup.",
           "wcag_criterion": "3.1.1",
           "wcag_level": "A"
         },
@@ -347,6 +398,9 @@
           "fix_suggestion": "Add ARIA attributes: `<div class=\"tab-bar\" role=\"tablist\"> <button class=\"tab-btn\" role=\"tab\" aria-selected=\"true\" aria-controls=\"panel-all\">All</button> ... </div> <div id=\"panel-all\" class=\"tab-panel\" role=\"tabpanel\" aria-labelledby=\"tab-all\">...</div>`",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": ".tab-btn { ... cursor: pointer; } without role=\"tab\", aria-selected, or aria-controls attributes. .tab-panel { display: none; } .tab-panel.active { display: block; }",
+          "line": 204,
+          "impact": "Screen reader users cannot efficiently navigate between tabs and may not understand the relationship between tab buttons and their corresponding panels. Semantic meaning is lost.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         }
@@ -400,6 +454,9 @@
           "fix_suggestion": "Add an associated label, for example: <label htmlFor=\"unlock-password\">Password</label><input id=\"unlock-password\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"password\" ... placeholder=\"Your password\" required autoFocus autoComplete=\"current-password\" />",
+          "line": 41,
+          "impact": "Screen reader users can land on an unnamed required field when trying to unlock encrypted journal content, which blocks a core flow.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -416,6 +473,9 @@
           "fix_suggestion": "Add a label tied to the field: <label htmlFor=\"current-password\">Current password</label><input id=\"current-password\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"password\" value={currentPassword} ... placeholder=\"Current password\" required autoComplete=\"current-password\" />",
+          "line": 416,
+          "impact": "Assistive technology users cannot reliably identify the first password field in the account password-change flow.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -432,6 +492,9 @@
           "fix_suggestion": "Add a visible label and id pair, such as <label htmlFor=\"new-password\">New password</label><input id=\"new-password\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"password\" value={newPassword} ... placeholder=\"New password (min 10 characters)\" required minLength={10} autoComplete=\"new-password\" />",
+          "line": 425,
+          "impact": "Screen reader users can miss which field creates the replacement password, increasing the chance of failed password changes.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -448,6 +511,9 @@
           "fix_suggestion": "Mark the container as a dialog and tie it to the heading, for example: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"unlock-title\"> ... <h2 id=\"unlock-title\">Unlock Journal</h2>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\"><div className=\"w-full max-w-sm ...\">",
+          "line": 29,
+          "impact": "Screen reader users are not informed that focus has moved into a blocking dialog, making the locked state harder to understand and navigate.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -464,6 +530,9 @@
           "fix_suggestion": "Add role=\"dialog\", aria-modal=\"true\", and aria-labelledby tied to the modal heading. This modal should also move focus into the dialog on open.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\"><div className=\"w-full max-w-sm ...\">",
+          "line": 38,
+          "impact": "Users of screen readers may continue exploring background content and miss the context switch into a recovery task.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -480,6 +549,9 @@
           "fix_suggestion": "Add dialog semantics: role=\"dialog\", aria-modal=\"true\", and aria-labelledby on the modal container, plus a heading id.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\"><div className=\"w-full max-w-md ...\">",
+          "line": 33,
+          "impact": "Users can lose context while trying to complete a critical security step because the blocking overlay is not announced as a dialog.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -496,6 +568,9 @@
           "fix_suggestion": "Assign ids to the textarea and input controls and connect each visible label with htmlFor, or use aria-labelledby where appropriate.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<label className=\"...\">Reflection</label>\n<textarea value={content} ... />",
+          "line": 226,
+          "impact": "Screen reader users may hear generic \"edit text\" controls instead of the field purpose while creating or editing journal entries.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -512,6 +587,9 @@
           "fix_suggestion": "Add stable ids to each form control and convert each visible label into a proper label association with htmlFor.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<label className=\"...\">Title</label>\n<input value={title} ... />",
+          "line": 251,
+          "impact": "Assistive technology users can lose track of which control edits which part of the reflection, making a primary authoring workflow difficult.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -528,6 +606,9 @@
           "fix_suggestion": "Add aria-expanded={expandedBook === book.bookid}, aria-controls for the chapter panel id, and assign that id to the revealed panel.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button onClick={() => { setExpandedBook(...); ... }} className=\"tap-target flex w-full ...\">",
+          "line": 153,
+          "impact": "Screen reader users cannot tell whether a book is collapsed or expanded before navigating into the chapter list.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -544,6 +625,9 @@
           "fix_suggestion": "Set aria-expanded={isExpanded}, aria-controls on the header button, and add the matching id to the expanded detail region.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button onClick={() => handleExpandPlan(plan.id)} className=\"tap-target flex w-full items-center gap-3 ...\">",
+          "line": 145,
+          "impact": "Users of assistive technology must guess whether additional plan details and progress controls are currently visible.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -560,6 +644,9 @@
           "fix_suggestion": "Apply aria-expanded and aria-controls to each header button and give each expandable region a unique id.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button onClick={() => setExpandedId(isExpanded ? null : item.id)} className=\"flex w-full items-start justify-between gap-3 text-left\">",
+          "line": 241,
+          "impact": "Screen reader users cannot tell which cards are open, making it harder to review saved studies and reflections efficiently.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -576,6 +663,9 @@
           "fix_suggestion": "Add aria-expanded and aria-controls to the trigger buttons and an id to the expandable panel.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button onClick={() => setExpandedId(isExpanded ? null : entry.id)} className=\"flex-1 text-left\">",
+          "line": 339,
+          "impact": "Assistive technology users must explore the DOM to discover whether extra prayer-request and action content is present.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -592,6 +682,9 @@
           "fix_suggestion": "Expose disclosure state with aria-expanded and point aria-controls to the corresponding expanded content container.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button onClick={() => setExpandedId(expanded ? null : entry.id)} className=\"flex-1 text-left\">",
+          "line": 314,
+          "impact": "Screen reader users cannot reliably understand whether the verse, prompt, tags, and delete actions are currently visible.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -608,6 +701,9 @@
           "fix_suggestion": "Add a visible or screen-reader label, for example <label htmlFor=\"study-book-search\" className=\"sr-only\">Search books</label><input id=\"study-book-search\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"text\" value={bookSearch} ... placeholder=\"Search books...\" ... autoFocus />",
+          "line": 446,
+          "impact": "When the placeholder disappears, screen reader and speech-input users lose a reliable field name while filtering books.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -624,6 +720,9 @@
           "fix_suggestion": "Expose the message list as a live log, for example <div role=\"log\" aria-live=\"polite\" aria-relevant=\"additions text\">, and mark the loading line as role=\"status\".",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"space-y-3 max-h-96 overflow-y-auto\"> ... {loading && <div ...>Reflecting on your question...</div>}",
+          "line": 90,
+          "impact": "Screen reader users may not hear when the app starts processing or when a new answer arrives, leaving the interaction silent and confusing.",
           "wcag_criterion": "4.1.3",
           "wcag_level": "AA"
         },
@@ -640,6 +739,9 @@
           "fix_suggestion": "Add autoComplete=\"email\" to the email field and autoComplete=\"current-password\" to the password field.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id=\"email\" type=\"email\" ... required />\n<input id=\"password\" type=\"password\" ... required />",
+          "line": 127,
+          "impact": "Users who rely on browser autofill, password managers, or cognitive support features get less reliable form filling on a core auth path.",
           "wcag_criterion": "1.3.5",
           "wcag_level": "AA"
         },
@@ -656,6 +758,9 @@
           "fix_suggestion": "Use autoComplete=\"name\", autoComplete=\"email\", and autoComplete=\"new-password\" on the registration inputs. The confirmation field should also use autoComplete=\"new-password\".",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id=\"name\" type=\"text\" ... />\n<input id=\"email\" type=\"email\" ... />\n<input id=\"password\" type=\"password\" ... />",
+          "line": 126,
+          "impact": "People using autofill and assistive input tools get a slower and less reliable sign-up flow.",
           "wcag_criterion": "1.3.5",
           "wcag_level": "AA"
         },
@@ -672,6 +777,9 @@
           "fix_suggestion": "Add autoComplete=\"email\" to the email input.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id=\"email\" type=\"email\" value={email} ... required />",
+          "line": 78,
+          "impact": "Users miss browser assistance for a common recovery flow and may have to re-enter data manually.",
           "wcag_criterion": "1.3.5",
           "wcag_level": "AA"
         },
@@ -688,6 +796,9 @@
           "fix_suggestion": "Add autoComplete=\"email\", autoComplete=\"one-time-code\", and autoComplete=\"new-password\" to the relevant fields. The confirmation field should also use autoComplete=\"new-password\".",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id=\"email\" type=\"email\" ... />\n<input id=\"code\" type=\"text\" inputMode=\"numeric\" ... />\n<input id=\"password\" type=\"password\" ... />",
+          "line": 89,
+          "impact": "Password managers and platform autofill tools cannot help users complete the reset flow as reliably as they should.",
           "wcag_criterion": "1.3.5",
           "wcag_level": "AA"
         }
@@ -741,6 +852,9 @@
           "fix_suggestion": "Add underlines to links in main content areas: main a, .prose a { text-decoration: underline; text-underline-offset: 0.25em; }. Keep navigation and button links without underlines.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "a { color: var(--accent); text-decoration: none; } removes underlines globally. In body copy and paragraphs, links are only distinguished by color.",
+          "line": 88,
+          "impact": "Users with color blindness or those viewing on monochrome displays cannot identify links. Users scanning content quickly may miss links. This affects 8% of males with color vision deficiency.",
           "wcag_criterion": "1.4.1",
           "wcag_level": "A"
         },
@@ -757,6 +871,9 @@
           "fix_suggestion": "Add aria-live='polite' and role='status' to #blog-results-meta: <div class='results-meta' id='blog-results-meta' aria-live='polite' role='status'>Showing <span id='blog-results-count'>{posts.length}</span> posts</div>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The #blog-results-meta div updates via JavaScript (resultsCount.textContent = String(visibleCount)) but lacks aria-live or role='status'.",
+          "line": 121,
+          "impact": "Screen reader users will not be notified when filtered results change, making the filtering feature completely unusable for them.",
           "wcag_criterion": "4.1.3",
           "wcag_level": "AA"
         },
@@ -773,6 +890,9 @@
           "fix_suggestion": "Use a more descriptive label: <label class='filter-field filter-search'><span>Search by keyword (searches titles, topics, tags, and content)</span><input ... /></label>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<label><span>Keyword</span><input type='search' placeholder='Search product strategy, privacy, journaling, events...' /></label>",
+          "line": 76,
+          "impact": "Users with cognitive disabilities or those using form-filling assistants may not understand what the search field searches (keywords across blog titles, content, tags, etc.).",
           "wcag_criterion": "2.4.4",
           "wcag_level": "A"
         },
@@ -789,6 +909,9 @@
           "fix_suggestion": "Add JavaScript: (1) Move focus to first nav link when menu opens, (2) Handle Escape key to close menu, (3) Add aria-controls='nav-links' to toggle button and id='nav-links' to nav element.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Desktop: .nav-dropdown-menu uses opacity and pointer-events controlled by :focus-within. Mobile: position becomes static and opacity/pointer-events are hardcoded, with no JS focus management visible.",
+          "line": 12,
+          "impact": "Keyboard-only users on mobile may be unable to navigate out of the expanded menu or close it, effectively trapping them.",
           "wcag_criterion": "2.1.2",
           "wcag_level": "A"
         },
@@ -805,6 +928,9 @@
           "fix_suggestion": "Add aria-controls: <button class='nav-toggle' aria-label='Toggle menu' aria-expanded='false' aria-controls='nav-links'> and <nav class='nav-links' id='nav-links'>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button class='nav-toggle' aria-label='Toggle menu' aria-expanded='false'> missing aria-controls='nav-links'",
+          "line": 12,
+          "impact": "Screen reader users won't understand which navigation element the toggle button controls, reducing clarity about menu functionality.",
           "wcag_criterion": "2.1.2",
           "wcag_level": "A"
         },
@@ -821,6 +947,9 @@
           "fix_suggestion": "When .nav-links.open is applied, focus the first anchor tag: navLinks.querySelector('a')?.focus();",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The .nav-toggle button toggles .open class on .nav-links, but no visible JavaScript moves focus to the menu items.",
+          "line": 12,
+          "impact": "Keyboard-only users must tab multiple times to reach the actual menu items, creating unnecessary friction.",
           "wcag_criterion": "2.4.3",
           "wcag_level": "A"
         },
@@ -837,6 +966,9 @@
           "fix_suggestion": "Add: <p class='filter-instructions' style='color: var(--text-muted); margin-bottom: 1rem;'>Filter posts by selecting any combination. All selected filters must match:</p>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Filter labels are minimal (Keyword, Product, Topic). No instruction text explains that all selected filters must match (AND logic).",
+          "line": 75,
+          "impact": "Users with cognitive disabilities or those unfamiliar with filtering UIs may be confused about expected filter behavior.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -853,6 +985,9 @@
           "fix_suggestion": "Test the site at 200% zoom and with text spacing adjustments. Verify no horizontal scrolling or content loss occurs. Update CSS comments to confirm WCAG 1.4.12 compliance.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Body uses line-height: 1.7 and responsive font sizing via clamp(), but max-width constraints and fixed container dimensions may cause overflow when spacing is increased.",
+          "line": 64,
+          "impact": "Users who need increased text spacing (dyslexia, low vision) may experience content overflow or loss of readability.",
           "wcag_criterion": "1.4.12",
           "wcag_level": "AA"
         },
@@ -869,6 +1004,9 @@
           "fix_suggestion": "Verify contrast ratios using WebAIM Contrast Checker. If below 3:1 against secondary backgrounds, increase border width to 2px or adjust color.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": ".btn { border: 1px solid var(--accent); } where --accent is #c4944a. This needs 3:1 contrast ratio against all background colors.",
+          "line": 140,
+          "impact": "Users with low vision or color blindness may have difficulty seeing button borders, making interactive elements less discoverable.",
           "wcag_criterion": "1.4.11",
           "wcag_level": "AA"
         },
@@ -885,6 +1023,9 @@
           "fix_suggestion": "Add unique IDs: <a href={`/blog/${post.id}`} id='post-{post.id}' class='post-card fade-in' data-post-card ... >",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<a ... data-post-card ... > elements have no id='post-{post.id}' attribute. Multiple elements with only data attributes can lead to selector ambiguity.",
+          "line": 125,
+          "impact": "Future code changes may fail silently. Automated accessibility testing tools may report issues due to missing IDs.",
           "wcag_criterion": "4.1.1",
           "wcag_level": "A"
         },
@@ -901,6 +1042,9 @@
           "fix_suggestion": "Add CSS icon: a[target='_blank']::after { content: ' \u2197'; font-size: 0.75em; margin-left: 0.25rem; }",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<a href='https://cordivent.com' target='_blank' rel='noopener'>Cordivent</a> has no visual indicator or text warning.",
+          "line": 30,
+          "impact": "Users may be surprised when links open in new windows, disrupting their browsing flow. Users with cognitive disabilities may be confused.",
           "wcag_criterion": "2.5.1",
           "wcag_level": "A"
         },
@@ -917,6 +1061,9 @@
           "fix_suggestion": "Add autocomplete='off': <input id='blog-search' type='search' name='q' autocomplete='off' ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id='blog-search' type='search' name='q' ... /> missing autocomplete attribute",
+          "line": 78,
+          "impact": "Low priority for current site. Browsers may suggest previous searches, which may not be desired for a content search.",
           "wcag_criterion": "1.3.5",
           "wcag_level": "AA"
         },
@@ -933,6 +1080,9 @@
           "fix_suggestion": "Add: document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open')); } });",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The .nav-dropdown-menu is controlled only by CSS :hover/:focus-within. No JavaScript Escape key handler is visible.",
+          "line": 20,
+          "impact": "Keyboard-only users cannot dismiss the dropdown using the standard Escape key, requiring them to tab away or click elsewhere.",
           "wcag_criterion": "1.4.13",
           "wcag_level": "AA"
         }
@@ -986,6 +1136,9 @@
           "fix_suggestion": "Convert to proper button elements or use actual href links instead of onclick with hash hrefs",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Navigation anchor tags with onclick handlers instead of proper href routing",
+          "line": 31,
+          "impact": "Keyboard-only users cannot navigate between views. Screen reader users may not understand the purpose of these elements.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         },
@@ -1002,6 +1155,9 @@
           "fix_suggestion": "Add keyboard event listener to handle Escape key for modal dismissal",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Modal dialog without documented Escape key handler or clear close button",
+          "line": 306,
+          "impact": "Keyboard-only users may become trapped in the modal if they cannot find the Cancel button.",
           "wcag_criterion": "2.1.2",
           "wcag_level": "A"
         },
@@ -1018,6 +1174,9 @@
           "fix_suggestion": "Add a skip link as the first focusable element on the page that links to main content with id='main-content'",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Navigation bar followed immediately by main content without skip link",
+          "line": 28,
+          "impact": "Keyboard-only and screen reader users must navigate through all nav links to reach main content, significantly slowing access.",
           "wcag_criterion": "2.4.1",
           "wcag_level": "A"
         },
@@ -1034,6 +1193,9 @@
           "fix_suggestion": "Add ARIA attributes: role='dialog', aria-modal='true', and aria-labelledby pointing to modal heading ID",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Modal div missing role, aria-modal, and aria-labelledby attributes",
+          "line": 306,
+          "impact": "Screen reader users are not informed that this is a modal dialog and cannot be announced properly. Tab order and focus management are unclear.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -1050,6 +1212,9 @@
           "fix_suggestion": "Add a visual error indicator such as an icon or text prefix like 'Error: ' before the error message text",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Form error div with only CSS color styling, no text prefix or icon",
+          "line": 41,
+          "impact": "Users with color blindness cannot perceive that an error has occurred. Visual-only users still need non-color indicators.",
           "wcag_criterion": "1.3.1",
           "wcag_level": "A"
         },
@@ -1066,6 +1231,9 @@
           "fix_suggestion": "Use a more visible outline instead of box-shadow for focus state",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Input focus styling uses subtle box-shadow without explicit outline",
+          "line": 109,
+          "impact": "Keyboard-only users may have difficulty seeing which form field is currently focused.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -1082,6 +1250,9 @@
           "fix_suggestion": "Ensure all buttons meet minimum 44x44px touch target size by adjusting btn-sm padding",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Modal buttons using btn-sm class with reduced padding",
+          "line": 311,
+          "impact": "Mobile and touch-screen users may struggle to precisely click the buttons, especially the Cancel button.",
           "wcag_criterion": "2.5.5",
           "wcag_level": "AAA"
         },
@@ -1098,6 +1269,9 @@
           "fix_suggestion": "Move focus to the main heading of the new view after displaying it",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "showView function hides/shows sections without moving focus",
+          "line": 409,
+          "impact": "Keyboard users don't know where focus is after view switch. Screen reader users don't get announced the new view's content.",
           "wcag_criterion": "2.4.3",
           "wcag_level": "A"
         },
@@ -1114,6 +1288,9 @@
           "fix_suggestion": "Ensure all interactive controls use semantic button elements",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Dynamic content generation patterns may bypass semantic button elements",
+          "line": 600,
+          "impact": "Screen reader users cannot identify these as buttons. Keyboard users cannot activate them with Space key.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         },
@@ -1130,6 +1307,9 @@
           "fix_suggestion": "Use darker color for labels to improve contrast to 7:1 or higher for better readability",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Form labels using text-muted color variable",
+          "line": 92,
+          "impact": "Users with low vision or color blindness may have difficulty reading form labels.",
           "wcag_criterion": "1.4.3",
           "wcag_level": "AA"
         },
@@ -1146,6 +1326,9 @@
           "fix_suggestion": "Ensure link text is clear and includes descriptive text in addition to arrow symbol",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Back link with arrow character (larr entity)",
+          "line": 301,
+          "impact": "Screen reader users will hear 'Back to deployments' but may be confused by arrow symbol if isolated.",
           "wcag_criterion": "2.4.4",
           "wcag_level": "A"
         },
@@ -1162,6 +1345,9 @@
           "fix_suggestion": "Add legend text at the top of form sections explaining that asterisks indicate required fields",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Multiple form fields with required asterisk span element",
+          "line": 47,
+          "impact": "Users, especially those new to the form, may not understand that the asterisk indicates a required field.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1178,6 +1364,9 @@
           "fix_suggestion": "Ensure dynamically added content maintains focus management and moves focus to new elements",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "addAgentGroup function creates dynamic form elements",
+          "line": 600,
+          "impact": "New form fields may not be keyboard accessible or properly announced to screen readers.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         },
@@ -1194,6 +1383,9 @@
           "fix_suggestion": "Add aria-live regions to announce dynamic changes to assistive technology users",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Form selects with onchange handlers that trigger updateZones and similar functions",
+          "line": 54,
+          "impact": "Screen reader and keyboard users may be surprised when selections change the form's visible content without explicit submission.",
           "wcag_criterion": "3.2.1",
           "wcag_level": "A"
         },
@@ -1210,6 +1402,9 @@
           "fix_suggestion": "Test at 320px and 200% zoom to ensure proper reflow, consider reducing grid minimum width",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Container with fixed max-width and form-row with minimum 200px",
+          "line": 61,
+          "impact": "Users with low vision who zoom to 200% may experience horizontal scrolling in some viewport sizes.",
           "wcag_criterion": "1.4.10",
           "wcag_level": "AA"
         },
@@ -1226,6 +1421,9 @@
           "fix_suggestion": "Use aria-describedby attribute to associate help text with form inputs",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Form labels with small description tags below but no aria-describedby association",
+          "line": 238,
+          "impact": "Screen reader users don't understand the relationship between the input and its help text description.",
           "wcag_criterion": "2.4.6",
           "wcag_level": "AA"
         },
@@ -1242,6 +1440,9 @@
           "fix_suggestion": "Add aria-hidden='true' to decorative previews, or provide text descriptions for screen readers",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "arch-preview and agent-preview divs without aria-hidden or semantic markup",
+          "line": 89,
+          "impact": "Screen reader users cannot understand the deployment topology being visualized.",
           "wcag_criterion": "1.3.1",
           "wcag_level": "A"
         },
@@ -1258,6 +1459,9 @@
           "fix_suggestion": "Add explicit close button or enhance JavaScript with keyboard event handling for Escape key",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Modal overlay with onclick handler using event.target check",
+          "line": 306,
+          "impact": "Keyboard users relying on the overlay interaction may not succeed if focus is on the modal card.",
           "wcag_criterion": "2.5.2",
           "wcag_level": "A"
         },
@@ -1274,6 +1478,9 @@
           "fix_suggestion": "Add scope='col' attribute to all th elements in table headers",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Table thead with th elements but no scope attributes",
+          "line": 284,
+          "impact": "Screen reader users don't have clear understanding of which column header corresponds to each data cell.",
           "wcag_criterion": "1.3.1",
           "wcag_level": "A"
         },
@@ -1290,6 +1497,9 @@
           "fix_suggestion": "Ensure all status elements include actual text content in addition to CSS classes",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "CSS classes for status badges without confirmation of text content",
+          "line": 375,
+          "impact": "If CSS fails to load, status badges may be indistinguishable. Screen readers need actual text content.",
           "wcag_criterion": "3.2.4",
           "wcag_level": "AA"
         },
@@ -1306,6 +1516,9 @@
           "fix_suggestion": "Use word-break and white-space properties to allow wrapping instead of only horizontal scrolling",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Output box styling with font-size 0.85rem and overflow-x auto",
+          "line": 424,
+          "impact": "Users with increased text spacing or low vision may have difficulty reading code output if it requires horizontal scrolling.",
           "wcag_criterion": "1.4.12",
           "wcag_level": "AA"
         },
@@ -1322,6 +1535,9 @@
           "fix_suggestion": "Add :focus and :focus-visible CSS states to nav-link elements",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "nav-link styling with hover and active states but no focus state",
+          "line": 48,
+          "impact": "Keyboard-only users may not see which nav item has focus when tabbing.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -1338,6 +1554,9 @@
           "fix_suggestion": "Add role='alert' and aria-live='assertive' to the login-error element",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Login error element without aria-live or role='alert'",
+          "line": 24,
+          "impact": "Screen reader users don't get notified when login errors occur.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -1354,6 +1573,9 @@
           "fix_suggestion": "Consider darker muted text color for AAA compliance aspiration",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "CSS custom properties for text colors",
+          "line": 9,
+          "impact": "Users with mild low vision would benefit from higher contrast throughout.",
           "wcag_criterion": "1.4.6",
           "wcag_level": "AAA"
         },
@@ -1370,6 +1592,9 @@
           "fix_suggestion": "No fix needed - this is compliant.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "html lang='en' attribute",
+          "line": 2,
+          "impact": "Positive finding - screen readers will use correct English pronunciation.",
           "wcag_criterion": "3.1.1",
           "wcag_level": "A"
         },
@@ -1386,6 +1611,9 @@
           "fix_suggestion": "No fix needed - this is compliant.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Form with submit button",
+          "line": 40,
+          "impact": "Positive finding - form submission is fully keyboard accessible.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         }
@@ -1439,6 +1667,9 @@
           "fix_suggestion": "Add keydown event handler to the modal to close on Escape key:\n\nconst handleKeyDown = (e: React.KeyboardEvent) => {\n  if (e.key === 'Escape') {\n    onUnlock(''); // or implement proper close handler\n  }\n};\n\n<div\n  className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\"\n  onKeyDown={handleKeyDown}\n  role=\"dialog\"\n  aria-modal=\"true\"\n  aria-labelledby=\"modal-title\"\n>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\">\n      <div className=\"w-full max-w-sm rounded-2xl border border-card-border bg-surface p-6 shadow-xl\">\n        // No Escape key handler, no way to dismiss keyboard-only",
+          "line": 28,
+          "impact": "Keyboard-only users and screen reader users may become trapped in the modal without a way to dismiss it, unable to access the rest of the page.",
           "wcag_criterion": "2.1.1",
           "wcag_level": "A"
         },
@@ -1455,6 +1686,9 @@
           "fix_suggestion": "Add proper ARIA attributes to the modal container:\n\n<div\n  className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\"\n  role=\"dialog\"\n  aria-modal=\"true\"\n  aria-labelledby=\"modal-title\"\n>\n  <div className=\"w-full max-w-sm rounded-2xl border border-card-border bg-surface p-6 shadow-xl\">\n    <h2 id=\"modal-title\" className=\"text-lg font-bold\">Unlock Journal</h2>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\">",
+          "line": 28,
+          "impact": "Screen reader users may not recognize the modal as a dialog and may not understand the page structure. Modal heading and description may not be properly announced.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -1471,6 +1705,9 @@
           "fix_suggestion": "Add focus trap using useEffect:\n\nconst modalRef = useRef<HTMLDivElement>(null);\nconst previouslyFocusedRef = useRef<HTMLElement | null>(null);\n\nuseEffect(() => {\n  previouslyFocusedRef.current = document.activeElement as HTMLElement;\n  const focusable = modalRef.current?.querySelectorAll<HTMLElement>(\n    'button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])'\n  );\n  if (focusable && focusable.length > 0) {\n    focusable[0].focus();\n  }\n}, []);\n\nSee PageGuide.tsx (line 36-50) for complete focus trap implementation pattern.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "export default function UnlockModal({ onUnlock }: UnlockModalProps) {\n  const [password, setPassword] = useState('');\n  const [error, setError] = useState('');\n  // No focus management, no useEffect to trap focus",
+          "line": 15,
+          "impact": "Keyboard users can Tab out of the modal to background elements, violating focus management expectations and potentially allowing interaction with page elements that should be inert.",
           "wcag_criterion": "2.1.2",
           "wcag_level": "A"
         },
@@ -1487,6 +1724,9 @@
           "fix_suggestion": "Add visible label or aria-label:\n\nOption A (visible label + aria-label):\n<button\n  key={r}\n  onClick={() => setDemoRole(r)}\n  aria-pressed={role === r}\n  aria-label={`View as ${label}: ${DEMO_ROLE_OPTIONS.find(option => option.role === r)?.summary}`}\n  className={...}\n>\n\nOption B (visible description below button):\n<div className=\"text-center\">\n  <button key={r} onClick={() => setDemoRole(r)} aria-pressed={role === r} className={...}>\n    <Icon size={14} />\n    {label}\n  </button>\n  <p className=\"text-xs text-muted mt-1\">{DEMO_ROLE_OPTIONS.find(option => option.role === r)?.summary}</p>\n</div>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button\n  key={r}\n  onClick={() => setDemoRole(r)}\n  aria-pressed={role === r}\n  title={DEMO_ROLE_OPTIONS.find(option => option.role === r)?.summary}\n  className={...}\n>",
+          "line": 33,
+          "impact": "Users without screen readers who rely on visible labels will not see the button descriptions, and screen reader users may not hear the title if they don't pause. The visible button text alone (\"Coordinator\", \"Speaker\", etc.) may not be sufficient context.",
           "wcag_criterion": "2.5.3",
           "wcag_level": "A"
         },
@@ -1503,6 +1743,9 @@
           "fix_suggestion": "Add a properly associated <label> element:\n\n<div>\n  <label htmlFor=\"unlock-password\" className=\"block text-sm font-medium text-foreground mb-2\">\n    Password\n  </label>\n  <input\n    id=\"unlock-password\"\n    type=\"password\"\n    value={password}\n    onChange={e => setPassword(e.target.value)}\n    placeholder=\"Your password\"\n    required\n    autoFocus\n    autoComplete=\"current-password\"\n    className=\"...\"\n  />\n</div>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input\n  type=\"password\"\n  value={password}\n  onChange={e => setPassword(e.target.value)}\n  placeholder=\"Your password\"\n  required\n  autoFocus\n  // No associated <label>",
+          "line": 41,
+          "impact": "Screen reader users may not have clear context for the input field. Placeholder text disappears when the user starts typing, leaving sighted users without a label.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -1519,6 +1762,9 @@
           "fix_suggestion": "Ensure all link text is unique or add aria-label for clarification:\n\n<a href=\"/contact/\" className=\"...\">Contact Us</a>\n...\n<a href=\"/contact/\" className=\"...\">Founder Contact</a>\n\nOr use aria-label:\n<a href=\"/contact/\" aria-label=\"Talk to the Founder\" className=\"...\">Talk to the Founder</a>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<nav aria-label=\"Footer\" className=\"flex flex-wrap items-center justify-center gap-x-4 gap-y-2\">\n  <a href=\"/pilot/\" className=\"...\">Book a Pilot</a>\n  <a href=\"/demo/\" className=\"...\">Demo</a>\n  <a href=\"/features/\" className=\"...\">Features</a>\n  <a href=\"/contact/\" className=\"...\">Contact</a>\n  <a href=\"/trust/\" className=\"...\">Trust &amp; Security</a>\n  <a href=\"/privacy/\" className=\"...\">Privacy</a>\n  <a href=\"/accessibility/\" className=\"...\">Accessibility</a>\n  <a href=\"/contact/\" className=\"...\">Talk to the Founder</a>\n</nav>",
+          "line": 101,
+          "impact": "Users navigating via keyboard or screen reader cannot distinguish between the two 'Contact' links without examining the URL or being confused by the link text.",
           "wcag_criterion": "2.4.4",
           "wcag_level": "A"
         },
@@ -1535,6 +1781,9 @@
           "fix_suggestion": "Verify contrast ratio and adjust --muted color if needed. Calculate #7f879b on #0c0e14:\n- Approximate contrast ratio is around 5.8:1, which passes WCAG AA.\n- However, if any use of --muted text is smaller than 14px bold (normal text), verify it meets 4.5:1 minimum.\n- If contrast issues are found, lighten --muted to increase contrast (e.g., #8a93a8 or lighter).\n\nTest with: https://webaim.org/resources/contrastchecker/\nInput: Foreground #7f879b, Background #0c0e14",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": ":root, .dark {\n  --background: #0c0e14;\n  --foreground: #e4e7ef;\n  --muted: #7f879b;\n}",
+          "line": 14,
+          "impact": "Users with low vision, color blindness, or viewing in bright conditions may have difficulty reading secondary text throughout the application.",
           "wcag_criterion": "1.4.3",
           "wcag_level": "AA"
         },
@@ -1551,6 +1800,9 @@
           "fix_suggestion": "Add aria-required and visual required indicator:\n\n<label className=\"mb-4 flex items-center gap-2 text-sm text-muted\">\n  <input\n    type=\"checkbox\"\n    checked={saved}\n    onChange={e => setSaved(e.target.checked)}\n    required\n    aria-required=\"true\"\n    className=\"accent-accent\"\n  />\n  <span>I have saved these codes in a safe place <span className=\"text-red-400 ml-1\" aria-label=\"required\">*</span></span>\n</label>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<label className=\"mb-4 flex items-center gap-2 text-sm text-muted\">\n  <input\n    type=\"checkbox\"\n    checked={saved}\n    onChange={e => setSaved(e.target.checked)}\n    className=\"accent-accent\"\n  />\n  I have saved these codes in a safe place\n</label>",
+          "line": 70,
+          "impact": "Users may not clearly understand that checking this box is mandatory to proceed, as there's no visual indicator of required status (like an asterisk or 'Required' text).",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1567,6 +1819,9 @@
           "fix_suggestion": "Add aria-live and role=\"alert\" to the error message:\n\n{error && (\n  <div \n    className=\"rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400\"\n    role=\"alert\"\n    aria-live=\"polite\"\n  >\n    {error}\n  </div>\n)}",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "{error && (\n  <div className=\"rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400\">\n    {error}\n  </div>\n)}",
+          "line": 139,
+          "impact": "Screen reader users navigating the form may not be immediately aware that an error occurred, especially if they don't reread the entire page.",
           "wcag_criterion": "3.2.2",
           "wcag_level": "A"
         },
@@ -1583,6 +1838,9 @@
           "fix_suggestion": "Add aria-label or role=\"status\" to the spinner:\n\n<div className=\"flex min-h-screen items-center justify-center\">\n  <div \n    className=\"h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent\" \n    role=\"status\"\n    aria-label=\"Loading\"\n  />\n</div>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"flex min-h-screen items-center justify-center\">\n  <div className=\"h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent\" />\n</div>",
+          "line": 77,
+          "impact": "Screen reader users will not know that the page is loading or waiting for a response.",
           "wcag_criterion": "1.3.1",
           "wcag_level": "A"
         },
@@ -1599,6 +1857,9 @@
           "fix_suggestion": "Add explicit focus styles:\n\n<button\n  onClick={close}\n  className=\"absolute right-4 top-4 rounded-lg p-1 text-muted transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent\"\n  aria-label=\"Close guide\"\n>\n  <X size={18} />\n</button>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button\n  onClick={close}\n  className=\"absolute right-4 top-4 rounded-lg p-1 text-muted transition-colors hover:bg-surface-hover hover:text-foreground\"\n  aria-label=\"Close guide\"\n>\n  <X size={18} />\n</button>",
+          "line": 126,
+          "impact": "Screen reader users will hear 'Close guide', which is clear. However, keyboard users may not have a visible focus indicator on this small icon button.",
           "wcag_criterion": "2.4.3",
           "wcag_level": "A"
         },
@@ -1615,6 +1876,9 @@
           "fix_suggestion": "Enhance focus styles for small buttons:\n\nclassName={`h-2 rounded-full transition-all focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${\n  i === step ? 'w-6 bg-gold' : 'w-2 bg-foreground/20 hover:bg-foreground/40'\n}`}",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "{steps.map((_, i) => (\n  <button\n    key={i}\n    onClick={() => setStep(i)}\n    className={`h-2 rounded-full transition-all ${\n      i === step ? 'w-6 bg-gold' : 'w-2 bg-foreground/20 hover:bg-foreground/40'\n    }`}\n    aria-label={`Go to step ${i + 1}`}\n  />\n))}",
+          "line": 141,
+          "impact": "Keyboard users may have difficulty seeing focus on these small buttons, especially if focus indicator is subtle.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -1631,6 +1895,9 @@
           "fix_suggestion": "Add icon or text prefix to indicate error:\n\n{error && (\n  <div className=\"rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400\" role=\"alert\">\n    <span className=\"font-semibold\">Error:</span> {error}\n  </div>\n)}\n\nOr add an icon:\nimport { AlertCircle } from 'lucide-react';\n\n{error && (\n  <div className=\"rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400\" role=\"alert\" className=\"flex gap-2\">\n    <AlertCircle size={16} className=\"shrink-0\" />\n    <span>{error}</span>\n  </div>\n)}",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "{error && (\n  <div className=\"rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400\">\n    {error}\n  </div>\n)}",
+          "line": 124,
+          "impact": "Users with red color blindness may not recognize that an error occurred, violating WCAG 1.4.1 Use of Color.",
           "wcag_criterion": "3.3.1",
           "wcag_level": "A"
         },
@@ -1647,6 +1914,9 @@
           "fix_suggestion": "Ensure all buttons have clear focus styles:\n\nclassName=\"w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-all hover:bg-accent-glow disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent\"",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button\n  type=\"submit\"\n  disabled={loading || !password}\n  className=\"w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-all hover:bg-accent-glow disabled:opacity-50\"\n>",
+          "line": 56,
+          "impact": "Keyboard users may have difficulty seeing focus on buttons, especially in low-contrast scenarios or with vision impairments.",
           "wcag_criterion": "2.4.7",
           "wcag_level": "AA"
         },
@@ -1663,6 +1933,9 @@
           "fix_suggestion": "Consider using consistent aria-label that matches visible text:\n\naria-label={`${menuOpen ? 'Close' : 'Open'} navigation menu`}",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button\n  type=\"button\"\n  onClick={() => setMenuOpen(prev => !prev)}\n  className=\"tap-target inline-flex items-center gap-1.5 rounded-lg border border-card-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover\"\n  aria-expanded={menuOpen}\n  aria-controls=\"navigation-panel\"\n  aria-label={menuOpen ? 'Close menu' : 'Open menu'}\n>\n  {menuOpen ? <X size={16} /> : <Menu size={16} />}\n  <span className=\"hidden sm:inline\">{menuOpen ? 'Close' : 'Menu'}</span>\n</button>",
+          "line": 95,
+          "impact": "Minor accessibility issue. The implementation is acceptable, but may cause slight confusion for screen reader users if visible text and aria-label diverge unexpectedly.",
           "wcag_criterion": "3.2.4",
           "wcag_level": "AA"
         },
@@ -1679,6 +1952,9 @@
           "fix_suggestion": "Add aria-describedby to the modal container:\n\n<div\n  className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\"\n  role=\"dialog\"\n  aria-modal=\"true\"\n  aria-labelledby=\"modal-title\"\n  aria-describedby=\"modal-description\"\n>\n  <div className=\"w-full max-w-sm rounded-2xl border border-card-border bg-surface p-6 shadow-xl\">\n    <h2 id=\"modal-title\" className=\"text-lg font-bold\">Unlock Journal</h2>\n    <p id=\"modal-description\" className=\"mb-4 text-sm text-muted\">\n      Enter your password to unlock your encrypted journal entries.\n    </p>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4\">",
+          "line": 28,
+          "impact": "This is an accessibility enhancement that would improve the experience for screen reader users, but is not a compliance failure.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "AAA"
         },
@@ -1695,6 +1971,9 @@
           "fix_suggestion": "Consider adding breadcrumb navigation:\n\n<nav aria-label=\"Breadcrumb\" className=\"text-sm mb-4\">\n  <ol className=\"flex items-center gap-2\">\n    <li><Link href=\"/\">Home</Link></li>\n    <li>/</li>\n    <li><Link href={`/e/${slug}`}>{event.eventName}</Link></li>\n    <li>/</li>\n    <li aria-current=\"page\">Agenda</li>\n  </ol>\n</nav>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "// Event route structure lacks breadcrumb",
+          "line": 1,
+          "impact": "Users may have difficulty understanding their location in the page hierarchy, especially in deeply nested routes. This is an AAA enhancement, not a compliance failure.",
           "wcag_criterion": "2.4.8",
           "wcag_level": "AAA"
         },
@@ -1711,6 +1990,9 @@
           "fix_suggestion": "Consider replacing title with aria-label or visible tooltips:\n\n// Option 1: Use aria-label (already sufficient for screen readers)\naria-label={`${label}: ${DEMO_ROLE_OPTIONS.find(option => option.role === r)?.summary}`}\n\n// Option 2: Add custom tooltip with aria-describedby (more complex but better for all users)\n<button\n  aria-describedby={`tooltip-${r}`}\n  // ...\n>\n  {label}\n</button>\n<div id={`tooltip-${r}`} role=\"tooltip\" className=\"hidden group-hover:block\">\n  {DEMO_ROLE_OPTIONS.find(option => option.role === r)?.summary}\n</div>",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "title={DEMO_ROLE_OPTIONS.find(option => option.role === r)?.summary}",
+          "line": 33,
+          "impact": "This is an enhancement suggestion, not a compliance failure. Users relying on title attributes for context may miss information, but aria-label provides an alternative for screen readers.",
           "wcag_criterion": "1.4.13",
           "wcag_level": "AA"
         }
@@ -1764,6 +2046,9 @@
           "fix_suggestion": "Add aria-label attribute: <textarea aria-label=\"Add notes to this reading\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<textarea value={noteText} placeholder=\"Why is this reading meaningful to you?\" rows={3} maxLength={500} />",
+          "line": 523,
+          "impact": "Screen reader users cannot determine the textarea's purpose and must rely on context or placeholder text.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1780,6 +2065,9 @@
           "fix_suggestion": "Add aria-label attribute: <input type=\"text\" aria-label=\"Email verification code (6 digits)\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"text\" inputMode=\"numeric\" pattern=\"[0-9]{6}\" placeholder=\"6-digit code\" autoComplete=\"one-time-code\" />",
+          "line": 84,
+          "impact": "Screen reader users cannot understand the purpose of this field. Critical authentication barrier for visually impaired users.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1796,6 +2084,9 @@
           "fix_suggestion": "Update placeholder color to full opacity: Change from 'placeholder:text-muted/50' to 'placeholder:text-muted' throughout codebase.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "--muted: #9590A8; Applied as placeholder:text-muted/50 throughout",
+          "line": 14,
+          "impact": "Users with low vision cannot clearly see placeholder text, reducing usability of all form inputs.",
           "wcag_criterion": "1.4.11",
           "wcag_level": "AA"
         },
@@ -1812,6 +2103,9 @@
           "fix_suggestion": "Add aria-label attribute: <input type=\"password\" aria-label=\"Enter password to unlock journal\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"password\" placeholder=\"Your password\" required autoFocus />",
+          "line": 46,
+          "impact": "Screen reader users cannot identify this as a password input for journal unlock.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1828,6 +2122,9 @@
           "fix_suggestion": "Add visible required indicator: <label htmlFor=\"name\">Display Name <span aria-label=\"required\">*</span></label>",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input id=\"name\" type=\"text\" required autoComplete=\"name\" className=\"...\" />",
+          "line": 178,
+          "impact": "Users cannot understand which fields are mandatory. Assistive technology users have no text-based indicator.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1844,6 +2141,9 @@
           "fix_suggestion": "Add aria-label attribute: <input type=\"text\" aria-label=\"Search card library by name or suit\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<input type=\"text\" placeholder=\"Search...\" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />",
+          "line": 311,
+          "impact": "Screen reader users cannot understand this is a card library search.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1860,6 +2160,9 @@
           "fix_suggestion": "Add aria-label attribute: <textarea aria-label=\"Personal notes for this card\" ... />",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<textarea value={cardNotes[card.id]} placeholder=\"Personal notes...\" maxLength={500} />",
+          "line": 169,
+          "impact": "Screen reader users cannot determine this is for personal card notes.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1876,6 +2179,9 @@
           "fix_suggestion": "Increase padding on close buttons from p-0.5 to p-2: className=\"rounded-lg p-2 ...\" with icon size={20}",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<button className=\"rounded-lg p-0.5 ...\"><X size={16} /></button>",
+          "line": 75,
+          "impact": "Mobile users may struggle to accurately tap small close buttons, particularly users with motor control difficulties.",
           "wcag_criterion": "2.5.5",
           "wcag_level": "AAA"
         },
@@ -1892,6 +2198,9 @@
           "fix_suggestion": "Provide descriptive alt text: alt=\"User-uploaded journal reference image\" or include context like date/entry association.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "<img src={imageUrls[key]} alt=\"Journal attachment\" loading=\"lazy\" width={80} height={80} />",
+          "line": 442,
+          "impact": "Screen reader users receive minimal information about uploaded images.",
           "wcag_criterion": "3.3.2",
           "wcag_level": "A"
         },
@@ -1908,6 +2217,9 @@
           "fix_suggestion": "Add aria-live=\"polite\" feedback region for state changes, or require explicit button submission for major changes.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Interpretation style selector, mood selector, and other onChange handlers that update state",
+          "line": null,
+          "impact": "Users of assistive technology may not expect or be aware of context changes from selecting options.",
           "wcag_criterion": "3.2.2",
           "wcag_level": "A"
         },
@@ -1924,6 +2236,9 @@
           "fix_suggestion": "Ensure dynamic IDs use unique identifiers: id={`mood-${mood}`} instead of reusing static IDs.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Mood buttons, card grids, tag displays using .map()",
+          "line": null,
+          "impact": "Potential duplicate IDs could break aria-labelledby and aria-describedby references.",
           "wcag_criterion": "4.1.1",
           "wcag_level": "A"
         },
@@ -1940,6 +2255,9 @@
           "fix_suggestion": "Document focus strategy. Verify tab order follows visual left-to-right, top-to-bottom. Test with keyboard Tab key.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Complex pages with spread layouts, multiple card reveals, interpretation toggles",
+          "line": null,
+          "impact": "Keyboard-only users may experience unexpected focus jumps on complex pages.",
           "wcag_criterion": "2.4.3",
           "wcag_level": "A"
         },
@@ -1956,6 +2274,9 @@
           "fix_suggestion": "No action required for AA. Verify gold/accent colors (#d4a843) against background for AAA aspiration.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Dark theme: #e8e0f0 on #0c0a1a \u2248 12:1 ratio (exceeds AA and AAA)",
+          "line": 3,
+          "impact": "Aspiration: Increase readability for low-vision users beyond AA requirements.",
           "wcag_criterion": "1.4.3",
           "wcag_level": "AA"
         },
@@ -1972,6 +2293,9 @@
           "fix_suggestion": "Continue current practices. Consider publishing accessibility guidelines for development team.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Skip-to-main-content link with sr-only class, aria-live on toasts, proper semantic HTML",
+          "line": 90,
+          "impact": "Positive: Strong accessibility foundation in place.",
           "wcag_criterion": "4.1.2",
           "wcag_level": "A"
         },
@@ -1988,6 +2312,9 @@
           "fix_suggestion": "No action required. Continue this excellent practice.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "@media (prefers-reduced-motion: reduce) with all animations disabled",
+          "line": 200,
+          "impact": "Positive: Users with vestibular disorders are properly accommodated.",
           "wcag_criterion": "2.3.3",
           "wcag_level": "AAA"
         }

@@ -57,6 +57,180 @@
           "product": 78
         }
       }
+    },
+    {
+      "timestamp": "2026-03-23T01:12:12.638734+00:00",
+      "scores": {
+        "analogify": {
+          "qa": 53,
+          "seo": 87,
+          "ada": 77,
+          "compliance": 72,
+          "monetization": 48,
+          "product": 67
+        },
+        "back-office": {
+          "qa": 69,
+          "seo": 42,
+          "ada": 79,
+          "compliance": 62,
+          "monetization": 72,
+          "product": 78
+        },
+        "bible-app": {
+          "qa": 70,
+          "seo": 83,
+          "compliance": 48,
+          "monetization": 61,
+          "product": 74
+        },
+        "codyjo.com": {
+          "qa": 77,
+          "seo": 90,
+          "ada": 79,
+          "compliance": 70,
+          "monetization": 62,
+          "product": 74
+        },
+        "pe-bootstrap": {
+          "qa": 29,
+          "ada": 69,
+          "compliance": 48,
+          "monetization": 42,
+          "product": 72
+        },
+        "portis-app": {
+          "qa": 62,
+          "seo": 1,
+          "ada": 81,
+          "compliance": 68,
+          "product": 58
+        },
+        "thenewbeautifulme": {
+          "qa": 25,
+          "seo": 87,
+          "ada": 74,
+          "compliance": 72,
+          "monetization": 72,
+          "product": 78
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-23T01:13:08.807080+00:00",
+      "scores": {
+        "analogify": {
+          "qa": 53,
+          "seo": 87,
+          "ada": 77,
+          "compliance": 72,
+          "monetization": 48,
+          "product": 67
+        },
+        "back-office": {
+          "qa": 69,
+          "seo": 42,
+          "ada": 79,
+          "compliance": 62,
+          "monetization": 72,
+          "product": 78
+        },
+        "bible-app": {
+          "qa": 70,
+          "seo": 83,
+          "compliance": 48,
+          "monetization": 61,
+          "product": 74
+        },
+        "codyjo.com": {
+          "qa": 77,
+          "seo": 90,
+          "ada": 79,
+          "compliance": 70,
+          "monetization": 62,
+          "product": 74
+        },
+        "pe-bootstrap": {
+          "qa": 29,
+          "ada": 69,
+          "compliance": 48,
+          "monetization": 42,
+          "product": 72
+        },
+        "portis-app": {
+          "qa": 62,
+          "seo": 1,
+          "ada": 81,
+          "compliance": 68,
+          "product": 58
+        },
+        "thenewbeautifulme": {
+          "qa": 25,
+          "seo": 87,
+          "ada": 74,
+          "compliance": 72,
+          "monetization": 72,
+          "product": 78
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-23T01:15:00.875649+00:00",
+      "scores": {
+        "analogify": {
+          "qa": 53,
+          "seo": 87,
+          "ada": 77,
+          "compliance": 72,
+          "monetization": 48,
+          "product": 67
+        },
+        "back-office": {
+          "qa": 69,
+          "seo": 42,
+          "ada": 79,
+          "compliance": 62,
+          "monetization": 72,
+          "product": 78
+        },
+        "bible-app": {
+          "qa": 70,
+          "seo": 83,
+          "compliance": 48,
+          "monetization": 61,
+          "product": 74
+        },
+        "codyjo.com": {
+          "qa": 77,
+          "seo": 90,
+          "ada": 79,
+          "compliance": 70,
+          "monetization": 62,
+          "product": 74
+        },
+        "pe-bootstrap": {
+          "qa": 29,
+          "ada": 69,
+          "compliance": 48,
+          "monetization": 42,
+          "product": 72
+        },
+        "portis-app": {
+          "qa": 62,
+          "seo": 1,
+          "ada": 81,
+          "compliance": 68,
+          "product": 58
+        },
+        "thenewbeautifulme": {
+          "qa": 25,
+          "seo": 87,
+          "ada": 74,
+          "compliance": 72,
+          "monetization": 72,
+          "product": 78
+        }
+      }
     }
   ]
 }

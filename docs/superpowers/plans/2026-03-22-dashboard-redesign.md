@@ -164,8 +164,10 @@ class TestNormalizeFinding:
 
     def test_effort_normalization(self):
         for raw_val, expected in [("low", "easy"), ("easy", "easy"),
+                                   ("tiny", "easy"), ("small", "easy"),
                                    ("medium", "moderate"), ("moderate", "moderate"),
                                    ("hard", "hard"), ("complex", "hard"),
+                                   ("large", "hard"),
                                    ("unknown", "unknown"), (None, "unknown")]:
             raw = {"id": "X", "title": "T", "effort": raw_val}
             result = normalize_finding(raw, "qa", "repo")
@@ -195,8 +197,10 @@ Add to `backoffice/backlog.py`:
 ```python
 EFFORT_MAP = {
     "low": "easy", "easy": "easy", "trivial": "easy",
+    "tiny": "easy", "small": "easy",
     "medium": "moderate", "moderate": "moderate",
     "hard": "hard", "complex": "hard", "high": "hard",
+    "large": "hard",
 }
 
 
@@ -373,11 +377,16 @@ def merge_backlog(findings: list[dict], backlog_path: Path) -> dict:
                 "current_finding": f,
             }
 
+    new_count = len(seen_hashes) - len(seen_hashes & (set(backlog["findings"].keys()) - seen_hashes))
+    # Simpler: count entries where first_seen == now
+    new_count = sum(1 for h in seen_hashes
+                    if backlog["findings"].get(h, {}).get("first_seen") == now)
+
     backlog["updated_at"] = now
     backlog_path.parent.mkdir(parents=True, exist_ok=True)
     backlog_path.write_text(json.dumps(backlog, indent=2, default=str) + "\n")
-    logger.info("Backlog updated: %d entries (%d new)", len(backlog["findings"]),
-                len(seen_hashes - set(backlog["findings"].keys()) | seen_hashes))
+    logger.info("Backlog updated: %d total entries, %d new this scan",
+                len(backlog["findings"]), new_count)
     return backlog
 ```
 
@@ -392,6 +401,8 @@ Expected: All PASS
 git add backoffice/backlog.py tests/test_backlog.py
 git commit -m "feat(backlog): add merge_backlog persistent finding registry"
 ```
+
+> **Deferred:** Auto-marking findings as `presumed_fixed` after 30 days without reappearing (spec section 5). This can be added later as a simple date check in the merge loop.
 
 ---
 
@@ -552,8 +563,15 @@ At the end of `aggregate()`, after all department aggregations, add:
                     # Collect scores for history
                     summary = repo.get("summary", {})
                     dept_key = dept_file.replace("-data.json", "")
+                    score = None
                     if dept_key == "qa":
-                        score = repo.get("health_score")
+                        # QA has no pre-computed score; derive from severity counts
+                        c = int(summary.get("critical", 0))
+                        h = int(summary.get("high", 0))
+                        m = int(summary.get("medium", 0))
+                        lo = int(summary.get("low", 0))
+                        total = c + h + m + lo + int(summary.get("info", 0))
+                        score = max(0, 100 - c * 15 - h * 8 - m * 3 - lo) if total else None
                     else:
                         for field in ["seo_score", "compliance_score",
                                        "monetization_readiness_score",
@@ -651,17 +669,32 @@ Sparklines: read last 5 snapshots from `score-history.json`, render as tiny bar 
 
 Needs Attention: collect all findings across departments, sort by severity (critical=0, high=1, medium=2, low=3, info=4), then by `backlog.audit_count` descending, then effort (easy=0, moderate=1, hard=2). Show top 15.
 
-- [ ] **Step 2: Test locally**
+- [ ] **Step 2: Add error and loading states**
+
+Implement the 5 states from spec section 8:
+1. **Loading skeleton**: Gray placeholder cards/rows rendered on page load, replaced when data arrives
+2. **Fetch failure**: If a department JSON fails to load, show "Failed to load [dept] data" in its score card; other departments continue working
+3. **No data**: Matrix cells show gray "—" for unscanned product/department combinations
+4. **Empty findings**: Panel body shows "No findings for this product" with a muted suggestion
+5. **Stale data**: If any `generated_at` timestamp is older than 24 hours, show "Data may be stale" next to the last scan timestamp
+
+- [ ] **Step 3: Add URL deep linking**
+
+On page load, read `?product=` and `?dept=` from the URL. If present, set the product selector and open the corresponding department panel. On product change or panel open/close, update the URL via `history.replaceState()`.
+
+- [ ] **Step 4: Test locally**
 
 Run: `python3 -m backoffice serve --port 8070`
 Open: `http://localhost:8070/index-new.html`
-Verify: Score cards show real scores, matrix is populated, findings appear
+Verify: Score cards show real scores, matrix is populated, findings appear.
+Test: `http://localhost:8070/index-new.html?product=selah&dept=qa` opens with Selah selected and QA panel open.
+Test: Kill the server and reload — verify loading skeleton appears, then error states show.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add dashboard/index-new.html
-git commit -m "feat(dashboard): new HQ page with score cards and product matrix"
+git commit -m "feat(dashboard): new HQ page with score cards, matrix, error states, deep linking"
 ```
 
 ---
@@ -924,7 +957,7 @@ git rm dashboard/index-old.html
 - [ ] **Step 4: Commit**
 
 ```bash
-git commit -m "chore(dashboard): remove 22 old dashboard pages, consolidated into single HQ"
+git commit -m "chore(dashboard): remove 23 old dashboard pages, consolidated into single HQ"
 ```
 
 ---

@@ -1,6 +1,6 @@
 {
   "department": "compliance",
-  "generated_at": "2026-03-23T00:18:03.941377+00:00",
+  "generated_at": "2026-03-23T01:15:00.851492+00:00",
   "totals": {
     "critical": 9,
     "high": 27,
@@ -37,6 +37,8 @@
           "fix_suggestion": "1. Integrate a GDPR-compliant cookie consent library (e.g., cookie-consent, Cookiebot free tier, or OneTrust basic). 2. Add a cookie banner to all pages that appears before analytics script is executed. 3. Make consent granular: Essential (always enabled), Analytics (opt-in), Marketing (opt-in). 4. Provide a way to withdraw/modify consent in footer or settings. 5. Update privacy policy with specific cookie names, purposes, and retention periods. 6. Load analytics script conditionally only after consent is granted.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Plausible analytics loaded without consent banner: '<script async src=\"https://plausible.io/js/pa-zBfbav_s2OcQFGk4H2Rfd.js\"></script>' in frontend/privacy.html and marketing pages. No cookie-consent library detected (e.g., OneTrust, Cookiebot, cookie-consent). Marketing HTML has no banner or modal for consent management.",
+          "line": null,
           "impact": "Violation of GDPR Article 7 (conditions for consent) and ePrivacy Directive (requirement for prior consent before placing cookies). EU data protection authorities can issue fines up to \u20ac10M or 2% of global turnover, whichever is higher. Users may file complaints with DPAs. Search engines may deprioritize sites without lawful cookie consent.",
           "regulation": "GDPR Art. 6, 7 \u2014 Lawful Basis & Consent"
         },
@@ -53,6 +55,8 @@
           "fix_suggestion": "1. Rewrite privacy policy to explicitly state legal basis for each processing activity (e.g., 'Client account management is necessary for contract performance', 'Analytics are based on legitimate interest in service improvement'). 2. Add specific retention periods for each data type: access logs (1 year TTL), comments (30 days pending review, then 90 days archived), demo sessions (1 year TTL). 3. List all third parties with explicit links to their privacy policies (Plausible, Resend, AWS). 4. Add section on data subjects' rights (access, rectification, erasure, portability, object, automated decision-making). 5. Include DPO contact (if applicable) or responsible person for privacy inquiries. 6. Document your breach notification procedures and provide contact email for breach reports.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Privacy policies state: 'Gallery data remains until deleted or expired by the operator. Pending comments and operational logs are generally retained for about 30 days unless longer review is needed.' but do NOT specify: retention for access logs, sub-admin accounts, demo sessions. Email disclosure to Plausible/Resend is mentioned generically but not by name or with link to their privacy policies. No legal basis mentioned for processing client emails (contract? legitimate interest?).",
+          "line": null,
           "impact": "Violation of GDPR Articles 13 and 14 regarding transparency. Data subjects have the right to clear, transparent information about how their data is processed. Lack of detailed disclosures can result in DPA enforcement, administrative fines (\u20ac10-20M or 2-4% of turnover), and erosion of user trust.",
           "regulation": "GDPR Art. 13, 14 \u2014 Privacy Policy Completeness"
         },
@@ -69,6 +73,8 @@
           "fix_suggestion": "1. Create a public, unauthenticated endpoint (or one behind email-based verification) that allows individuals to request their data: POST /gdpr/access-request with email. 2. Implement email verification (send link to confirm email ownership). 3. Upon verification, return a full data export (JSON or CSV) including all records from all tables, not just samples. 4. Ensure response time meets GDPR requirement (45 days, extendable by 2 months). 5. Log the request and response delivery. Alternatively, require pre-existing client account login to access /account/export-my-data endpoint.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "gdpr_search() function requires super-admin authentication. Endpoint returns all PII: 'results[\"tables\"][\"access_log\"] = { \"count\": len(items), \"fields\": [\"email\", \"ip\", \"action\", \"timestamp\", \"gallery_id\"], \"sample\": items[:5] }'. Only 5 samples returned, not all data. No public/unauthenticated path to this endpoint documented in API routes.",
+          "line": 4460,
           "impact": "Non-compliance with GDPR Article 15 right of access. Data subjects have the legal right to request and receive their personal data without excessive delay. Failing to provide an accessible mechanism for this is a violation. DPA can issue an enforcement action requiring remediation. Affected individuals can lodge complaints and seek compensation for material or non-material damage.",
           "regulation": "GDPR Art. 15 \u2014 Right of Access"
         },
@@ -85,6 +91,8 @@
           "fix_suggestion": "1. Create a public/authenticated endpoint for data erasure requests: POST /gdpr/erasure-request with email and reason. 2. Implement email verification (confirmation link sent to email). 3. If reason is 'withdrawal of consent', allow self-service. If reason is 'right to be forgotten', log the request for manual review by operator. 4. After verification, proceed with gdpr_erase() logic. 5. Provide a response indicating what was deleted and timelines. 6. Log all erasure requests with audit trail.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "gdpr_erase() function checks: 'if provided.startswith(\"demo_\"): ...' for super-admin key only. Deletion logic is comprehensive but hidden behind admin-only auth.",
+          "line": 4542,
           "impact": "GDPR Article 17 violation. Data subjects have the right to erasure under certain conditions (no longer necessary for purpose, withdrawal of consent, unlawful processing, etc.). Not providing a self-service mechanism violates this right and can result in DPA enforcement and fines.",
           "regulation": "GDPR Art. 17 \u2014 Right to Erasure"
         },
@@ -101,6 +109,8 @@
           "fix_suggestion": "1. Update access log insertion code to explicitly set expires_at to current_time + 1_year (or operator-configured TTL). 2. Update privacy policy to explicitly state: 'Access logs are retained for 1 year and automatically deleted via DynamoDB TTL.' 3. For sub-admin/demo sessions, confirm default retention is also set and documented. 4. Add configuration option in environment variables to allow customization of retention periods by operator (e.g., LOG_RETENTION_DAYS=365).",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "DynamoDB table definition: 'ttl { attribute_name = \"expires_at\" enabled = true }' enables TTL but code that inserts access_log records does not set expires_at. See auth_view/handler.py where access logs are created but no expiry is set: access_log_table.put_item(Item={...}) without expires_at field.",
+          "line": 38,
           "impact": "Indefinite storage of personal data (emails, IPs, activity logs) violates GDPR Article 5(1)(e) storage limitation principle. DPA can issue guidance and enforcement actions. Users can claim that their data is processed longer than necessary.",
           "regulation": "GDPR Art. 5(1)(e) \u2014 Storage Limitation"
         },
@@ -117,6 +127,8 @@
           "fix_suggestion": "1. Review and confirm DPAs are in place with: AWS (for Lambda, DynamoDB, S3, SES), Plausible (or switch to privacy-friendly alternative like Fathom or Metrical), Resend (if used for transactional emails). 2. Document the legal basis for data transfers (e.g., SCCs, adequacy decision, Binding Corporate Rules). 3. Publish links to third-party privacy policies in your privacy policy. 4. Add section: 'Data processors and transfers: Our data is processed by AWS (Standard Contractual Clauses), Plausible (Privacy Shield or SCCs), and Resend (SCCs).' 5. Maintain a Data Processing Inventory documenting all vendors and their contracts.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy: 'Plausible is the only analytics service used on these pages.' but does not link to Plausible's privacy policy or confirm a Data Processing Agreement. Code uses SES and Resend for email: 'ses = boto3.client(\"ses\", region_name=os.environ.get(\"AWS_REGION\", \"us-west-2\"))' but no documentation of DPA with AWS SES. Resend integration in code not visible in handlers reviewed.",
+          "line": null,
           "impact": "Without documented DPAs and transfer mechanisms, the application cannot legally transfer EU personal data to US-based services. GDPR Articles 28 and 44-49 require this documentation. DPA enforcement can include orders to cease data transfers and fines.",
           "regulation": "GDPR Art. 32 \u2014 International Data Transfers"
         },
@@ -133,6 +145,8 @@
           "fix_suggestion": "1. Remove the CORS_ORIGIN environment variable default '*' in lambda/admin/handler.py. Instead, whitelist specific origins: 'ALLOWED_ORIGINS = [os.environ.get(\"CORS_ORIGIN\", \"\")].filter(bool)' or maintain a hardcoded list. 2. Update the respond() function to check if origin is in whitelist before setting Access-Control-Allow-Origin header. 3. Set CORS_ORIGIN environment variable to the specific gallery domain(s) only. 4. Add X-Requested-With: XMLHttpRequest check for state-changing requests (POST, DELETE). 5. Test that requests from unauthorized origins receive no CORS headers.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Terraform: 'allow_origins = [ \"https://${local.marketing_domain}\", \"https://${var.marketing_www_domain}\", \"https://${local.gallery_domain}\" ]' is correctly scoped in API Gateway. However, lambda/admin/handler.py line 454: '\"Access-Control-Allow-Origin\": os.environ.get(\"CORS_ORIGIN\", \"*\")' sets default to wildcard. This header overrides the API Gateway CORS configuration.",
+          "line": 14,
           "impact": "Overly permissive CORS violates ISO 27001 A.5.15 access control principle. It increases risk of credential-stuffing attacks, CSRF, and data theft. While authentication mitigates some risk, the defense-in-depth principle is violated. Auditors will flag this as a security weakness.",
           "regulation": "ISO 27001 A.5.15 \u2014 Access Control"
         },
@@ -149,6 +163,8 @@
           "fix_suggestion": "1. Update access_log insertion to anonymize or hash email/IP: use hashlib.sha256(email.encode()).hexdigest() instead of raw email. 2. For rate limiting and abuse detection that require IPs, hash the IP as well. 3. Set CloudWatch log retention to match data retention policy (1 year for access logs, 30 days for debug logs). 4. Add a field to distinguish log types: 'type': 'access_attempt', 'failed_auth', 'api_error' to allow filtering sensitive logs. 5. Implement log scrubbing to redact PII from error messages before they're logged.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "API Gateway logs include sourceIp. Access log DynamoDB table stores email and IP without aggregation or anonymization. No explicit log retention policy mentioned beyond CloudWatch default (depends on log group retention settings).",
+          "line": 37,
           "impact": "GDPR Article 5 and 6 require that personal data processing be minimized and lawful. Storing PII in audit logs without clear retention policy can violate storage limitation (Art. 5(1)(e)). If logs are breached, it exposes email and IP data. ISO 27001 A.8.15 requires audit logs to be protected and retention-controlled.",
           "regulation": "ISO 27001 A.8.15 \u2014 Logging and Audit Trails"
         },
@@ -165,6 +181,8 @@
           "fix_suggestion": "1. Add rate limiting to GDPR endpoints: check ratelimit_table before processing, increment counter per email/IP. E.g., 'max 5 access requests per email per hour', 'max 2 erasure requests per email per 24 hours'. 2. Return 429 Too Many Requests if limit exceeded. 3. Enable point_in_time_recovery on ratelimit_table: 'point_in_time_recovery { enabled = true }' in terraform/dynamodb.tf. 4. Log all GDPR requests with detailed audit trail (who, when, what data, outcome). 5. Consider requiring explicit confirmation (second factor) for erasure requests.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "gdpr_search() and gdpr_erase() functions do not check a local rate limit cache. They perform full table scans: '_scan_all(access_log_table, ...)' which could be resource-expensive. No explicit rate limiting logic or token bucket per function.",
+          "line": 4457,
           "impact": "Without rate limiting on sensitive operations, the system is vulnerable to abuse. An attacker with admin key could exhaust API quotas, enumerate all users, or trigger mass deletions. This violates ISO 27001 A.5.15 (access control) and increases risk of data loss or service disruption.",
           "regulation": "ISO 27001 A.5.15 \u2014 Access Control / Authentication"
         },
@@ -181,6 +199,8 @@
           "fix_suggestion": "1. Create a Global Secondary Index (GSI) on demo_sessions_table with demo_key as hash key: 'global_secondary_index { name = \"demo_key-index\", hash_key = \"demo_key\" }'. 2. Query this index instead of full scan: 'demo_sessions_table.query(IndexName=\"demo_key-index\", KeyConditionExpression=Key(\"demo_key\").eq(key))'. 3. Set Limit=1 on the query since demo_key should be unique.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Demo key validation: 'items = _scan_all(demo_sessions_table, FilterExpression=Attr(\"demo_key\").eq(key))'. _scan_all() fetches all items without limit. A table with many demo sessions could cause high latency and cost.",
+          "line": 358,
           "impact": "Inefficient data access patterns consume resources and could be exploited for DoS. This violates ISO 27001 A.5.15 (access control) principle of minimizing resource consumption for security operations.",
           "regulation": "ISO 27001 A.8.25 \u2014 Input Validation and Sanitization"
         },
@@ -197,6 +217,8 @@
           "fix_suggestion": "1. Monitor CloudFront and AWS documentation for support of SHA256 signing (may require changes to CloudFront key pair type or region support). 2. If SHA256 becomes available, migrate to it: 'hashes.SHA256()' instead of 'hashes.SHA1()'. 3. For now, document this as a 'known limitation' due to CloudFront API constraints and confirm with AWS that SHA1 is secure enough for this use case. 4. Add a note to security.astro or security documentation explaining the trade-off.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "auth_view/handler.py: 'signature = private_key.sign(policy.encode(), padding.PKCS1v15(), hashes.SHA1())'. pyproject.toml: 'S303 # SHA1 for CF signing' indicates acknowledgment of this limitation.",
+          "line": 125,
           "impact": "Low immediate risk since CloudFront's implementation is robust and collision attacks are impractical for this use case. However, continued use of SHA1 violates ISO 27001 best practices and modern cryptographic standards. EU and international bodies recommend phasing out SHA1 entirely. Auditors will flag this as a technical debt.",
           "regulation": "ISO 27001 A.8.3 \u2014 Cryptographic Controls"
         },
@@ -213,6 +235,8 @@
           "fix_suggestion": "1. In CloudFront distribution resource, add: 'minimum_protocol_version = \"TLSv1.2_2021-06\"' (or TLSv1.3 if available). 2. In API Gateway, confirm default TLS version is 1.2+ via AWS documentation or API. 3. Consider adding Security-Headers HPKP (Public Key Pinning) header if mobile clients are used. 4. Test with nmap or testssl.sh to confirm TLS 1.0/1.1 are disabled.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "No minimum_protocol_version set in CloudFront distribution. No tls_version requirement in API Gateway.",
+          "line": null,
           "impact": "Low risk due to AWS defaults being secure. However, explicitly configuring minimum TLS version demonstrates compliance with ISO 27001 and defense-in-depth. Without explicit configuration, any AWS default change could reduce security.",
           "regulation": "ISO 27001 A.8.24 \u2014 Encryption in Transit"
         },
@@ -229,6 +253,8 @@
           "fix_suggestion": "1. Create a dedicated audit_log function that logs all admin actions: 'def audit_log(action, resource_id, user_id, result, details={})'. 2. Call this function for: create/update/delete gallery, approve/reject photo, moderate comment, create/modify sub-admin, generate tokens. 3. Store audit logs in a separate immutable table or CloudWatch log group with long retention (3-7 years). 4. Include fields: timestamp, action, resource_id, user_id, IP, result (success/failure), details. 5. Implement log aggregation and alerting for suspicious patterns (e.g., multiple failed auth attempts, mass deletions).",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Some log entries: 'logger.info(\"Created gallery %s for client: %s\", gallery_id, client_name)' but not all operations are logged. Gallery photo updates, comment moderation, sub-admin creation have no explicit logging visible in reviewed sections.",
+          "line": null,
           "impact": "Low immediate risk, but lack of comprehensive audit trail weakens compliance posture. ISO 27001 A.8.15 requires that all security-relevant events be logged. If a data breach occurs, incomplete audit logs hinder incident investigation and may violate GDPR Article 33 breach notification requirements.",
           "regulation": "ISO 27001 A.8.15 \u2014 Audit Trail Completeness"
         },
@@ -245,6 +271,8 @@
           "fix_suggestion": "1. Create docs/INCIDENT-RESPONSE.md documenting: (a) How security issues are reported (email, responsible person). (b) Initial triage and severity assessment. (c) Investigation steps and forensic procedures. (d) Notification timelines (internal: immediate, DPA: 72 hours, users: without undue delay). (e) Communication templates for affected users. (f) Remediation and recovery steps. 2. Create docs/BREACH-NOTIFICATION.md with breach notification template that includes: nature of breach, categories of personal data, likely consequences, measures taken to mitigate. 3. Set up CloudWatch alarms for suspicious activities (high rate of deletions, auth failures, WAF blocks) and route them to the security team via SNS.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Security page: 'Report security concerns to <a href>security@codyjo.com</a>' but no procedures documented. No incident response playbook found in codebase. No references to breach notification templates or timelines.",
+          "line": null,
           "impact": "GDPR Article 33 requires breach notification within 72 hours. Without a documented procedure, the likelihood of timely notification is reduced. This can result in regulatory fines and legal liability. ISO 27001 A.5.24 requires incident response planning.",
           "regulation": "ISO 27001 A.5.24 \u2014 Incident Response"
         },
@@ -261,6 +289,8 @@
           "fix_suggestion": "1. Conduct a DPIA following the EDPB guidelines (EDPB Template or ISO/IEC 27550). 2. Document processing activities: (a) Identification of data controller/processor. (b) Purposes of processing. (c) Legitimate interest assessment (if applicable). (d) Categories of data subjects and personal data. (e) Risk assessment: identify risks to individuals' rights and freedoms. (f) Mitigation measures (technical and organizational). (g) Necessity and proportionality assessment. 3. Store the DPIA in docs/DPIA.md and reference it in the privacy policy. 4. If risks are identified as high, consult with supervisory authority per Article 36.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "No docs/DPIA.md or similar file found in codebase. Recital 75 of GDPR guidance suggests DPIAs for: large-scale processing of special categories, systematic monitoring, automated decision-making. ChromaHaus photo analysis could be considered automated processing (though not decision-making).",
+          "line": null,
           "impact": "GDPR Article 35 violation. Failure to conduct a DPIA when required can result in regulatory guidance, enforcement orders, and fines (\u20ac10-20M or up to 4% of global turnover). A DPIA is a demonstration of compliance and helps identify and mitigate risks.",
           "regulation": "GDPR Art. 35 \u2014 Data Protection Impact Assessment"
         },
@@ -277,6 +307,8 @@
           "fix_suggestion": "1. Determine if Analogify meets DPO requirement criteria under GDPR Article 37(1) (public authority, core activity is systematic monitoring, large-scale processing of special categories). 2. If exempt, add to privacy policy: 'A Data Protection Officer is not required under GDPR Article 37. Privacy inquiries can be directed to: cody@codyjo.com'. 3. If DPO is required or voluntarily designated, add to privacy policy: 'Our Data Protection Officer is [Name] ([email])' and ensure DPO contact is publicly available.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Privacy contact: 'Questions or privacy requests can be sent to <a href>cody@codyjo.com</a>' but no mention of whether Cody is a DPO or the responsible person.",
+          "line": null,
           "impact": "Low risk if organization is exempt from DPO requirement (fewer than 250 employees, non-systematic monitoring, not processing special categories at scale). However, absence of clarity creates regulatory risk and user confusion. Auditors may flag this as incomplete governance.",
           "regulation": "GDPR Art. 37 \u2014 Data Protection Officer"
         },
@@ -293,6 +325,8 @@
           "fix_suggestion": "No action required. However, if in future the platform adds: (1) a public gallery directory with uncontrolled access, (2) social media features, (3) age-restricted content delivery, or (4) consumer-facing apps (Analogify Zen backend), age verification may become applicable.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Platform architecture: photographers authenticate with admin panel, create galleries, clients authenticate via email-based entry. No public content, no age-restricted content, no social features, no user-to-user interaction beyond moderated comments. Analogify Zen (consumer product) is marketing-only and has no backend.",
+          "line": null,
           "impact": "No legal risk. Age verification requirements do not apply to this project type.",
           "regulation": "US State Laws (Louisiana, Utah, Texas, Virginia, Arkansas, Montana, California), UK Online Safety Act"
         }
@@ -343,6 +377,8 @@
           "fix_suggestion": "1. Integrate AWS Secrets Manager or HashiCorp Vault for secrets storage. 2. Modify backoffice/config.py to fetch sensitive values from the secrets manager at startup. 3. Use environment variable references in backoffice.yaml for sensitive fields (e.g., api_key: \"${API_KEY}\"). 4. Document the secrets management approach in setup instructions. 5. Add pre-commit hook to prevent accidental commits of plaintext secrets.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "config/backoffice.example.yaml shows: api_key: \"\", aws region/bucket/distribution credentials all stored as plaintext YAML. The config loader (backoffice/config.py) reads these values directly into dataclasses with no decryption step.",
+          "line": null,
           "impact": "If configuration is compromised, unauthorized access to audit findings and target infrastructure violates ISO 27001 control A.8.2 and A.8.24 requirements. Potential exposure of AWS credentials could lead to infrastructure compromise, data theft, and financial liability (AWS abuse).",
           "regulation": "ISO 27001 A.8.2 (User Authentication Management) & A.8.24 (Cryptography)"
         },
@@ -359,6 +395,8 @@
           "fix_suggestion": "1. Document that the API server MUST be deployed behind a reverse proxy (nginx, Apache, AWS ALB) with TLS termination. 2. Alternatively, add ssl.wrap_socket() context to api_server.py if direct HTTPS is needed. 3. Add a startup check that logs a WARNING if api_key is configured but no reverse proxy is detected. 4. Update deployment documentation to include HTTPS-required notation. 5. Add security headers (HSTS, CSP) in the reverse proxy configuration.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "api_server.py line 1 uses http.server.BaseHTTPRequestHandler without ssl module wrapper. No SSL context creation or certificate loading. README deployment section does not explicitly require reverse proxy with HTTPS.",
+          "line": null,
           "impact": "API keys and audit findings transmitted over plaintext HTTP violate ISO 27001 A.8.24 encryption in transit requirements. Man-in-the-middle attacks could intercept API keys or manipulate findings.",
           "regulation": "ISO 27001 A.8.24 (Cryptography) & A.8.3 (Network Access Control)"
         },
@@ -375,6 +413,8 @@
           "fix_suggestion": "1. Implement per-IP rate limiting using a library like python-ratelimit or Flask-Limiter (even though this is a raw http.server). 2. Add a simple in-memory token bucket or sliding window counter keyed by request origin. 3. Return HTTP 429 (Too Many Requests) when rate limit is exceeded. 4. Recommend deploying behind a reverse proxy with rate limiting (nginx limit_req, AWS WAF). 5. Document rate limit thresholds in the API documentation.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "do_POST() method accepts any request and calls run_agent() without checking request rate. No per-IP or per-key rate limiting. No request queuing or backpressure mechanism.",
+          "line": "150-250",
           "impact": "Lack of rate limiting enables brute-force attacks against API keys and denial-of-service attacks, violating ISO 27001 A.8.2 authentication controls and A.8.1 access control principles.",
           "regulation": "ISO 27001 A.8.2 (User Authentication Management) - Rate Limiting"
         },
@@ -391,6 +431,8 @@
           "fix_suggestion": "1. Add explicit logging for authentication failures: log failed API key attempts with source IP and timestamp. 2. Log all API requests with method, path, source IP, API key ID (not value), status code, and response size. 3. Add separate audit log file (audit.log) with immutable append-only semantics. 4. Sanitize exception logs to avoid exposing file paths, config values, or internal structure. 5. Implement log retention and rotation policies.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "api_server.py _check_auth() returns True/False but does not log failed auth attempts. No audit trail of which API keys accessed which endpoints. No request/response logging in APIHandler.",
+          "line": null,
           "impact": "Lack of comprehensive audit logs prevents detection of unauthorized access, API key compromise, or data tampering. Violates ISO 27001 A.8.15/A.8.16 requirements for logging and monitoring.",
           "regulation": "ISO 27001 A.8.15 (Logging) & A.8.16 (Monitoring)"
         },
@@ -407,6 +449,8 @@
           "fix_suggestion": "1. Implement API key rotation: support multiple active keys with expiration dates. 2. Move keys to a secrets manager (AWS Secrets Manager, HashiCorp Vault). 3. Add --rotate-key command to CLI to generate new keys. 4. Log all key rotations and revocations. 5. Document a key rotation policy (e.g., rotate every 90 days).",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "api_key stored as static string in config. APIHandler._check_auth() compares against a single key. No key versioning, rotation, or expiration.",
+          "line": null,
           "impact": "Lack of key rotation increases the window of exposure if a key is compromised. Violates ISO 27001 A.8.2 principles of timely access control updates.",
           "regulation": "ISO 27001 A.8.2 (Access Control) - Secrets Rotation"
         },
@@ -423,6 +467,8 @@
           "fix_suggestion": "1. Upgrade CSP to remove 'unsafe-inline' for scripts: use nonce-based or hash-based script execution. 2. Move inline styles to external stylesheets. 3. Add X-Frame-Options: DENY to prevent clickjacking. 4. Add X-Content-Type-Options: nosniff to prevent MIME sniffing. 5. Add Referrer-Policy: strict-origin-when-cross-origin. 6. Add Permissions-Policy to disable sensitive browser features (geolocation, camera, microphone). 7. For sensitive pages, add Cache-Control: no-store, private.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "index.html: CSP includes 'unsafe-inline' for script-src and style-src. This allows inline event handlers and style attributes, enabling XSS. Connect-src is 'self' only, which is good.",
+          "line": 7,
           "impact": "XSS vulnerabilities via unsafe CSP allow attackers to steal API keys, session cookies, or inject malicious content into dashboards. Violates ISO 27001 A.8.9 security headers and A.8.25 output encoding principles.",
           "regulation": "ISO 27001 A.8.9 (Security Headers) & A.8.25 (Input Validation)"
         },
@@ -439,6 +485,8 @@
           "fix_suggestion": "1. Validate that the supplied target name matches one of the configured targets in backoffice.yaml. 2. Reject any target path that is not explicitly configured. 3. Add an explicit whitelist check before calling run_agent(). 4. Log rejected scan attempts with the supplied target and source IP.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "api_server.py _handle_scan() reads target from POST body and passes to run_agent(). Target is resolved via resolve_target() but the resolution is permissive: any existing directory path is accepted. No whitelist check against configured targets.",
+          "line": null,
           "impact": "Arbitrary path traversal could expose audit findings on unintended repos or trigger scans on sensitive directories, violating ISO 27001 A.8.26 input validation controls.",
           "regulation": "ISO 27001 A.8.26 (Input Validation)"
         },
@@ -455,6 +503,8 @@
           "fix_suggestion": "1. Update backoffice/api_server.py to reject '*' as an allowed origin (comment out or remove the wildcard check). 2. Document that allowed_origins must be an explicit list of trusted domains. 3. Add a validation check during config loading to reject wildcard origins and log a warning. 4. Recommend deploying with specific, domain-restricted CORS origins only.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "api_server.py _cors_headers() checks: if '*' in allowed or origin in allowed. This allows the config to specify '*' as an allowed origin, which is overly permissive for a sensitive API.",
+          "line": "180-190",
           "impact": "Overly permissive CORS enables cross-site request forgery (CSRF) attacks where a malicious website triggers requests to the back-office API on behalf of an authenticated user. Violates ISO 27001 A.8.9 access control principles.",
           "regulation": "ISO 27001 A.8.9 (Security Headers) - CORS Configuration"
         },
@@ -471,6 +521,8 @@
           "fix_suggestion": "1. Set a maximum request body size (e.g., 10MB). 2. In _read_body(), check if Content-Length > MAX_BODY_SIZE and return 413 Payload Too Large. 3. Document the maximum payload size in API documentation. 4. Recommend deploying behind a reverse proxy (nginx, ALB) with request size limits enforced at the perimeter.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "api_server.py _read_body() reads self.rfile.read(length) without checking if length exceeds a reasonable limit (e.g., 1MB). Python's http.server does not enforce a default limit.",
+          "line": "212-220",
           "impact": "Lack of request size limits enables denial-of-service attacks that consume memory and CPU, violating ISO 27001 A.8.3 network security controls.",
           "regulation": "ISO 27001 A.8.3 (Network Access Control)"
         }
@@ -524,6 +576,8 @@
           "fix_suggestion": "Add explicit consent fields to the register payload, store consent scope, timestamp, and policy/version identifiers in DynamoDB, and expose withdrawal/preference management for any optional processing tied to consent.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The checkbox at lines 178-183 is mandatory, but the POST body at lines 71-76 omits any consent fields. The backend profile written in lambda/api/index.mjs lines 416-431 stores email, name, passwordHash, salt, preferredVersion, emailVerified, and createdAt only.",
+          "line": 178,
           "impact": "If Selah relies on consent for account creation disclosures, analytics, or other optional processing, it cannot demonstrate valid consent during a regulator inquiry or user complaint, creating exposure to corrective orders and administrative fines.",
           "regulation": "GDPR Arts. 6, 7"
         },
@@ -540,6 +594,8 @@
           "fix_suggestion": "Implement a consent/preferences layer for analytics and gate Plausible script injection on that preference, or remove third-party analytics for regulated users and update privacy disclosures accordingly.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "layout.tsx lines 66-67 load plausible.io globally. A repo-wide search found no cookie banner or consent-management implementation under src/app, src/components, or src/lib.",
+          "line": 66,
           "impact": "Processing analytics data for EEA users without a demonstrable lawful basis or clear opt-out/consent workflow can trigger complaints, orders to stop processing, and regulator scrutiny over third-party transfers and transparency.",
           "regulation": "GDPR Arts. 6, 7, 12, 13"
         },
@@ -556,6 +612,8 @@
           "fix_suggestion": "Add a delete-account flow in Settings that requires password re-entry, calls DELETE /api/account, clears local data, and confirms what data will be removed.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The account UI at lines 223-245 shows profile details and a sign-out button only. The deletion endpoint exists in lambda/api/index.mjs at lines 363 and 847-905, but there is no client-side call to /api/account in the repository.",
+          "line": 223,
           "impact": "Users may be unable to exercise Article 17 rights without manual support intervention, increasing complaint risk and making statutory response timelines harder to meet.",
           "regulation": "GDPR Art. 17"
         },
@@ -572,6 +630,8 @@
           "fix_suggestion": "Define retention periods by data type, store expiry metadata where appropriate, and add scheduled purge logic or lifecycle jobs. This requires business and legal input before code changes.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "User content is stored in lambda/api/index.mjs lines 1001-1015, 1092-1130, 1183-1195, and 1260-1271 without expiresAt. terraform/dynamodb.tf lines 38-41 enable TTL only for records that explicitly include expiresAt.",
+          "line": 1001,
           "impact": "Indefinite retention of personal data without a documented necessity basis can violate the storage-limitation principle and widen exposure if a breach or DSAR occurs.",
           "regulation": "GDPR Art. 5(1)(e)"
         },
@@ -588,6 +648,8 @@
           "fix_suggestion": "Move session handling to Secure, HttpOnly, SameSite cookies or another server-managed session mechanism, and keep only strictly necessary non-sensitive state in web storage.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "auth-context.tsx stores bible_token, bible_user, and selah_enc_cache in localStorage at lines 19-21, 25-31, 49-56, and 62-71. StudyChat also reads bible_token from localStorage at src/components/StudyChat.tsx lines 136-143.",
+          "line": 19,
           "impact": "Session theft can lead to unauthorized access to personal data, triggering incident-response obligations, account compromise, and possible breach-notification exposure under both ISO-aligned controls and privacy law.",
           "regulation": "ISO 27001 Annex A.8.2, A.8.24"
         },
@@ -604,6 +666,8 @@
           "fix_suggestion": "Block journal backup until the journal key is unlocked, or split backup so journals are skipped with a clear warning unless encryption is active. On the backend, reject plaintext journal writes for accounts that have encryption enabled.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "account-sync.ts lines 107-115 send the unmodified journal entry when masterKey is falsy. Settings calls backupLocalDataToAccount(undefined, masterKey) at src/app/settings/page.tsx lines 139-152, so a signed-in user can trigger backup even when masterKey is null.",
+          "line": 107,
           "impact": "Sensitive spiritual reflections and prayer-journal content may be stored unencrypted in the backend, increasing breach impact and undermining security assurances made to users.",
           "regulation": "ISO 27001 Annex A.8.24, A.8.25"
         },
@@ -620,6 +684,8 @@
           "fix_suggestion": "Remove unsafe-inline and unsafe-eval, migrate any inline bootstrapping to nonce- or hash-based scripts, and confirm the build/runtime path works without eval-dependent tooling in production.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The CSP at terraform/cloudfront.tf lines 218-220 is: script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io.",
+          "line": 219,
           "impact": "A weaker CSP increases the likelihood that an injection flaw becomes a real account-compromise incident, which raises security and breach-response risk.",
           "regulation": "ISO 27001 Annex A.8.9"
         }
@@ -670,6 +736,8 @@
           "fix_suggestion": "Expand privacy policy to include: (1) 'Contact form data is retained for [30-90] days or until inquiry is resolved, whichever is longer, then deleted.' (2) 'We process contact data on the basis of [consent given via checkbox / legitimate interest in responding to inquiries].' (3) DPO contact if applicable, or clarify no separate DPO is appointed. (4) 'Suspected breaches are reported to [supervisory authority] within 72 hours. Contact privacy@codyjo.com for security incidents.'",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy states general purpose ('to respond to that request') but not: retention duration for contact submissions, lawful basis selection (consent vs. legitimate interest), DPO email if applicable, or breach notification procedure. No mention of retention policy beyond generic 'request-based deletion'.",
+          "line": 56,
           "impact": "Incomplete privacy notices violate GDPR Articles 13-14 and can trigger enforcement fines up to \u20ac20M or 4% of global turnover. Data subjects can claim damages for non-transparent processing.",
           "regulation": "GDPR Art. 13, 14 \u2014 Privacy Policy Completeness"
         },
@@ -686,6 +754,8 @@
           "fix_suggestion": "Add to privacy policy: 'To exercise your data subject rights, email privacy@codyjo.com with your request. Requests for access will return contact form submissions, timestamps, and consent records within 30 days. Requests for deletion will remove all personal data unless we have a legal obligation to retain it.'",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Lines 117-121 mention rights exist but offer no submission mechanism. No privacy@codyjo.com email address, dedicated rights-request endpoint, or documented procedure for processing access/deletion requests is provided.",
+          "line": 117,
           "impact": "GDPR requires controllers to respond to access requests within 30 days. Lack of a documented mechanism may be interpreted as failure to facilitate rights exercise. Fines up to \u20ac10M or 2% of turnover can apply.",
           "regulation": "GDPR Art. 15-22 \u2014 Data Subject Rights Mechanism"
         },
@@ -702,6 +772,8 @@
           "fix_suggestion": "Verify Plausible DPA is in place (typically included in their standard terms). Update privacy policy to state: 'Plausible is our data processor under a Data Processing Agreement that complies with GDPR Article 28. Plausible does not process personal data for any purpose other than providing analytics services to us.'",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy lists Plausible with a data policy link but does not state 'We have executed a Data Processing Agreement with Plausible' or reference a DPA addendum. No evidence of DPA in the repository.",
+          "line": 16,
           "impact": "Absence of documented DPA is a direct GDPR Article 28 violation. Fines up to \u20ac10M or 2% of turnover apply. If Plausible's default terms include a DPA, lack of acknowledgment still creates audit risk.",
           "regulation": "GDPR Art. 28 \u2014 Data Processing Agreement for Plausible"
         },
@@ -718,6 +790,8 @@
           "fix_suggestion": "Confirm AWS Standard Contractual Clauses (SCCs) are in place via AWS Data Processing Addendum. Update privacy policy: 'Personal data is transferred to the United States under Standard Contractual Clauses (SCCs) that ensure adequate safeguards. You may request details of the transfer mechanism by contacting privacy@codyjo.com.'",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "API endpoint at line 317: https://ldnybm21m6.execute-api.us-west-2.amazonaws.com/contact points to US infrastructure. Privacy policy (line 43) states 'Infrastructure is primarily hosted in the United States' but does not reference SCCs, adequacy decisions, or supplementary measures.",
+          "line": 317,
           "impact": "Without documented legal transfer mechanisms, EU personal data transfer to the US violates GDPR. Recent Schrems II ruling emphasizes strict requirements. Fines up to \u20ac20M or 4% of turnover apply. Irish DPC has taken enforcement action on US transfer gaps.",
           "regulation": "GDPR Art. 44-49 \u2014 International Data Transfers"
         },
@@ -734,6 +808,8 @@
           "fix_suggestion": "Update privacy policy to include: 'You can withdraw your consent at any time by contacting privacy@codyjo.com. Upon withdrawal, we will delete your contact form data unless we have a legal obligation to retain it.'",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Consent checkbox at line 280 but no explanation in privacy policy on how to withdraw consent, revoke permission, or request data deletion after submission. No contact method provided for withdrawal requests.",
+          "line": 280,
           "impact": "GDPR Art. 7(3) requires transparent withdrawal mechanism. Lack of clarity may trigger regulator complaints.",
           "regulation": "GDPR Art. 7(3) \u2014 Withdrawal of Consent"
         },
@@ -750,6 +826,8 @@
           "fix_suggestion": "Remove 'unsafe-inline' from script-src and use nonces: (1) Add a nonce to Plausible script tag (line 123). (2) Astro should support automatic nonce generation. (3) Update CSP to: script-src 'self' 'nonce-[generated]' https://plausible.io;. (4) Move inline Plausible init code to external file or apply nonce.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "CSP meta tag: \"script-src 'self' 'unsafe-inline' https://plausible.io;\" The 'unsafe-inline' allows inline <script> tags to execute without restrictions, nullifying CSP's XSS mitigation value.",
+          "line": 66,
           "impact": "XSS vulnerabilities on a form collecting contact data could lead to credential theft or data exfiltration, violating GDPR Article 32 (security measures) and ISO 27001 controls. Demonstrated XSS leading to breach could trigger enforcement.",
           "regulation": "ISO 27001 A.14.2 \u2014 Secure Development"
         },
@@ -766,6 +844,8 @@
           "fix_suggestion": "Configure CloudFront response headers policy or Astro middleware to set: (1) X-Frame-Options: DENY (prevent clickjacking). (2) X-Content-Type-Options: nosniff (prevent MIME-sniffing). (3) Referrer-Policy: strict-origin-when-cross-origin (limit referrer leakage). (4) Permissions-Policy: camera=(), microphone=(), geolocation=() (restrict browser features).",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "CSP is set via meta tag (line 66) but no X-Frame-Options, X-Content-Type-Options, Referrer-Policy, or Permissions-Policy headers are configured. These should be set at the HTTP response level (CloudFront policy or middleware).",
+          "line": 66,
           "impact": "Missing security headers increase attack surface for clickjacking and data leakage. If these enable a breach, GDPR Article 32 and ISO 27001 controls are undermined.",
           "regulation": "ISO 27001 A.13.1 \u2014 Network Security"
         },
@@ -782,6 +862,8 @@
           "fix_suggestion": "Verify that the AWS Lambda function implements server-side validation: (1) Email format (robust regex or validation library). (2) Maximum length checks. (3) Required field validation. (4) Character restrictions (reject control characters, unusual Unicode). (5) XSS prevention (escape HTML entities before storage). Return 400/422 if validation fails.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Email validation at line 338-342 uses client-side regex. Lambda endpoint at ldnybm21m6.execute-api.us-west-2.amazonaws.com/contact is external and not auditable from the repository.",
+          "line": 338,
           "impact": "Client-side validation can be bypassed. Without confirmed server-side validation, injection attacks or malformed data could compromise data integrity or enable XSS if data is later reflected.",
           "regulation": "ISO 27001 A.8.25 \u2014 Input Validation"
         },
@@ -798,6 +880,8 @@
           "fix_suggestion": "Implement API authentication: (1) Add API key validation in Lambda (check x-api-key header against environment variable). (2) Or use AWS API Gateway Lambda authorizer with IAM role. (3) Verify CORS is restricted to https://www.codyjo.com origin. (4) Confirm 429 rate-limiting is in place (already implemented per code).",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Fetch request at line 362 sends JSON with Content-Type header only; no Authorization header or API key visible. No evidence of API Gateway IAM authorization or Lambda authorization logic in the repository.",
+          "line": 362,
           "impact": "Unprotected API endpoints risk abuse, spam flooding, or data injection. If attackers inject malicious content or cause service degradation, it undermines ISO 27001 A.8.2 access controls and availability.",
           "regulation": "ISO 27001 A.8.2 \u2014 Access Control"
         },
@@ -814,6 +898,8 @@
           "fix_suggestion": "Update privacy policy: 'Server and CDN logs are retained for 90 days in accordance with AWS CloudFront default retention and used for security investigation and troubleshooting. Logs are not shared with third parties unless required by law.'",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Lines 67-72 describe logs but state only that they are 'used for site reliability, abuse prevention, and troubleshooting' without specifying retention period (e.g., '90 days').",
+          "line": 67,
           "impact": "Lack of documented log retention complicates breach investigation and incident response. GDPR Article 32 and ISO 27001 A.5.11 expect documented audit logging.",
           "regulation": "ISO 27001 A.5.11 \u2014 Audit Trails"
         },
@@ -830,6 +916,8 @@
           "fix_suggestion": "Restrict CSP to the specific API endpoint: connect-src 'self' https://ldnybm21m6.execute-api.us-west-2.amazonaws.com https://plausible.io; If the endpoint domain is managed externally, document why the wildcard is necessary.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "CSP at line 66: connect-src 'self' https://*.execute-api.us-west-2.amazonaws.com https://plausible.io; The wildcard allows any endpoint in the region.",
+          "line": 66,
           "impact": "Overly permissive CSP reduces protection value. Low risk for a static portfolio site but represents unnecessary attack surface.",
           "regulation": "ISO 27001 A.8.9 \u2014 Web Application Security"
         },
@@ -846,6 +934,8 @@
           "fix_suggestion": "Create a simple Record of Processing Activities (internal document, not public) listing: (1) Contact form: name/email/message, purpose: respond to inquiry, retention: 30-90 days, basis: consent, no sharing. (2) Plausible analytics: aggregated usage, purpose: understand traffic, retention: per Plausible policy, basis: consent or legitimate interest, processor: Plausible.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy describes processing in narrative form but no structured RoPA document (CSV, table, or JSON) listing data categories, purposes, retention, recipients, and legal basis is visible.",
+          "line": 1,
           "impact": "Lack of formal RoPA does not automatically violate GDPR, but it weakens accountability and makes audits harder. Regulators expect to see a RoPA during enforcement actions.",
           "regulation": "GDPR Art. 5(1)(f) \u2014 Accountability"
         }
@@ -896,6 +986,8 @@
           "fix_suggestion": "1. Create a privacy policy page (e.g., frontend/web/privacy.html) that discloses: (a) controller identity and contact details, (b) purposes of processing (infrastructure deployment, audit logging), (c) legal basis (Art. 6 \u2014 likely legitimate interest or contract), (d) categories of personal data collected, (e) retention periods, (f) data subject rights and how to exercise them, (g) recipients if data is shared. 2. Link the privacy policy from the UI (footer or settings). 3. Add a notice on the deployment form explaining data handling. 4. Update API documentation with data handling expectations.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "No privacy policy link in frontend UI. No disclosure in the deployment form about data collection, storage, or retention. Variables collected: requestor (Art. 4(1) personal data), scenario (may contain personal data), console_password (sensitive data).",
+          "line": 0,
           "impact": "GDPR violations can result in administrative fines up to \u20ac20 million or 4% of annual global turnover, whichever is higher. Failure to provide privacy notices violates Art. 13\u201314 and could trigger supervisory authority enforcement action.",
           "regulation": "GDPR Art. 13, 14 (Privacy Policy)"
         },
@@ -912,6 +1004,8 @@
           "fix_suggestion": "1. Determine the lawful basis for each processing activity: Likely candidates are (a) Art. 6(1)(b) if pe-bootstrap is part of an employment or service contract, (b) Art. 6(1)(f) legitimate interests (infrastructure management, security, operational need). 2. Document the basis clearly in the privacy policy. 3. If using legitimate interests, conduct and document a Legitimate Interest Assessment (LIA) showing that interests are not overridden by individual rights. 4. Update the terms of service or user agreement to reference the lawful basis. 5. For Google OAuth, clarify in the privacy policy that you are relying on consent (Art. 7) or another basis, and ensure users can withdraw consent.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Auth token handling at line 630 accepts tokens without consent flow. Personal data stored in metadata (lines 690\u2013715 in main.py) with no lawful basis notation. Google OAuth integration (lines 567\u2013579) but no disclosure of data use or consent.",
+          "line": 630,
           "impact": "Processing personal data without a lawful basis is a material GDPR violation. Supervisory authorities can issue cease-and-desist orders and impose significant fines (up to \u20ac20 million or 4% of turnover).",
           "regulation": "GDPR Art. 6 (Lawful Basis)"
         },
@@ -928,6 +1022,8 @@
           "fix_suggestion": "1. Implement a /api/user/data endpoint that returns all personal data associated with the authenticated user (deployment metadata, audit log entries, etc.). 2. Return data in a structured, machine-readable format (JSON or CSV). 3. Add a button in the web UI (e.g., under Settings or Account) that allows users to download their data. 4. Document the 30-day SLA for responding to requests.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "No API endpoint for data export (GET /api/user/data or similar). Metadata stored in GCS (line 403\u2013414) is readable only by administrators with GCS access, not by end users.",
+          "line": 0,
           "impact": "Failure to respond to data subject access requests within 30 days violates GDPR Art. 15 and can result in enforcement orders and fines.",
           "regulation": "GDPR Art. 15 (Right of Access)"
         },
@@ -944,6 +1040,8 @@
           "fix_suggestion": "1. Implement a delete endpoint /api/deployments/{deployment_id}/delete that (a) verifies the authenticated user owns the deployment, (b) deletes metadata, outputs, and audit logs from GCS, (c) returns a confirmation. 2. Create a retention policy: offer a 30-day grace period before hard deletion, then purge all data. 3. Add a 'delete my data' option in the web UI. 4. Document the retention period in the privacy policy.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "destroy_deployment endpoint (line 792) destroys GCP infrastructure but does not delete metadata or audit logs from GCS. Metadata remains in GCS at deployments/{deployment_id}/metadata.json indefinitely.",
+          "line": 792,
           "impact": "Failure to honor erasure requests violates GDPR Art. 17 and can result in enforcement orders and fines. Prolonged retention of personal data without justification violates Art. 5 (storage limitation).",
           "regulation": "GDPR Art. 17 (Right to Erasure)"
         },
@@ -960,6 +1058,8 @@
           "fix_suggestion": "1. Define a data retention policy: (a) Deployment metadata: retain for 90 days post-deployment-destruction, then delete. (b) Audit trails: retain for 1 year for compliance/security purposes, then delete. 2. Implement automated deletion via GCP Cloud Scheduler + Cloud Functions or GCS lifecycle rules. 3. Document the retention policy in the privacy policy and CLAUDE.md. 4. Add a /api/user/data-retention endpoint that discloses the retention schedule to users.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Metadata is written to GCS (line 403) and read indefinitely. A TTL field exists in metadata (line 709) but it appears to be informational only (for deployment lifecycle, not data retention). No cleanup job or lifecycle policy is enforced on GCS blobs.",
+          "line": 403,
           "impact": "Indefinite retention of personal data violates the storage limitation principle (GDPR Art. 5(1)(e)) and can result in enforcement action. Regulators expect documented, justified retention periods.",
           "regulation": "GDPR Art. 5(1)(e), Art. 25 (Storage Limitation & Data Protection by Design)"
         },
@@ -976,6 +1076,8 @@
           "fix_suggestion": "1. Add security headers to Flask responses via middleware or after_request hook: (a) Strict-Transport-Security: max-age=31536000; includeSubDomains; preload (b) Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com; img-src 'self' data: (c) X-Frame-Options: DENY (d) X-Content-Type-Options: nosniff (e) Referrer-Policy: strict-origin-when-cross-origin (f) Cache-Control: private, no-store for sensitive endpoints. 2. Restrict CORS to specific origins (not wildcard). 3. Enforce HTTPS redirects.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Flask app (line 24) does not set security headers. CORS(app) at line 25 is configured without explicit origin restrictions. No Content-Security-Policy or HSTS header configuration observed.",
+          "line": 24,
           "impact": "GDPR Art. 32 requires appropriate technical and organizational measures, including encryption and integrity verification. Missing security headers violate this requirement and could be cited in breach notifications. Attackers could intercept data or perform XSS attacks, exposing personal data.",
           "regulation": "GDPR Art. 32 (Security of Processing)"
         },
@@ -992,6 +1094,8 @@
           "fix_suggestion": "1. Replace CORS(app) with explicit origin whitelisting: from flask_cors import CORS; CORS(app, resources={'/api/*': {'origins': ['https://pe-bootstrap.example.com']}}) 2. Identify the frontend domain(s) that will call the API and whitelist only those. 3. Set credentials=True and allow_headers=['Authorization', 'Content-Type'].",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "CORS(app) at line 25 with no origin restrictions. frontend/infra/main.tf comment acknowledges 'Cloud Run is publicly accessible (CORS requires requests to reach Flask)' but does not restrict to legitimate origins.",
+          "line": 25,
           "impact": "Overly permissive CORS violates GDPR Art. 32 security requirements. A breach via CORS misconfiguration could expose deployment metadata and audit logs, triggering breach notification obligations.",
           "regulation": "GDPR Art. 32 (Security of Processing)"
         },
@@ -1008,6 +1112,8 @@
           "fix_suggestion": "1. Add a PATCH /api/deployments/{deployment_id} endpoint that allows users to update: scenario, requestor name. 2. Verify user ownership of the deployment before allowing updates. 3. Log all changes in the audit trail. 4. Add an edit button in the web UI (e.g., in the deployment details page).",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "No PATCH /api/deployments/{id} endpoint to update metadata. Metadata is write-once after creation (line 717).",
+          "line": 0,
           "impact": "Failure to provide a way to correct inaccurate personal data violates GDPR Art. 16 and contributes to inaccuracy violations under Art. 5(1)(d).",
           "regulation": "GDPR Art. 5(1)(d) (Accuracy)"
         },
@@ -1024,6 +1130,8 @@
           "fix_suggestion": "1. Migrate audit logging to Google Cloud Logging (Stackdriver) instead of JSON files in GCS. Cloud Logging provides immutable, tamper-proof audit trails. 2. Configure log retention (e.g., 90 days for operational logs, 1 year for security-relevant logs) via log sinks. 3. Set up log analysis/alerting for suspicious events (multiple failed auth attempts, unauthorized API calls). 4. Ensure logs are accessible to security and compliance teams but not to end users.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Audit events are appended to metadata.json in GCS (lines 441\u2013451). The file is mutable and can be overwritten by anyone with GCS write permission. No checksums, signatures, or immutable storage (e.g., Cloud Logging) used.",
+          "line": 436,
           "impact": "Lack of log integrity violates ISO 27001 A.8.15 and GDPR Art. 32 requirements for secure processing. In the event of a breach, logs may be considered unreliable evidence, hampering breach investigation and regulatory response.",
           "regulation": "ISO 27001 A.8.15 (Logging & Monitoring)"
         },
@@ -1040,6 +1148,8 @@
           "fix_suggestion": "1. Store authentication tokens in memory only (not in sessionStorage), or use HttpOnly cookies if possible. 2. Implement rate limiting and account lockout on failed login attempts to mitigate brute-force attacks. 3. Set CSP header to restrict script sources (reduces XSS risk). 4. Consider adding a token expiration mechanism (e.g., tokens expire after 1 hour, requiring re-authentication). 5. Investigate using Web Crypto API for in-memory token management.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "sessionStorage.setItem('pe_auth_token', token) at line 82 and sessionStorage.getItem at line 9. No HttpOnly flag or secure storage mechanism.",
+          "line": 82,
           "impact": "XSS vulnerability leading to token theft could allow attackers to impersonate users and access deployments, violating ISO 27001 A.8.2 (authentication) and GDPR Art. 32 (security). Breached tokens could expose sensitive deployment data.",
           "regulation": "ISO 27001 A.8.7 (Password Management)"
         },
@@ -1056,6 +1166,8 @@
           "fix_suggestion": "1. Add rate limiting to /api/auth/verify: implement exponential backoff (e.g., 5 attempts per minute, then 1 attempt per 5 minutes after 5 failed attempts). 2. Use Flask-Limiter library: from flask_limiter import Limiter; limiter.limit('5/minute')(auth_verify). 3. Log repeated failures and alert on suspicious patterns. 4. Consider implementing account lockout: temporary lock after N failed attempts.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "auth_verify endpoint (line 625) has no rate-limiting decorator or logic. No mention of rate limiting in the Flask app configuration.",
+          "line": 625,
           "impact": "Brute-force attacks could compromise the web UI, allowing unauthorized access to deployment management, violating ISO 27001 A.8.3 and GDPR Art. 32 security requirements.",
           "regulation": "ISO 27001 A.8.3 (User Registration & Access Management)"
         },
@@ -1072,6 +1184,8 @@
           "fix_suggestion": "1. Add maximum length validation: len(requestor) <= 255. 2. Reject non-ASCII or control characters if unexpected. 3. Add validation for scenario field similarly.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "validate_params checks requestor with: if not requestor.strip() and if not slugify_label(requestor), but does not enforce a maximum length. slugify_label (line 297) trims to 63 chars, but validation doesn't check length before slugification.",
+          "line": 189,
           "impact": "Input validation bypasses could lead to log injection, DoS, or data corruption. While not directly a GDPR violation, it contributes to system instability that could cause data loss or unauthorized access.",
           "regulation": "ISO 27001 A.8.25 (Input Validation)"
         }
@@ -1122,6 +1236,8 @@
           "fix_suggestion": "Implement GET /api/export endpoint that: (1) authenticates the requesting user, (2) queries all user data from DynamoDB using the user ID, (3) assembles data into a JSON or CSV format with all personal data fields, (4) returns the export as a downloadable file. Include: user profile, all studies, all journals, all bookmarks, preferences, plan progress, streaks, and event-related data. Add a timestamp to the export showing when it was generated. Implement rate limiting to prevent abuse.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "The API routes show /api/account DELETE endpoint at line 540, but no GET /api/export or similar endpoint. The handleDeleteAccount function (line 1051) deletes all user data but does not provide export capability. User data includes: profile (name, email), studies, journals, bookmarks, daily verses, plans, streak data, preferences, event intake data.",
+          "line": 540,
           "impact": "GDPR violations can result in fines up to \u20ac20 million or 4% of global annual revenue, whichever is higher. Non-compliance with data portability rights specifically triggers supervisory authority investigations and user complaints. Users in EU may file complaints with national Data Protection Authorities.",
           "regulation": "GDPR Art. 20 (Right to Data Portability)"
         },
@@ -1138,6 +1254,8 @@
           "fix_suggestion": "(1) Remove 'unsafe-eval' immediately \u2014 there is almost never a legitimate reason for unsafe-eval. (2) For unsafe-inline: attempt to remove by using Content Security Policy nonces or hashes for inline scripts. If that's not feasible due to Next.js architecture, document why it's necessary and document compensating controls (e.g., strong input validation, output encoding). (3) Test that existing scripts still work with a stricter CSP (using test policy first). (4) Consider using a CSP violation reporting mechanism to catch injection attempts.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Line 278: content_security_policy = \"default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io; ...\" The script-src directive explicitly includes both 'unsafe-inline' and 'unsafe-eval', which allow arbitrary JavaScript execution and bypass CSP protections.",
+          "line": 278,
           "impact": "XSS vulnerabilities can lead to: account hijacking, data theft, malware injection. Not directly a GDPR violation but compromises confidentiality and integrity of personal data. ISO 27001 A.8.24 requires cryptographic and logical controls on data. CSP weakening is a control failure. Incident response would be required if XSS leads to data breach.",
           "regulation": "ISO 27001 A.8.24 (Cryptography & Key Management) and OWASP Top 10 (A03:2021 Injection)"
         },
@@ -1154,6 +1272,8 @@
           "fix_suggestion": "Implement a cookie consent solution: (1) Add a consent banner on first load (non-intrusive but visible) that allows users to: accept essential cookies only, or accept all including analytics/marketing. (2) Store consent choices in localStorage and HttpOnly cookie with a 12-month expiry. (3) Only load plausible.io analytics script if user consents. (4) Create a preference center (linked from footer) allowing users to change consent at any time. (5) Document in privacy policy what cookies are used and for what purpose. (6) Implement consent records in the database (which user consented to what, when, which privacy policy version).",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Login page (line 43) detects GPC signal but does not show an opt-in consent banner for analytics. CSP (line 278) allows plausible.io connections (analytics). Privacy policy mentions 'Technical and security data such as IP address, browser metadata, rate-limit events, and operational logs' but does not show a granular consent flow. No consent cookie or preference center visible in codebase.",
+          "line": "43, 278, 40",
           "impact": "GDPR Art. 6(1)(a) requires explicit consent for processing based on consent. Without granular consent, any analytics/marketing data processing is unlawful. Fines up to \u20ac10 million or 2% of revenue. Supervisory authorities actively enforce this via monitoring for missing consent banners.",
           "regulation": "GDPR Art. 6 & 7 (Lawful Basis & Consent)"
         },
@@ -1170,6 +1290,8 @@
           "fix_suggestion": "(1) Add explicit TTL to all DynamoDB log entries: set expiresAt = current_time + 30 days when logging. (2) For S3 access logs, configure S3 Lifecycle Policy to delete objects after 30 days. (3) For CloudWatch Logs, set log group retention to 30 days. (4) For any application-level logging (e.g., to external service), implement rotation and deletion. (5) Implement a data retention policy document and review logs quarterly. (6) Ensure logging does not capture sensitive data (passwords, tokens, PII); if needed, hash or redact before logging.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "DynamoDB TTL is configured for the 'expiresAt' attribute (line 38-41) but logging calls at line 295-301 use console.log and do not set an expiresAt value. CloudFront access logs (terraform/cloudfront.tf line 132-135) are logged to S3 with no expiration policy visible. AWS CloudWatch logs (likely used for Lambda) have no retention policy visible in Terraform.",
+          "line": "38-41, 295-301",
           "impact": "GDPR Art. 5(1)(e) requires data be kept in a form which permits identification of data subjects for no longer than necessary. Indefinite retention of logs (especially containing IP addresses, user IDs, request metadata) violates storage limitation. Regulatory exposure if audit shows logs retained beyond stated 30-day period.",
           "regulation": "GDPR Art. 5(1)(e) (Storage Limitation)"
         },
@@ -1186,6 +1308,8 @@
           "fix_suggestion": "(1) Define a logging policy: document which fields are safe to log (timestamps, event names, anonymized/hashed identifiers). (2) Implement log sanitization: before logging any field, check against a 'safe fields' whitelist. (3) Hash or redact PII before logging. (4) Hash password reset codes in DynamoDB (use timing-safe comparison on verification like passwords). (5) Test that logs do not contain passwords, tokens, or plaintext PII. (6) Document retention and access controls for logs (who can view, from where).",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Line 295-301: logAuthEvent logs timestamps and event names with details object that may contain userId, emailHash, and reason. Line 609-610 and 690-691 hash the email before logging but still reveal existence of authentication attempts. Line 755 stores reset code in plaintext (should be hashed). No documented policy on what fields are safe to log.",
+          "line": "295-301, 609-610, 690-691, 755",
           "impact": "If logs are breached, exposed PII violates GDPR Art. 32 (security of processing) and Art. 33 (breach notification). Exposed email addresses + failed login attempts enable targeted phishing. ISO 27001 A.8.15 requires logging of access and changes; A.8.16 requires audit trail protection.",
           "regulation": "ISO 27001 A.8.15 & A.8.16 (Logging & Audit Trails) and A.8.25 (Input Validation)"
         },
@@ -1202,6 +1326,8 @@
           "fix_suggestion": "(1) Implement optional TOTP (Time-based One-Time Password) using libraries like speakeasy or similar. (2) Add API endpoints: POST /api/auth/mfa/setup (returns QR code), POST /api/auth/mfa/verify (validates TOTP), POST /api/auth/mfa/disable (requires current password). (3) Require MFA for admin accounts (ADMIN_EMAILS set at line 16-18). (4) Add MFA state to token (mfaVerified flag). (5) After login, if MFA is enabled, require TOTP verification before returning full access token. (6) Provide backup recovery codes for account access if authenticator app is lost.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Login handler (line 669-718) performs password verification and returns token without any MFA challenge. No routes for MFA setup, verification, or enforcement visible in the API routes (lines 425-520). Login page has no MFA input fields.",
+          "line": "669-718, entire file",
           "impact": "Weak authentication increases risk of unauthorized access to organizer event data, attendee contact information, and booth/vendor data. While not directly a GDPR violation, compromised accounts lead to breaches. ISO 27001 A.8.2 recommends MFA for sensitive systems. Regulatory bodies increasingly expect MFA for business-critical accounts.",
           "regulation": "ISO 27001 A.8.2 (Authentication) and A.5.18 (Access Control)"
         },
@@ -1218,6 +1344,8 @@
           "fix_suggestion": "(1) Conduct a DPIA covering: event photo gallery (collection of attendee photos), role-based access (tracking who has admin/organizer permissions), event attendance tracking, email marketing (event reminders), third-party data sharing (if any). (2) Document: data flow, purposes, retention, recipients, rights of data subjects, technical/organizational safeguards, risks, and mitigations. (3) Store DPIA in a protected document (not public) but be prepared to share with supervisory authorities if requested. (4) If high-risk processing is found, document consultation with DPO if applicable. (5) Review DPIA annually or when processing significantly changes.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy lists data collected but does not mention DPIA or specific risk mitigations for event data. README (lines 43-72) describes various data collected but no mention of privacy impact assessment. No DPIA document visible in docs/.",
+          "line": "43-72, entire file, N/A",
           "impact": "If processing is high-risk and no DPIA is conducted, GDPR Art. 35 is violated. Supervisory authorities specifically check for DPIAs when investigating complaints about high-risk processing (e.g., photo galleries, role-based access, event attendance tracking).",
           "regulation": "GDPR Art. 25 (Data Protection by Design and Default) & Art. 35 (DPIA)"
         },
@@ -1234,6 +1362,8 @@
           "fix_suggestion": "(1) Document RTO and RPO: define acceptable downtime and data loss (e.g., RTO 4 hours, RPO 1 hour). (2) Enable DynamoDB Exports to S3 on a daily schedule (via Lambda + CloudWatch Events). (3) Implement S3 cross-region replication for critical backups. (4) Document backup retention: keep 7 days of daily exports, 4 weeks of weekly exports. (5) Test restore procedures quarterly and document results. (6) Create incident response runbook: breach (immediate steps, notification, investigation), data loss (restore from backup), service outage (failover plan). (7) Assign incident commander and escalation contacts.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "DynamoDB has PITR enabled but no S3 backup, DynamoDB Exports, or multi-region replication visible. README and CLAUDE.md do not mention backup or disaster recovery procedures. No runbook for incident response (breach, service outage, data corruption) visible.",
+          "line": "43-45, entire file, N/A",
           "impact": "ISO 27001 A.8.13 requires backup and recovery capability. GDPR breach notification (Art. 33) requires documented incident response with specific timelines (72 hours). Without documented procedures, response times will be slow and recovery may not meet user expectations (e.g., attendees unable to access event during outage).",
           "regulation": "ISO 27001 A.8.13 (Backup & Recovery) and A.5.28 (Incident Response)"
         },
@@ -1250,6 +1380,8 @@
           "fix_suggestion": "(1) Add Cache-Control header to CloudFront response headers policy for sensitive paths (/login, /settings, /e/*/manage, /account). (2) For these paths: Cache-Control: no-store, no-cache, must-revalidate, max-age=0. (3) For public/marketing pages (/features, /pricing, /contact): Cache-Control: public, max-age=3600. (4) Test that sensitive pages are not cached by inspecting response headers. (5) Document cache policy in security documentation.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "CloudFront default_cache_behavior sets TTLs (min 0, default 86400, max 31536000) but does not add Cache-Control headers to the response. The next.config.ts does not configure response headers. API responses (line 128) only set Content-Type and CORS headers.",
+          "line": "159-182, entire file",
           "impact": "User data cached in browser history/cache could be exposed if computer is shared. Not a direct GDPR/ISO violation but a data security risk. Affects confidentiality of personal data on shared devices (e.g., library, office shared computer).",
           "regulation": "ISO 27001 A.8.9 (Security Headers) and A.8.32 (Change Management)"
         },
@@ -1266,6 +1398,8 @@
           "fix_suggestion": "(1) Create a ROLES table: id, userId, role (admin, organizer, viewer, etc.), grantedAt, grantedBy, revokedAt. (2) Replace hardcoded ADMIN_EMAILS with database query: queryCommand for USER#X/ROLE. (3) Add admin UI: list users, grant/revoke roles, view audit log. (4) Log all role changes and admin actions: CREATE event with adminUserId, targetUserId, action, before/after state. (5) Implement role-based permission checks for all sensitive endpoints. (6) Document roles and their capabilities. (7) Require re-authentication for sensitive admin operations (password prompt).",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Line 16-18: ADMIN_EMAILS hardcoded set with only one email. Line 219-225: isAdmin and requireAdmin functions check membership. No UI or database-driven role assignment visible. No audit log of admin actions.",
+          "line": "16-18, 219-225",
           "impact": "Lack of granular access control violates ISO 27001 A.8.5 (access control) principle. If admin credentials are compromised, all data is at risk. No ability to audit who made what change (violates A.8.16 audit trails for changes).",
           "regulation": "ISO 27001 A.8.5 (Access Control) and A.5.9 (Principle of Least Privilege)"
         },
@@ -1282,6 +1416,8 @@
           "fix_suggestion": "(1) Document JWT secret rotation policy: rotate every 90 days (or immediately if compromise suspected). (2) Implement key versioning in Secrets Manager: store both current and previous secrets, try current first, fall back to previous if verification fails. (3) Create a rotation Lambda triggered by EventBridge on a 90-day schedule. (4) Shorter token expiry: consider 1-7 days instead of 30 days, requiring refresh tokens for longer sessions. (5) Implement token revocation list (denylist) for compromised tokens or explicit logout. (6) Document rotation procedure and test it in a dev environment.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "getJwtSecret() caches the secret after first retrieval (line 24). Token expiry is hardcoded to 30 days (line 178: exp: now + 86400 * 30). No key rotation Lambda or procedure visible.",
+          "line": "25-36, 178",
           "impact": "If JWT secret is compromised, attacker can forge tokens valid for 30 days. ISO 27001 A.8.24 recommends key rotation. GDPR Art. 32 requires technical measures appropriate to the risk.",
           "regulation": "ISO 27001 A.8.24 (Key Management) and A.5.12 (Access Control)"
         },
@@ -1298,6 +1434,8 @@
           "fix_suggestion": "(1) When an organizer adds an attendee to an event (guest list, booth), send an email to the attendee with: controller identity (Cordivent), purposes (event coordination, attendance tracking), retention period, rights (access, deletion, portability). (2) Include a link to the full privacy policy and unsubscribe link. (3) Log that notification was sent. (4) Provide organizers with a template/guidance on what privacy info to include when manually inviting attendees. (5) In-app notification option for attendees already in the system: notify them that they were added to [event name] and link to privacy info.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "API routes at line 434-435 show /api/events/[slug]/register and /api/events/[slug]/self-checkin endpoints. Guest list and booth manager features allow organizers to add attendees. No evidence of automatic privacy notice being sent to attendees added by organizers.",
+          "line": "434, 3400-3500 (estimated)",
           "impact": "GDPR Art. 14 violation if attendees are not informed when added to events. Supervisory authority would expect documentation that privacy info was provided, either via email or in-app notification.",
           "regulation": "GDPR Art. 14 (Information to be provided where personal data are not obtained from the data subject)"
         }
@@ -1351,6 +1489,8 @@
           "fix_suggestion": "Revise the privacy policy to explicitly state the lawful basis for each major processing activity: (1) Account data and readings: Contract (Art. 6(1)(b)) as necessary for service provision; (2) Analytics: Legitimate interest (Art. 6(1)(f)) - specify the legitimate interests being served; (3) Email communications: Consent for marketing, contract for transactional. Create a detailed processing activity table or data mapping document. Ensure GDPR Art. 13 transparency for all collection points.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy states 'Why we use it' includes 'To generate readings and operate the features you explicitly request', but does not distinguish between processing bases for different activities. Analytics collection (IP, browser metadata) lacks explicit basis disclosure.",
+          "line": 49,
           "impact": "GDPR violations can result in fines up to 4% of annual turnover or \u20ac20 million. Lack of clear lawful basis for all processing is a foundational compliance gap that could expose the organization to enforcement action by supervisory authorities.",
           "regulation": "GDPR Art. 6 (Lawful Basis)"
         },
@@ -1367,6 +1507,8 @@
           "fix_suggestion": "Implement one of the following: (1) Age gate at registration requiring DOB entry and verification (reject users under 16); (2) Parental consent flow for users 13-16 (requires email verification from parent); (3) Age estimation using third-party service (Yoti, AgeChecker, etc.). For US users, implement COPPA compliance: age verification, parental consent for <13, verifiable parental email. Document compliance in privacy policy and DPIA. Consider geographic detection to apply jurisdiction-specific rules. Add prominent age disclaimer on login/registration pages.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "handleRegister function accepts registration from any user without age verification. No age gate UI component exists. Privacy policy (src/app/privacy/page.tsx:99-100) states age requirement in text form only.",
+          "line": 308,
           "impact": "GDPR violations for processing children's data without parental consent: up to 4% of turnover. COPPA violations: up to $43,280 per violation. CCPA/AADC violations: up to $2,500-$7,500 per violation. Enforcement action by FTC, state AGs, and EU supervisory authorities. Loss of user trust and reputational damage.",
           "regulation": "GDPR Art. 8, COPPA (15 U.S.C. \u00a7 6501-6506), California AADC (AB 2273)"
         },
@@ -1383,6 +1525,8 @@
           "fix_suggestion": "Obtain or review DPAs from: (1) Anthropic for Claude API usage; (2) AWS for S3, Lambda, DynamoDB, CloudFront, Secrets Manager services; (3) Resend for email service. Ensure DPAs include: data subject request support, subprocessor notification, deletion/return of data on termination, audit rights, data security obligations. Create a Data Processing Register documenting all processors. Link DPA summaries in the privacy policy or provide on request.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy states: 'When you request an AI interpretation or related AI feature, the relevant reading context may be processed by Anthropic to return that response. The app is hosted primarily on Amazon Web Services in the United States, and transactional emails may use Resend where configured.' No DPA links or references present in code or README.",
+          "line": 57,
           "impact": "GDPR Art. 28 violation: supervisory authority can issue corrective orders and fines up to 10 million euros or 2% of annual turnover (whichever is higher). Personal liability for data protection officers and controllers. Cannot demonstrate processor compliance to auditors or regulators.",
           "regulation": "GDPR Art. 28 (Data Processing Agreement)"
         },
@@ -1399,6 +1543,8 @@
           "fix_suggestion": "Revise privacy policy to include: (1) Explicit statement that personal data is transferred to and processed in the United States by AWS, Anthropic, and Resend; (2) Statement that the US is not deemed to have adequate data protection by the European Commission; (3) Explanation of safeguards: Standard Contractual Clauses (SCCs) in place with US processors, compliance with Schrems II supplementary measures where applicable; (4) Link to Data Protection Impact Assessment (DPIA) or summary; (5) EU users' rights to request supplementary safeguards; (6) Contact information for data transfer inquiries. Ensure SCCs are in place with all US processors.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Privacy policy states 'The app is hosted primarily on Amazon Web Services in the United States' but does not explain: (1) legal mechanism for transfer (SCCs, adequacy decision, etc.); (2) that EU users' data is stored and processed in the US; (3) Schrems II implications; (4) right to supplementary measures.",
+          "line": 61,
           "impact": "GDPR violation if adequate safeguards are not in place or not disclosed. Fines up to 10 million euros or 2% of turnover. Supervisory authority enforcement. Potential data subject claims for damages (Art. 82). User distrust.",
           "regulation": "GDPR Art. 13, 14 (Transparency - International Transfers)"
         },
@@ -1415,6 +1561,8 @@
           "fix_suggestion": "Implement rate limiting on POST endpoints: (1) POST /api/interpret: limit to 10 interpretations per user per hour; (2) POST /api/readings: limit to 20 readings per user per day; (3) POST /api/readings/share: limit to 5 shares per user per hour; (4) POST /api/journals: limit to 10 journals per user per day. Use the existing checkRateLimit() function pattern. Log rate limit events for monitoring. Consider using x-ratelimit headers in responses to inform clients of limits.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Rate limiting is implemented for REGISTER, LOGIN, and account deletion via checkRateLimit() function, but handleShareReading (line 296), handleSaveReading, and other endpoints lack explicit rate limiting. No rate limiting logic found in index.mjs outside of auth handlers.",
+          "line": 296,
           "impact": "ISO 27001 violation (lack of access control and use limitation). Potential for DDoS or cost-based attacks. Operational risk: service unavailability, unexpected cloud costs, harm to users' service experience.",
           "regulation": "ISO 27001 A.8.32 (Change Management) / A.8.33 (Developer Testing)"
         },
@@ -1431,6 +1579,8 @@
           "fix_suggestion": "Expand audit logging to cover all security-relevant events: (1) Authentication: successful login, failed login, password change, email change, account deletion; (2) Authorization: failed access attempts to protected endpoints, admin actions; (3) Data access: journal reads (consider if necessary), export data requests; (4) Encryption: key generation, key recovery attempts, key rotation; (5) Third-party integrations: AI interpretation requests sent to Anthropic; (6) Sensitive operations: account modifications, reading sharing. Log: event type, user ID, timestamp, IP address, result (success/failure). Do not log passwords, tokens, or sensitive data. Implement log retention policy (e.g., 90 days for operational logs, 1 year for security logs). Consider shipping logs to CloudWatch Logs with long-term S3 archival for immutability.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Code shows console.log for specific events: 'auth_account_delete' (line 299), 'data_export', but missing logs for: successful logins, email changes, password changes (other than deleteAccount), admin actions, reading creation/modification.",
+          "line": 299,
           "impact": "ISO 27001 A.8.15/A.8.16 non-compliance. Inability to detect security incidents or trace unauthorized access. Breach detection and investigation hindered. Regulatory bodies expect comprehensive audit logs for compliance audits.",
           "regulation": "ISO 27001 A.8.15, A.8.16 (Logging and Audit Trails)"
         },
@@ -1447,6 +1597,8 @@
           "fix_suggestion": "Establish and document explicit retention schedules: (1) Operational logs (auth, API errors): 30 days auto-expiry via CloudWatch Logs retention; (2) Security-relevant logs (failures, deletions, exports): 90 days; (3) Billing/audit logs: 7 years (for regulatory/tax purposes); (4) User data (readings, journals): indefinite until user deletion. Implement retention via CloudWatch Logs retention policies, DynamoDB TTL, and S3 lifecycle policies. Document in privacy policy and operational runbooks. Update Terraform to enforce retention.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "README states: 'Operational logs are generally retained for about 30 days unless needed longer for security review.' No explicit retention schedule, TTL configuration, or cleanup job found in code. CloudWatch Logs retention not configured in Terraform.",
+          "line": 89,
           "impact": "GDPR Art. 5(1)(e) violation: storage limitation principle not met. Fines up to 10 million euros or 2% of annual turnover. Data subjects cannot trust retention policies.",
           "regulation": "GDPR Art. 5(1)(e) (Storage Limitation)"
         },
@@ -1463,6 +1615,8 @@
           "fix_suggestion": "Implement comprehensive log handling: (1) Mask or hash sensitive data in logs: user IDs can be hashed, IP addresses can be anonymized (truncate last octet); (2) Use structured logging (JSON) for easier parsing and filtering; (3) Implement log access controls: restrict CloudWatch Logs access to authorized personnel via IAM; (4) Enable CloudWatch Logs encryption at rest (already available in AWS); (5) Set log retention for CloudWatch Logs to 30-90 days; (6) Never log request/response bodies containing sensitive data; (7) Use AWS VPC endpoints to route logs securely; (8) Document log access and audit logs.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Logging statements include userId and IP (line 299: 'userId: user.userId, ip: event.requestContext?.http?.sourceIp'). Error response (line 299) returns generic 'Internal server error' (good), but detailed error logs go to CloudWatch. No mention of log encryption or access controls in Terraform.",
+          "line": 99,
           "impact": "ISO 27001 non-compliance. Potential data breach if logs are exposed. GDPR risk if user IDs and IPs are logged without strong access controls and retention limits. Reputational damage.",
           "regulation": "ISO 27001 A.8.15 (Logging - No Sensitive Data)"
         },
@@ -1479,6 +1633,8 @@
           "fix_suggestion": "If the app is intentionally not targeting minors, consider: (1) Adding prominent age gate and terms confirming 16+ access only; (2) If minor access is anticipated, implement age-appropriate mode: high-privacy defaults, disable data sharing, no behavioral tracking, simplified UI with large text, accessible privacy information; (3) Parental dashboard for minors 13-16 (parental approval required); (4) Restrict features available to minors (e.g., no public sharing, limits on data export); (5) No marketing or promotional content to minors. Document compliance in privacy policy and DPIA.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "No age detection logic in code. Settings page treats all users equally (no 'minor mode'). UI design does not include age-specific protections. No parental controls or guardian approval flows.",
+          "line": null,
           "impact": "GDPR Art. 8 and AADC (AB 2273) non-compliance if minors use the service. Fines up to \u20ac20 million or 4% of turnover (GDPR). FTC enforcement and state AG fines for COPPA/AADC violations ($2,500-$7,500 per violation).",
           "regulation": "GDPR Art. 8, COPPA (Children's Online Privacy Protection Act)"
         },
@@ -1495,6 +1651,8 @@
           "fix_suggestion": "Document and implement: (1) Backup strategy: DynamoDB PITR (current), daily full backups to S3, cross-region replication for failover; (2) Define RTO and RPO: RTO <4 hours, RPO <1 hour; (3) Recovery procedures: documented runbooks for DynamoDB recovery, S3 data recovery, Lambda redeployment; (4) Test recovery quarterly: execute full restore from backup to test environment; (5) Communicate backup and recovery procedures to ops team; (6) Monitor backup success via CloudWatch alarms; (7) Document in runbooks and architecture documentation.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "DynamoDB PITR enabled (line 38-40), but no backup strategy, RTO/RPO, or disaster recovery documentation found in code comments, README, or ops documentation. No backup testing mentioned.",
+          "line": 38,
           "impact": "ISO 27001 non-compliance. Risk of data loss in case of major incident. Service unavailability. Reputational damage.",
           "regulation": "ISO 27001 A.8.13 (Backup and Recovery)"
         },
@@ -1511,6 +1669,8 @@
           "fix_suggestion": "Consider: (1) Moving Plausible initialization to an external script file to remove need for 'unsafe-inline'; (2) Using Content Security Policy nonces for any unavoidable inline scripts; (3) Restricting style-src to 'self' only and using CSS classes instead of inline styles; (4) Adding script-src hash if Plausible init code is fixed. For now, 'unsafe-inline' is acceptable given the trusted nature of Plausible, but evaluate in future security reviews.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "CSP policy includes: \"script-src 'self' 'unsafe-inline' https://plausible.io\" and \"style-src 'self' 'unsafe-inline'\". While inline scripts are minimized in the codebase, this relaxation of CSP weakens XSS protection.",
+          "line": 235,
           "impact": "Minor ISO 27001 non-compliance. Slight increase in XSS risk if inline script injection vulnerabilities are present in dependencies.",
           "regulation": "ISO 27001 A.8.24 (Cryptography - Algorithm Strength)"
         }

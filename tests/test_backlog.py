@@ -194,6 +194,84 @@ class TestNormalizeFinding:
                       "effort", "fix_suggestion", "fixable_by_agent", "status"):
             assert field in result, f"Missing canonical field: {field}"
 
+    def test_impact_passed_through_from_qa_seo_finding(self):
+        """impact field from QA/SEO raw findings should map directly to canonical impact."""
+        raw = {
+            "id": "SEO-1",
+            "severity": "medium",
+            "category": "seo",
+            "title": "Missing meta description",
+            "impact": "Reduced click-through rate from search results",
+        }
+        result = normalize_finding(raw, "seo", "my-site")
+        assert result["impact"] == "Reduced click-through rate from search results"
+
+    def test_impact_falls_back_to_legal_risk_when_no_impact(self):
+        """impact should fall back to legal_risk when raw impact is absent."""
+        raw = {
+            "id": "C-3",
+            "severity": "high",
+            "category": "gdpr",
+            "title": "No data deletion flow",
+            "legal_risk": "GDPR Art. 17 violation",
+        }
+        result = normalize_finding(raw, "compliance", "site")
+        assert result["impact"] == "GDPR Art. 17 violation"
+
+    def test_impact_prefers_impact_over_legal_risk(self):
+        """When both impact and legal_risk exist, impact should win."""
+        raw = {
+            "id": "C-4",
+            "severity": "critical",
+            "category": "gdpr",
+            "title": "Cookie wall without consent",
+            "impact": "Direct impact on user trust",
+            "legal_risk": "GDPR Art. 7 violation",
+        }
+        result = normalize_finding(raw, "compliance", "site")
+        assert result["impact"] == "Direct impact on user trust"
+
+    def test_evidence_and_line_passed_through(self):
+        """evidence and line fields must appear in the normalized output."""
+        raw = {
+            "id": "QA-99",
+            "severity": "high",
+            "category": "security",
+            "title": "SQL injection",
+            "file": "src/db.py",
+            "evidence": "cursor.execute(f'SELECT * FROM users WHERE id={user_id}')",
+            "line": 42,
+        }
+        result = normalize_finding(raw, "qa", "my-repo")
+        assert result["evidence"] == "cursor.execute(f'SELECT * FROM users WHERE id={user_id}')"
+        assert result["line"] == 42
+
+    def test_evidence_defaults_to_empty_string(self):
+        """evidence should default to empty string when absent."""
+        raw = {"id": "X-1", "severity": "low", "category": "test", "title": "T"}
+        result = normalize_finding(raw, "qa", "repo")
+        assert result["evidence"] == ""
+
+    def test_line_defaults_to_none(self):
+        """line should default to None when absent."""
+        raw = {"id": "X-1", "severity": "low", "category": "test", "title": "T"}
+        result = normalize_finding(raw, "qa", "repo")
+        assert result["line"] is None
+
+    def test_monetization_impact_falls_back_to_description(self):
+        """For monetization findings without impact/legal_risk, impact should use description."""
+        raw = {
+            "id": "MON-5",
+            "value": "high",
+            "category": "ads",
+            "title": "Add display ads",
+            "description": "Display ads could generate significant passive revenue",
+            "revenue_estimate": "$300/mo",
+            "phase": 1,
+        }
+        result = normalize_finding(raw, "monetization", "shop")
+        assert result["impact"] == "Display ads could generate significant passive revenue"
+
 
 # ---------------------------------------------------------------------------
 # TestMergeBacklog
@@ -296,6 +374,38 @@ class TestMergeBacklog:
         result = merge_backlog([finding], backlog_path)
         expected_hash = finding_hash("qa", "my-repo", "Test Bug", "src/main.py")
         assert expected_hash in result["findings"]
+
+    def test_new_entry_has_top_level_fields(self, tmp_path):
+        """New backlog entries must include hash, department, repo, title, file at top level."""
+        backlog_path = str(tmp_path / "backlog.json")
+        finding = self._make_finding(title="Top Level Bug", file_path="src/main.py")
+        result = merge_backlog([finding], backlog_path)
+        entry = next(iter(result["findings"].values()))
+        assert "hash" in entry
+        assert "department" in entry
+        assert "repo" in entry
+        assert "title" in entry
+        assert "file" in entry
+        assert entry["department"] == "qa"
+        assert entry["repo"] == "my-repo"
+        assert entry["title"] == "Top Level Bug"
+        assert entry["file"] == "src/main.py"
+        expected_hash = finding_hash("qa", "my-repo", "Top Level Bug", "src/main.py")
+        assert entry["hash"] == expected_hash
+
+    def test_existing_entry_updates_top_level_fields(self, tmp_path):
+        """Updated backlog entries must refresh hash, department, repo, title, file."""
+        backlog_path = str(tmp_path / "backlog.json")
+        finding = self._make_finding(title="Persistent Bug", file_path="src/core.py")
+        merge_backlog([finding], backlog_path)
+        result = merge_backlog([finding], backlog_path)
+        entry = next(iter(result["findings"].values()))
+        assert entry["audit_count"] == 2
+        assert entry["hash"] == finding_hash("qa", "my-repo", "Persistent Bug", "src/core.py")
+        assert entry["department"] == "qa"
+        assert entry["repo"] == "my-repo"
+        assert entry["title"] == "Persistent Bug"
+        assert entry["file"] == "src/core.py"
 
 
 # ---------------------------------------------------------------------------

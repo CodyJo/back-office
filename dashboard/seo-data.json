@@ -1,6 +1,6 @@
 {
   "department": "seo",
-  "generated_at": "2026-03-23T00:18:03.937986+00:00",
+  "generated_at": "2026-03-23T01:15:00.847129+00:00",
   "totals": {
     "critical": 5,
     "high": 22,
@@ -36,7 +36,10 @@
           "effort": "easy",
           "fix_suggestion": "Make og:image:alt dynamic and page-specific. Update Base.astro to accept an optional ogImageAlt prop:\n\ninterface Props {\n  title: string;\n  description: string;\n  path?: string;\n  ogImage?: string;\n  ogImageAlt?: string;  // Add this\n  // ... rest of props\n}\n\nconst {\n  ogImageAlt = `${site.productName} \u2014 ${title.split(' \u2014 ')[0]}`  // Derive from page title\n  // ... rest of destructuring\n} = Astro.props;\n\nThen update the meta tag:\n<meta property=\"og:image:alt\" content={ogImageAlt} />\n\nExample usage in index.astro:\n<Base\n  title=\"...\"\n  description=\"...\"\n  ogImageAlt=\"Private gallery delivery platform with ChromaHaus processing and photographer approval\"\n>",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<meta property=\"og:image:alt\" content={`${site.productName} social preview`} />",
+          "line": 81,
+          "impact": "Social media sharing lacks descriptive context about page content. When shared on platforms like LinkedIn, Twitter, or Facebook, the image lacks semantic meaning. This affects click-through rates on social shares and reduces the contextual value of the shared link. It's a missed opportunity for brand messaging and user engagement signals."
         },
         {
           "id": "SEO-002",
@@ -50,7 +53,10 @@
           "effort": "easy",
           "fix_suggestion": "Add JSON-LD WebPage schema to frontend/gallery.html after the Twitter Card meta tags:\n\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"WebPage\",\n  \"name\": \"Client Photo Gallery\",\n  \"description\": \"View and download your photo gallery. Powered by Analogify Studio and ChromaHaus automated image processing.\",\n  \"url\": \"https://galleries.analogifystudio.com/gallery.html\",\n  \"publisher\": {\n    \"@type\": \"Organization\",\n    \"name\": \"Analogify Studio\",\n    \"logo\": \"https://analogifystudio.com/og-default.svg\"\n  },\n  \"about\": {\n    \"@type\": \"Thing\",\n    \"name\": \"Photo Gallery\",\n    \"description\": \"Secure, branded photo gallery with selective downloads and moderated comments\"\n  },\n  \"isAccessibleForFree\": false\n}\n</script>",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "File contains Open Graph and Twitter Card meta tags but no <script type=\"application/ld+json\"> block with WebPage or CollectionPage schema",
+          "line": 1,
+          "impact": "Without structured data, gallery pages won't generate rich snippets in search results, reducing CTR. AI search engines (Bing Chat, Google SGE) have limited semantic understanding of page content. Missing opportunity for knowledge panel eligibility on branded gallery pages."
         },
         {
           "id": "SEO-003",
@@ -64,7 +70,10 @@
           "effort": "easy",
           "fix_suggestion": "Add FAQPage schema to zen.astro. Add this in the frontmatter before the template:\n\nconst faqSchema = {\n  '@context': 'https://schema.org',\n  '@type': 'FAQPage',\n  'mainEntity': [\n    {\n      '@type': 'Question',\n      'name': 'Do I need an account?',\n      'acceptedAnswer': {\n        '@type': 'Answer',\n        'text': 'No. Analogify Zen does not require an account.'\n      }\n    },\n    {\n      '@type': 'Question',\n      'name': 'Do my photos get uploaded?',\n      'acceptedAnswer': {\n        '@type': 'Answer',\n        'text': 'No. Zen runs locally on your device, so Analogify does not upload or store your photos.'\n      }\n    },\n    {\n      '@type': 'Question',\n      'name': 'Can Analogify see my pictures?',\n      'acceptedAnswer': {\n        '@type': 'Answer',\n        'text': 'No. Your photo processing happens locally, and we do not have access to your images.'\n      }\n    },\n    {\n      '@type': 'Question',\n      'name': 'What if I delete something by mistake?',\n      'acceptedAnswer': {\n        '@type': 'Answer',\n        'text': 'Zen uses a safe delete flow with quarantine or trash, plus an undo window before permanent deletion.'\n      }\n    },\n    {\n      '@type': 'Question',\n      'name': 'Does it only find exact duplicates?',\n      'acceptedAnswer': {\n        '@type': 'Answer',\n        'text': 'No. Zen can also group similar shots so you can keep the best one and remove the rest.'\n      }\n    }\n  ]\n};\n\nThen add to the Base component:\n<Base ... schemaOverride={faqSchema}>\n\nOr add inline: <script type=\"application/ld+json\" set:html={JSON.stringify(faqSchema)} />",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<div class=\"zen-faq\">\n  <article class=\"summary-card fade-in\">\n    <h3>Do I need an account?</h3>\n    <p>No. Analogify Zen does not require an account.</p>\n  </article>\n  <!-- 5 more FAQ items -->\n</div>",
+          "line": 218,
+          "impact": "Missed featured snippet opportunity. FAQ schema typically gets featured in search results for 'Do I...' queries. Voice assistants (Alexa, Google Assistant) use FAQPage schema to provide conversational answers. Without it, organic CTR is lower and AI discoverability suffers."
         },
         {
           "id": "SEO-004",
@@ -78,7 +87,10 @@
           "effort": "easy",
           "fix_suggestion": "Expand meta description to 120-160 characters:\n\nChange from:\ndescription=\"Accessibility is ongoing engineering work.\"\n\nTo:\ndescription=\"Learn about Analogify's ongoing commitment to accessibility, WCAG 2.1 AA compliance, and how we build inclusive photo gallery experiences for all photographers.\"",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "<Base title=\"Accessibility\" description=\"Accessibility is ongoing engineering work.\">",
+          "line": 1,
+          "impact": "Suboptimal SERP display for accessibility page. Google typically shows 120-160 character descriptions; shorter ones appear incomplete and have lower CTR. Inconsistent brand voice across search results."
         },
         {
           "id": "SEO-005",
@@ -92,7 +104,10 @@
           "effort": "easy",
           "fix_suggestion": "Expand descriptions to 120-160 characters:\n\nSupport page:\nCurrent: \"Support for workflow questions, access issues, and delivery problems.\"\nSuggested: \"Get help with Analogify Studio workflows, access issues, gallery management, and delivery questions. Response time: 2 business days. Privacy-first support process.\"\n\nSecurity page:\nCurrent: \"Built around controlled delivery, not public-by-default media sharing.\"\nSuggested: \"Analogify Studio prioritizes photographer privacy and client security. Learn about our controlled-delivery architecture, encrypted downloads, moderated comments, and privacy-first approach to gallery platforms.\"",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "support.astro: ~63 chars; security.astro: ~93 chars",
+          "line": 1,
+          "impact": "Truncated SERP display. Security and support are high-intent search pages; photographers searching 'analogify security' or 'analogify support' will see incomplete descriptions."
         },
         {
           "id": "SEO-006",
@@ -106,7 +121,10 @@
           "effort": "easy",
           "fix_suggestion": "Optional enhancement for future growth. If you add nested content (e.g., /docs/setup, /docs/features), add BreadcrumbList schema:\n\nconst breadcrumbSchema = path !== '/' ? {\n  '@context': 'https://schema.org',\n  '@type': 'BreadcrumbList',\n  'itemListElement': [\n    { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': marketingUrl },\n    { '@type': 'ListItem', 'position': 2, 'name': title, 'item': canonicalURL }\n  ]\n} : null;",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Schema object only includes SoftwareApplication type; no BreadcrumbList schema even for nested conceptual hierarchy",
+          "line": 32,
+          "impact": "Low - current flat URL structure doesn't require breadcrumbs. But if site grows with nested sections, missing breadcrumbs. Current impact: minimal SEO value loss."
         },
         {
           "id": "SEO-007",
@@ -120,7 +138,10 @@
           "effort": "moderate",
           "fix_suggestion": "If frontend gallery serves images dynamically via JavaScript, document the optimization in comments or verify the JS framework is:\n1. Using lazy loading (loading=\"lazy\" attribute or equivalent)\n2. Serving responsive srcset (multiple resolutions)\n3. Using modern formats with fallbacks (WebP/AVIF with JPEG fallback)\n4. Setting explicit width/height to prevent layout shift\n\nExample pattern for image rendering in generated HTML:\n<img \n  src=\"https://galleries.analogifystudio.com/image-web.jpg\"\n  alt=\"[Photo description from metadata]\"\n  loading=\"lazy\"\n  decoding=\"async\"\n  width=\"2000\"\n  height=\"1500\"\n/>",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "HTML file shows no <img> tags with loading=\"lazy\" or srcset attributes. Image optimization is likely handled by JavaScript runtime.",
+          "line": 1,
+          "impact": "Low - modern frameworks typically handle image optimization. But static HTML should still show best practices. May impact perceived page speed (though actual speed likely fine)."
         },
         {
           "id": "SEO-008",
@@ -134,7 +155,10 @@
           "effort": "moderate",
           "fix_suggestion": "Optional future enhancement:\n1. Generate IndexNow key from Bing Webmaster Tools\n2. Add to public/index-now-key.txt\n3. Call IndexNow API on build:\n   POST https://api.indexnow.org/indexnow\n   Body: { \"host\": \"analogifystudio.com\", \"key\": \"...\", \"urlList\": [...] }\n4. Or add to sitemap header in robots.txt for automatic pickup",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No reference to IndexNow API endpoint or integration in any configuration files",
+          "line": 1,
+          "impact": "Info-level. Current setup is compliant and good. IndexNow would accelerate indexing speed for new pages/updates but isn't required. Photographers wouldn't see immediate SEO benefit since site doesn't publish high-velocity content."
         }
       ],
       "categories": {
@@ -192,7 +216,10 @@
           "effort": "easy",
           "fix_suggestion": "Create /robots.txt at web root with standard rules for crawlers and sitemap reference.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "File not found in project root. Critical infrastructure file missing.",
+          "line": null,
+          "impact": "Search engines cannot follow explicit crawling rules. May fail to index important pages efficiently."
         },
         {
           "id": "SEO-002",
@@ -206,7 +233,10 @@
           "effort": "easy",
           "fix_suggestion": "Generate sitemap.xml listing all 24 public dashboard pages with lastmod dates and priorities.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "File not found in project root or dashboard directory.",
+          "line": null,
+          "impact": "Search engines may miss important dashboard pages. Reduces crawl efficiency and delays indexing."
         },
         {
           "id": "SEO-003",
@@ -220,7 +250,10 @@
           "effort": "easy",
           "fix_suggestion": "Add unique 120-160 character meta descriptions to each dashboard HTML file explaining page purpose and content.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Grep of dashboard files shows: 2 files with meta descriptions, 22 without. Only admin.html and self-audit.html contain desc tags.",
+          "line": 5,
+          "impact": "High. Reduces click-through rates from search results. Google auto-generates snippets which are often poor quality."
         },
         {
           "id": "SEO-004",
@@ -234,7 +267,10 @@
           "effort": "easy",
           "fix_suggestion": "Add self-referencing canonical links to each dashboard page pointing to correct absolute URLs.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All 24 HTML files checked. Zero canonical tags found in head sections.",
+          "line": 5,
+          "impact": "High. Duplicate content can split ranking power. Search engines may index wrong versions."
         },
         {
           "id": "SEO-005",
@@ -248,7 +284,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add og:title, og:description, og:image, og:url, og:type to each page. Create 1200x630px OG images.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Grep for og: pattern found zero matches in dashboard HTML heads. Only found in demo data within seo.html.",
+          "line": 5,
+          "impact": "High for social discovery. Social shares show generic text without images or context. Reduces engagement."
         },
         {
           "id": "SEO-006",
@@ -262,7 +301,10 @@
           "effort": "easy",
           "fix_suggestion": "Add twitter:card, twitter:title, twitter:description, twitter:image meta tags. Use 1200x675px images.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Grep for twitter: pattern found zero matches in any dashboard file.",
+          "line": 5,
+          "impact": "Medium. X shares show plain text instead of rich cards with images. Reduces engagement."
         },
         {
           "id": "SEO-007",
@@ -276,7 +318,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add Organization and WebSite schema to base template. Add department-specific schema to relevant pages.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Grep for @context pattern found matches only in demo data in faq.html and product.html, not in actual implementations.",
+          "line": 5,
+          "impact": "Medium-High. Reduces discoverability by AI search engines and voice assistants."
         },
         {
           "id": "SEO-008",
@@ -290,7 +335,10 @@
           "effort": "easy",
           "fix_suggestion": "Standardize all titles to consistent format: [Page Name] \u2014 Cody Jo Method (50-60 characters).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Pattern A: 'Cody Jo Method \u2014 [Page]' (9 pages). Pattern B: '[Page] \u2014 Back Office' (15 pages). Pattern C: '[Product] \u2014 Back Office' (4 pages).",
+          "line": 6,
+          "impact": "Medium. Confuses SEO algorithms. Reduces brand recognition in search results."
         },
         {
           "id": "SEO-009",
@@ -304,7 +352,10 @@
           "effort": "easy",
           "fix_suggestion": "Ensure every page has exactly one H1 as main heading. Keep semantic structure clean.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "index.html uses h1.page-title. qa.html uses h1.logo with spans. Structure differs by page.",
+          "line": 75,
+          "impact": "Low-Medium. Can confuse screen readers and AI models about page topic."
         },
         {
           "id": "SEO-010",
@@ -318,7 +369,10 @@
           "effort": "moderate",
           "fix_suggestion": "Consider server-side rendering for key sections or ensure JavaScript content is crawlable.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Content containers like div#findingList, div#departmentGrid populated by JavaScript. No static HTML content.",
+          "line": 160,
+          "impact": "Medium. AI search engines may not see findings and department data. Reduces discoverability."
         },
         {
           "id": "SEO-011",
@@ -332,7 +386,10 @@
           "effort": "hard",
           "fix_suggestion": "Add landing page with static content explaining Back Office purpose. Ensure documentation pages have crawlable content.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "index.html has only page-copy paragraph before empty JS containers. Rest is CSS and JavaScript.",
+          "line": 49,
+          "impact": "Medium. Reduces organic search visibility. Not critical since dashboards are internal tools."
         },
         {
           "id": "SEO-012",
@@ -346,7 +403,10 @@
           "effort": "easy",
           "fix_suggestion": "Add descriptive alt text to all img tags. Use alt='' for decorative images.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Image rendering without alt: img src=... style=... loading=lazy (no alt attribute).",
+          "line": 1,
+          "impact": "Low-Medium. Affects accessibility and image search SEO. Minimal since dashboards have few images."
         },
         {
           "id": "SEO-013",
@@ -360,7 +420,10 @@
           "effort": "easy",
           "fix_suggestion": "For future external links, use rel='noopener noreferrer' for security.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No external links found in dashboards. Internal links properly don't force new tabs.",
+          "line": null,
+          "impact": "Low. No immediate issues. Guidance for future external link additions."
         },
         {
           "id": "SEO-014",
@@ -374,7 +437,10 @@
           "effort": "easy",
           "fix_suggestion": "Add defer attribute to non-critical scripts or move to end of body.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Scripts loaded in head: script src=site-branding.js, script src=department-context.js (synchronous).",
+          "line": 10,
+          "impact": "Low-Medium. Synchronous loading blocks rendering. Dashboards are internal so impact acceptable."
         },
         {
           "id": "SEO-015",
@@ -388,7 +454,10 @@
           "effort": "easy",
           "fix_suggestion": "No action needed. Font loading is properly optimized.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "CSS query includes display=swap parameter: fonts.googleapis.com/css2?...&display=swap",
+          "line": 9,
+          "impact": "None. Already optimized correctly."
         },
         {
           "id": "SEO-016",
@@ -402,7 +471,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add FAQPage schema with Question/Answer pairs extracted from faq.html content.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "faq.html has Q&A content structure but no JSON-LD FAQPage schema block found.",
+          "line": 1,
+          "impact": "Medium. Improves visibility in FAQ featured snippets and voice assistant results."
         },
         {
           "id": "SEO-017",
@@ -416,7 +488,10 @@
           "effort": "easy",
           "fix_suggestion": "Add BreadcrumbList schema to main dashboard pages (optional).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Nav elements present but no JSON-LD BreadcrumbList schema found.",
+          "line": 1,
+          "impact": "Low. Optional enhancement. Improves AI understanding of page relationships."
         },
         {
           "id": "SEO-018",
@@ -430,7 +505,10 @@
           "effort": "easy",
           "fix_suggestion": "Add unique descriptions and brief product overviews to each dashboard.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All product pages follow same structure with only title change. No unique content explaining product purpose.",
+          "line": 1,
+          "impact": "Low-Medium. Internal dashboards so not critical. But if discoverable, duplicates confuse crawlers."
         }
       ],
       "categories": {
@@ -483,7 +561,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add route-level `metadata` or `generateMetadata()` exports for every public page so each route emits a unique title, description, canonical URL, and OG/Twitter URL. Example: `export const metadata = { title: \"Reading Plans\", description: \"Browse guided Bible reading plans...\", alternates: { canonical: \"https://selah.codyjo.com/plans/\" }, openGraph: { url: \"https://selah.codyjo.com/plans/\" } }`.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "title: { default: 'Selah \u2014 AI Bible Study & Reading Plans', template: '%s | Selah' }, description: 'Deepen your faith with personalized Bible study...', openGraph: { title: 'Selah \u2014 AI Bible Study & Reading Plans', url: 'https://selah.codyjo.com' }",
+          "line": 11,
+          "impact": "Search engines receive duplicate relevance signals for books, study, updates, journal, and other pages, which weakens indexing precision and can cause the homepage to outrank deeper pages for page-specific queries."
         },
         {
           "id": "SEO-002",
@@ -497,7 +578,10 @@
           "effort": "hard",
           "fix_suggestion": "Move the route shell and default content into server-rendered App Router components, and avoid forcing `useSearchParams()` bailouts for the primary page body. Pre-render a static browse experience with headings and internal links, then hydrate interactive chapter loading on top.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "<template data-dgst=\"BAILOUT_TO_CLIENT_SIDE_RENDERING\"></template><div class=\"mx-auto max-w-3xl px-4 py-8 text-sm text-muted\">Loading books...</div>",
+          "line": 1,
+          "impact": "Core scripture-discovery and study pages are not reliably indexable, which can block rankings for book and study-related queries and reduce AI systems ability to extract useful content from the route HTML."
         },
         {
           "id": "SEO-003",
@@ -511,7 +595,10 @@
           "effort": "easy",
           "fix_suggestion": "Generate the sitemap from the route manifest or maintain it from a single source of truth so every public route is emitted automatically. If auth pages should not be indexed, change their robots directives to `noindex` instead of leaving them public but absent from the sitemap.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<urlset ...> ... <loc>https://selah.codyjo.com/privacy/</loc> ... </urlset> with no entries for /updates/, /login/, /register/, /forgot-password/, or /reset-password/.",
+          "line": 2,
+          "impact": "Search engines lose a primary discovery signal for public URLs, which slows crawling and can leave utility or content pages under-discovered relative to the actual route surface."
         },
         {
           "id": "SEO-004",
@@ -525,7 +612,10 @@
           "effort": "easy",
           "fix_suggestion": "Add `<lastmod>` for every URL, preferably from build metadata or content timestamps. Example: `<lastmod>2026-03-11</lastmod>`.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<url><loc>https://selah.codyjo.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>",
+          "line": 3,
+          "impact": "Crawlers get less guidance about when content actually changed, which can delay recrawls and weaken freshness signals in search and AI answer systems."
         },
         {
           "id": "SEO-005",
@@ -539,7 +629,10 @@
           "effort": "easy",
           "fix_suggestion": "Override metadata for the not-found route so it emits only `noindex, follow` and no homepage canonical. In Next App Router, set a dedicated `metadata` object for the not-found boundary rather than inheriting the root canonical.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<meta name=\"robots\" content=\"noindex\"/><meta name=\"robots\" content=\"index, follow\"/><link rel=\"canonical\" href=\"https://selah.codyjo.com/\"/>",
+          "line": 1,
+          "impact": "Conflicting directives waste crawl budget, make 404 handling ambiguous, and can dilute canonical trust if bots see error pages repeatedly pointing at the homepage."
         },
         {
           "id": "SEO-006",
@@ -553,7 +646,10 @@
           "effort": "easy",
           "fix_suggestion": "Add a normal static link to `/updates` in always-rendered navigation, the footer, or the homepage, and include the route in the sitemap.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "{menuOpen && (... <Link href=\"/updates\">What's New</Link> ...)}",
+          "line": 148,
+          "impact": "An orphan-like content page receives weaker crawl and ranking signals because no persistent internal link points to it in the crawlable page HTML."
         },
         {
           "id": "SEO-007",
@@ -567,7 +663,10 @@
           "effort": "easy",
           "fix_suggestion": "Render each entry as an `<article>` with a `<time dateTime={update.date}>` element, and add `BlogPosting` JSON-LD containing `headline`, `datePublished`, `dateModified`, and `description`.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "{APP_UPDATES.map((update, i) => (<motion.div ...><div ...><TagBadge ... /><span className=\"text-xs text-muted\">{formatDate(update.date)}</span></div><h2>...</h2><p>...</p></motion.div>))}",
+          "line": 75,
+          "impact": "AI search engines and assistants have less structured context for release-note extraction, freshness detection, and attribution when summarizing product changes."
         },
         {
           "id": "SEO-008",
@@ -581,7 +680,10 @@
           "effort": "moderate",
           "fix_suggestion": "Set route-specific `openGraph` and `twitter` metadata per page, including page-specific `title`, `description`, and `url`. For example, `/updates/` should emit `og:url=https://selah.codyjo.com/updates/` and its own release-note title/description.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "openGraph: { type: 'website', siteName: 'Selah', title: 'Selah \u2014 AI Bible Study & Reading Plans', description: 'Deepen your faith...', url: 'https://selah.codyjo.com' }, twitter: { title: 'Selah \u2014 AI Bible Study & Reading Plans', description: 'Personalized Bible study in your preferred translation.' }",
+          "line": 18,
+          "impact": "Social shares and chat-based previews lose page specificity, which reduces click-through rate and reinforces the duplicate-signal problem for secondary pages."
         },
         {
           "id": "SEO-009",
@@ -595,7 +697,10 @@
           "effort": "easy",
           "fix_suggestion": "Verify the metadata build emits image tags for exported routes, preferably using an absolute PNG or JPG URL such as `https://selah.codyjo.com/og.png`, then confirm `og:image` and `twitter:image` are present in the built HTML.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<meta property=\"og:title\" ... /><meta property=\"og:description\" ... /><meta property=\"og:url\" ... /><meta property=\"og:site_name\" ... /><meta property=\"og:type\" ... /><meta name=\"twitter:card\" content=\"summary_large_image\"/>",
+          "line": 1,
+          "impact": "Social cards can fall back to weak or missing images, reducing click-through and making links less attractive in chat apps, social feeds, and AI preview surfaces."
         },
         {
           "id": "SEO-010",
@@ -609,7 +714,10 @@
           "effort": "hard",
           "fix_suggestion": "Server-render the initial headings, descriptive copy, and navigation for critical routes, then hydrate only the interactive controls. That reduces main-thread work and gives crawlers and users useful HTML immediately.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "<template data-dgst=\"BAILOUT_TO_CLIENT_SIDE_RENDERING\"></template><div class=\"mx-auto max-w-3xl px-4 py-8 text-sm text-muted\">Loading study tools...</div>",
+          "line": 1,
+          "impact": "Hydration-dependent route shells hurt LCP and perceived responsiveness, especially on mobile connections, and they reduce the amount of useful content available at first paint."
         }
       ],
       "categories": {
@@ -662,7 +770,10 @@
           "effort": "easy",
           "fix_suggestion": "Exclude all `noindex` routes from sitemap generation. In Astro, either move those routes out of the public sitemap path, or filter them out when generating the sitemap so only canonical indexable URLs are emitted.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<loc>https://codyjo.com/back-office/admin/</loc> ... <loc>https://codyjo.com/back-office/demo/</loc> ... <loc>https://codyjo.com/back-office/selah/</loc>\n\n<Base ... noindex={true}> in src/pages/back-office/admin.astro:5-9, src/pages/back-office/demo.astro:172, and src/pages/back-office/[product].astro:30-34",
+          "line": 1,
+          "impact": "Conflicting sitemap and robots signals waste crawl budget and increase the chance that utility pages, protected launch pages, or demo surfaces are crawled more aggressively than intended."
         },
         {
           "id": "SEO-002",
@@ -676,7 +787,10 @@
           "effort": "easy",
           "fix_suggestion": "Add `<link rel=\"canonical\" href=\"https://codyjo.com/back-office/documentation.html\">` to the head, or migrate the page into an Astro page that reuses `Base.astro` so canonical generation stays consistent site-wide.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Back Office CI/CD Reference Architecture</title>\n  <meta name=\"description\" content=\"Published Back Office documentation ...\">\n  <style>...",
+          "line": 6,
+          "impact": "Without a self-referencing canonical, crawlers get no canonical hint for this public documentation page, which weakens normalization if the page is linked with variants or mirrored under another host."
         },
         {
           "id": "SEO-003",
@@ -690,7 +804,10 @@
           "effort": "easy",
           "fix_suggestion": "Add JSON-LD for `TechArticle` or `Article` plus publisher/organization metadata, or move the page onto the shared layout and pass a page-specific schema object.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Back Office CI/CD Reference Architecture</title>\n  <meta name=\"description\" content=\"Published Back Office documentation ...\">\n  <style>...",
+          "line": 6,
+          "impact": "AI retrieval and search features lose explicit context about what this page is, who published it, and how it relates to Back Office, which reduces discoverability for documentation-style queries."
         },
         {
           "id": "SEO-004",
@@ -704,7 +821,10 @@
           "effort": "easy",
           "fix_suggestion": "Add `og:title`, `og:description`, `og:url`, `og:image`, `twitter:card`, `twitter:title`, `twitter:description`, and `twitter:image`, or migrate the page to the shared layout.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Back Office CI/CD Reference Architecture</title>\n  <meta name=\"description\" content=\"Published Back Office documentation ...\">\n  <style>...",
+          "line": 6,
+          "impact": "Shares of the documentation page will render with weak or inconsistent link previews, which reduces click-through rate and makes the page less reusable in social and chat surfaces."
         },
         {
           "id": "SEO-005",
@@ -718,7 +838,10 @@
           "effort": "easy",
           "fix_suggestion": "Remove the global build-time `lastmod`, or compute per-page dates from content frontmatter or git timestamps so blog posts and static pages emit meaningful freshness data.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "integrations: [sitemap({\n  lastmod: new Date(),\n})]",
+          "line": 7,
+          "impact": "Search engines receive inaccurate freshness signals. That can cause needless recrawls of unchanged pages and makes real content updates harder to distinguish from routine deploys."
         },
         {
           "id": "SEO-006",
@@ -732,7 +855,10 @@
           "effort": "moderate",
           "fix_suggestion": "Pass page-level JSON-LD to each product page using `SoftwareApplication` or `Product` with name, description, URL, applicationCategory, audience, and publisher fields.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "const defaultSchema = {\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"WebSite\",\n  \"name\": \"Cody Jo Method\",\n  ...\n};\n\n<Base title={pageTitle} description={pageDescription}> in src/pages/analogify.astro:9 and src/pages/selah.astro:9",
+          "line": 27,
+          "impact": "AI systems and search engines get weaker entity signals for the site's primary products, reducing the odds of strong product understanding, richer knowledge extraction, and software-specific search features."
         },
         {
           "id": "SEO-007",
@@ -746,7 +872,10 @@
           "effort": "easy",
           "fix_suggestion": "Shorten the template, for example by dropping the blog suffix for posts or using a shorter brand suffix such as `| Cody Jo Method` only when needed.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "title={`${post.data.title} \u2014 ${product?.blogName ?? 'Cody Jo Method Blog'}`}\nGenerated examples: `Back Office CLI Guide: The Fastest Way to Run Product Audits Across Multiple Repos \u2014 Back Office Blog` (101 chars) and `CI/CD Reference for a Multi-Product Studio: How I Ship Sites, Apps, and Internal Tools Without Chaos \u2014 Back Office Blog` (119 chars).",
+          "line": 87,
+          "impact": "Overlong titles are more likely to be rewritten or truncated in SERPs, weakening keyword focus and reducing click-through clarity on article pages."
         },
         {
           "id": "SEO-008",
@@ -760,7 +889,10 @@
           "effort": "easy",
           "fix_suggestion": "Rewrite the template to produce focused 50-60 character titles and 120-160 character descriptions per product hub, keeping the core keyword and audience but removing the extra explanatory sentence fragments.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "title={`${product.blogName} | ${product.name} Articles`}\ndescription={`${product.blogName} covering ${product.description.toLowerCase()} Built for ${product.audience}, with a privacy-first product posture.`}\nGenerated examples: `Selah Blog | Selah Articles` (27 chars) with a 238-char description, and `SEO Privacy Tracker Blog | SEO Privacy Tracker Articles` with a 279-char description.",
+          "line": 22,
+          "impact": "SERP snippets for these hub pages are likely to truncate, and the short or generic titles under-describe high-value category pages that should rank for product-blog and topical queries."
         }
       ],
       "categories": {
@@ -813,7 +945,10 @@
           "effort": "easy",
           "fix_suggestion": "Add: <meta name=\"description\" content=\"Configure and deploy Puppet Enterprise demo environments on GCP. Single-page application for infrastructure provisioning.\">",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>PE Demo Bootstrap</title>",
+          "line": 3,
+          "impact": "Internal tools should still have meta descriptions for clarity in bookmarks and API documentation."
         },
         {
           "id": "SEO-101",
@@ -827,7 +962,10 @@
           "effort": "easy",
           "fix_suggestion": "Add: <meta name=\"robots\" content=\"noindex, nofollow, noarchive\">",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+          "line": 3,
+          "impact": "Prevents accidental indexing of internal tools and protects infrastructure details."
         },
         {
           "id": "SEO-102",
@@ -841,7 +979,10 @@
           "effort": "easy",
           "fix_suggestion": "Add OG tags:\n<meta property=\"og:title\" content=\"PE Demo Bootstrap\">\n<meta property=\"og:description\" content=\"Configure and deploy Puppet Enterprise demo environments on GCP.\">\n<meta property=\"og:type\" content=\"website\">",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+          "line": 4,
+          "impact": "Improves link sharing in Slack/Teams/email and provides context in documentation tools."
         },
         {
           "id": "SEO-103",
@@ -855,7 +996,10 @@
           "effort": "easy",
           "fix_suggestion": "Add H1 at top of main: <h1>PE Demo Bootstrap</h1>\nChange first <h2> to follow proper hierarchy.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<h2>New PE Deployment</h2>\n      <form id=\"deploy-form\"",
+          "line": 39,
+          "impact": "H1 tags help screen readers and AI models understand page structure and primary topic."
         },
         {
           "id": "SEO-104",
@@ -869,7 +1013,10 @@
           "effort": "easy",
           "fix_suggestion": "Add <footer> at end. Consider using <article> for form sections. Current structure is acceptable for a form-heavy app.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "<main class=\"container\">\n    <!-- Deploy Form -->\n    <section",
+          "line": 36,
+          "impact": "Semantic HTML helps AI models parse content hierarchy and understand page structure without JavaScript."
         },
         {
           "id": "SEO-105",
@@ -883,7 +1030,10 @@
           "effort": "easy",
           "fix_suggestion": "Not applicable.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No <img> tags found in HTML",
+          "line": 1,
+          "impact": "No impact - this is a form interface."
         },
         {
           "id": "SEO-106",
@@ -897,7 +1047,10 @@
           "effort": "easy",
           "fix_suggestion": "Add SoftwareApplication schema:\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"SoftwareApplication\",\n  \"name\": \"PE Demo Bootstrap\",\n  \"description\": \"Infrastructure provisioning tool for Puppet Enterprise on GCP\"\n}\n</script>",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No <script type=\"application/ld+json\"> found",
+          "line": 1,
+          "impact": "Structured data helps APIs, ChatGPT, and internal automation understand application purpose."
         },
         {
           "id": "SEO-107",
@@ -911,7 +1064,10 @@
           "effort": "hard",
           "fix_suggestion": "Consider: 1) Move CSS to end of body, 2) Use async CSS loading, or 3) Inline critical CSS in head.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "<link rel=\"stylesheet\" href=\"styles.css\">",
+          "line": 7,
+          "impact": "Render-blocking CSS delays Largest Contentful Paint metric."
         },
         {
           "id": "SEO-108",
@@ -925,7 +1081,10 @@
           "effort": "easy",
           "fix_suggestion": "Add: <meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline';\">",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No CSP meta tag found",
+          "line": 4,
+          "impact": "CSP prevents XSS attacks and protects form submission. Not indexing-related but improves app security."
         },
         {
           "id": "SEO-109",
@@ -939,7 +1098,10 @@
           "effort": "easy",
           "fix_suggestion": "Consider adding: <script src=\"...\" async defer fetchpriority=\"high\"></script> if this is critical path.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<script src=\"https://accounts.google.com/gsi/client\" async defer></script>",
+          "line": 8,
+          "impact": "Auth scripts can delay page interactivity if not prioritized correctly."
         },
         {
           "id": "SEO-110",
@@ -953,7 +1115,10 @@
           "effort": "easy",
           "fix_suggestion": "Use <button type=\"button\"> for JS actions, or proper href for navigation:\n<a href=\"/deploy\">New Deployment</a>",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<a href=\"#\" onclick=\"showView('deploy')\" class=\"nav-link active\"",
+          "line": 31,
+          "impact": "JavaScript-dependent links fail in no-JS scenarios and confuse assistive technology."
         },
         {
           "id": "SEO-111",
@@ -967,7 +1132,10 @@
           "effort": "moderate",
           "fix_suggestion": "Use <button type=\"button\" onclick=\"...\"> instead of <div onclick=\"...\">. Current buttons are correct; ensure all clickable elements are <button> or <a>.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "<button type=\"button\" class=\"btn btn-secondary btn-sm\" onclick=\"exportConfig()\"",
+          "line": 271,
+          "impact": "Semantic buttons (not divs with onclick) are better understood by assistants and screen readers."
         },
         {
           "id": "SEO-112",
@@ -981,7 +1149,10 @@
           "effort": "easy",
           "fix_suggestion": "Change to: <title>PE Demo Bootstrap - Configure Puppet Enterprise on GCP</title>",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<title>PE Demo Bootstrap</title>",
+          "line": 6,
+          "impact": "Longer, descriptive titles help with accessibility and provide context in browser tabs."
         }
       ],
       "categories": {
@@ -1034,7 +1205,10 @@
           "effort": "hard",
           "fix_suggestion": "Add 'export const metadata: Metadata' to all 46 pages. For dynamic pages in /e/[slug]/*, implement generateMetadata() functions. Example:\n\nexport async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {\n  const event = await fetchEventData(params.slug);\n  return {\n    title: event.name,\n    description: event.description,\n    alternates: { canonical: absoluteUrl(`/e/${params.slug}/`) },\n  };\n}",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "find src/app -name 'page.tsx' shows only 21 pages with 'export const metadata' but 67 total pages exist",
+          "line": 0,
+          "impact": "Pages lack unique, keyword-optimized titles and descriptions in search results and social shares. Dynamic event pages (/e/demo, /e/[slug]/*, etc.) don't have indexable metadata despite being content-heavy pages that could drive SEO value."
         },
         {
           "id": "SEO-002",
@@ -1048,7 +1222,10 @@
           "effort": "moderate",
           "fix_suggestion": "Convert static sitemap to dynamic generation using Next.js sitemap() function:\n\nimport { MetadataRoute } from 'next';\n\nexport default function sitemap(): MetadataRoute.Sitemap {\n  const basePages = [{ url: 'https://cordivent.com/', changeFrequency: 'daily', priority: 1.0 }, ...];\n  const dynamicEvents = events.map(e => ({ url: `https://cordivent.com/e/${e.slug}/`, changeFrequency: 'weekly', priority: 0.8 }));\n  return [...basePages, ...dynamicEvents];\n}",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "sitemap.xml lists 18 URLs; codebase has 67 pages",
+          "line": 0,
+          "impact": "Search engines may not discover or prioritize orphan pages. Internal event pages, user dashboards, and organizer tools are invisible to crawlers."
         },
         {
           "id": "SEO-003",
@@ -1062,7 +1239,10 @@
           "effort": "easy",
           "fix_suggestion": "Add explicit viewport metadata to layout.tsx metadata export:\n\nexport const metadata: Metadata = {\n  // ... existing metadata\n  viewport: 'width=device-width, initial-scale=1.0',\n}",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<head> section has manifest, theme-color, and apple-touch-icon, but no explicit <meta name=\"viewport\" ... />",
+          "line": 54,
+          "impact": "Minor. Search engines assume mobile compatibility based on Next.js defaults, but explicit declaration is clearer."
         },
         {
           "id": "SEO-004",
@@ -1076,7 +1256,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement generateMetadata for dynamic pages with canonical URLs:\n\nexport async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {\n  return {\n    alternates: { canonical: absoluteUrl(`/e/${params.slug}/`) },\n    // ... other metadata\n  };\n}",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "grep 'alternates.*canonical' src/app/e shows no results; only marketing pages (16 pages) have alternates: { canonical: ... }",
+          "line": 0,
+          "impact": "Dynamic pages may be indexed with incorrect URLs, protocol variants, or query parameters. Reduces ranking authority on single canonical version."
         },
         {
           "id": "SEO-005",
@@ -1090,7 +1273,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add openGraph and twitter objects to metadata exports. For dynamic pages:\n\nexport async function generateMetadata({ params }: Params): Promise<Metadata> {\n  const event = await fetchEvent(params.slug);\n  return {\n    openGraph: {\n      title: event.name,\n      description: event.description,\n      url: absoluteUrl(`/e/${params.slug}/`),\n      images: [{ url: event.ogImage, width: 1200, height: 630 }],\n    },\n  };\n}",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only 15 pages out of 67 have 'openGraph' in metadata export",
+          "line": 0,
+          "impact": "Social media previews for shared links are generic and not page-specific, reducing click-through rates. User-generated content pages (event home, gallery, directory) don't have rich preview images."
         },
         {
           "id": "SEO-006",
@@ -1104,7 +1290,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add structured data to key page types:\n\n1. Event pages (/e/[slug]/): Add Event schema with name, description, startDate, endDate, location, image.\n2. Features pages: Add Article schema with headline, description, datePublished, author.\n3. FAQ content: Use FAQPage schema if applicable.\n\nExample Event schema for /e/[slug]/:\n\nscript type=\"application/ld+json\"\n{\n  '@context': 'https://schema.org',\n  '@type': 'Event',\n  name: event.name,\n  description: event.description,\n  startDate: event.startDate,\n  endDate: event.endDate,\n  location: { '@type': 'Place', name: event.venue },\n  image: event.ogImage,\n  url: absoluteUrl(`/e/${event.slug}/`)\n}",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only WebApplication and Organization JSON-LD scripts in root layout; no Article, Event, BreadcrumbList, or Person schema",
+          "line": 66,
+          "impact": "Search engines cannot surface rich snippets for events, articles, or FAQs. Featured snippet and voice assistant opportunities missed."
         },
         {
           "id": "SEO-007",
@@ -1118,7 +1307,10 @@
           "effort": "easy",
           "fix_suggestion": "Convert <img> to Next.js Image component with explicit dimensions, or add aspect-ratio CSS:\n\n// Option 1: Use Next.js Image\nimport Image from 'next/image';\n<Image src=\"/cody-jo-eflin.jpg\" alt=\"Cody Jo Eflin\" width={400} height={400} className=\"rounded-2xl\" />\n\n// Option 2: Add aspect-ratio to <img>\n<img src=\"/cody-jo-eflin.jpg\" alt=\"Cody Jo Eflin\" style={{ aspectRatio: '1/1' }} className=\"h-auto w-full object-cover rounded-2xl\" />",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<img src=\"/cody-jo-eflin.jpg\" alt=\"Cody Jo Eflin\" className=\"h-auto w-full object-cover\" /> \u2014 no explicit width/height",
+          "line": 23,
+          "impact": "Image may cause layout shift as it loads (CLS metric impact). While CSS h-auto/w-full provides responsive sizing, explicit width/height prevents jank."
         },
         {
           "id": "SEO-008",
@@ -1132,7 +1324,10 @@
           "effort": "easy",
           "fix_suggestion": "Audit all <img> tags and Image components for lazy loading:\n- Above-fold images (hero, header): loading=\"eager\" or default (no lazy)\n- Below-fold images (gallery, testimonials): loading=\"lazy\"\n- Next.js Image: use priority={true} for LCP images, default lazy for others",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<img src=\"/cody-jo-eflin.jpg\" ... loading=\"eager\" /> \u2014 this is correct for above-fold, but pattern should be checked across all images",
+          "line": 27,
+          "impact": "Minor. Correct implementation on visible components. Potential improvement: verify all below-fold images use loading=\"lazy\" to improve Core Web Vitals."
         },
         {
           "id": "SEO-009",
@@ -1146,7 +1341,10 @@
           "effort": "easy",
           "fix_suggestion": "Add semantic H2 wrappers for major content sections:\n\n<h1>Straightforward pilot packages...</h1>\n<section>\n  <h2>Choose Your Package</h2>\n  <div className=\"grid\">\n    {packages.map(pkg => <h3>{pkg.name}</h3>)}\n  </div>\n</section>\n<section>\n  <h2>What's Included in Every Pilot</h2>\n  {/* included features list */}\n</section>",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "H1 present but followed directly by package cards with h2 on individual pricing card titles (inside loop), instead of semantic H2 for 'Pricing Packages' section wrapper",
+          "line": 84,
+          "impact": "Reduced semantic clarity for content hierarchy. AI models prefer explicit H2/H3 nesting for understanding page structure and extracting featured snippets."
         },
         {
           "id": "SEO-010",
@@ -1160,7 +1358,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add FAQ schema and structured content sections:\n\n1. Add explicit 'What is Cordivent?' answer in first 50 words of homepage\n2. Add FAQ section to /features with structured Q&A pairs (Who is it for? What makes it different? How does it work?)\n3. Implement FAQPage JSON-LD schema\n4. Break feature descriptions into bullet lists with numbered steps (How it works section already exists, make it more extraction-friendly)\n\nExample:\n<section>\n  <h2>Common Questions</h2>\n  <ul itemscope itemtype=\"https://schema.org/FAQPage\">\n    <li itemscope itemprop=\"mainEntity\" itemtype=\"https://schema.org/Question\">\n      <strong itemprop=\"name\">What is Cordivent?</strong>\n      <p itemprop=\"acceptedAnswer\" itemscope itemtype=\"https://schema.org/Answer\">\n        <span itemprop=\"text\">Cordivent is...</span>\n      </p>\n    </li>\n  </ul>\n</section>",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Features page shows feature cards with title/description but no structured Q&A, no FAQ section, no clear 'what is Cordivent' opening statement",
+          "line": 0,
+          "impact": "Lower likelihood of appearing in featured snippets, AI search results (Bing Chat, Google SGE, ChatGPT browsing), or voice assistant answers. Content requires AI to infer structure."
         },
         {
           "id": "SEO-011",
@@ -1174,7 +1375,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement dynamic OG image generation for event pages:\n\n1. Use library like `@vercel/og` or canvas-based image generation\n2. Create event-specific OG image endpoint: /api/og?slug=event-slug\n3. Reference in generateMetadata():\n\nimages: [{ \n  url: `${SITE_URL_NO_TRAILING_SLASH}/api/og?slug=${event.slug}`,\n  width: 1200, \n  height: 630,\n  alt: event.name\n}]",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "images: [{ url: '/og.svg' ... }] is hardcoded; no dynamic OG image generation for events or user-generated content",
+          "line": 33,
+          "impact": "Social shares of event pages, gallery items, and speaker profiles show generic preview image instead of event-specific or person-specific images. Reduces click-through rates on social shares."
         },
         {
           "id": "SEO-012",
@@ -1188,7 +1392,10 @@
           "effort": "easy",
           "fix_suggestion": "Generate dynamic robots.txt using Next.js robots() function:\n\nimport { MetadataRoute } from 'next';\n\nexport default function robots(): MetadataRoute.Robots {\n  return {\n    rules: {\n      userAgent: '*',\n      allow: '/',\n    },\n    sitemap: `${SITE_URL_NO_TRAILING_SLASH}/sitemap.xml`,\n  };\n}\n\nMove to src/app/robots.ts and remove static public/robots.txt",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Sitemap: https://cordivent.com/sitemap.xml \u2014 domain is hardcoded",
+          "line": 4,
+          "impact": "On staging/preview deployments, robots.txt sends crawlers to production sitemap, not the staging environment. Minor issue for production but could confuse crawlers on non-canonical domains."
         },
         {
           "id": "SEO-013",
@@ -1202,7 +1409,10 @@
           "effort": "easy",
           "fix_suggestion": "Convert static og.svg to og.png or og.jpg (ensure 1200x630px). If dynamic OG images are later implemented, use PNG/JPEG output.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Layout metadata references: '/og.svg'",
+          "line": 0,
+          "impact": "Minor. Some social platforms (especially older crawlers) may not render SVG OG images correctly. JPEG/PNG are safer defaults."
         },
         {
           "id": "SEO-014",
@@ -1216,7 +1426,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add BreadcrumbList schema to event subroutes (agenda, manage/*, directory/*, etc.):\n\n<script type=\"application/ld+json\">\n{\n  '@context': 'https://schema.org',\n  '@type': 'BreadcrumbList',\n  itemListElement: [\n    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://cordivent.com/' },\n    { '@type': 'ListItem', position: 2, name: event.name, item: `https://cordivent.com/e/${event.slug}/` },\n    { '@type': 'ListItem', position: 3, name: 'Agenda', item: `https://cordivent.com/e/${event.slug}/agenda/` }\n  ]\n}\n</script>",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No BreadcrumbList schema found in codebase (grep shows no breadcrumb schema)",
+          "line": 0,
+          "impact": "Low. Missing breadcrumb markup for nested pages; search results may not show breadcrumb navigation."
         },
         {
           "id": "SEO-015",
@@ -1230,7 +1443,10 @@
           "effort": "easy",
           "fix_suggestion": "Add dimensions to Twitter Card image object:\n\ntwitter: {\n  card: 'summary_large_image',\n  title: `${SITE_NAME} - ${SITE_TAGLINE}`,\n  description: SITE_DESCRIPTION,\n  images: [{ \n    url: '/og.svg',\n    width: 1200,\n    height: 630,\n    alt: `${SITE_NAME} - ${SITE_TAGLINE}`,\n  }],\n}",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "twitter: { images: [{ url: '/og.svg', alt: `${SITE_NAME} - ${SITE_TAGLINE}` }] } \u2014 no width/height in image object",
+          "line": 35,
+          "impact": "Low. Twitter handles image scaling automatically, but explicit dimensions ensure correct display."
         },
         {
           "id": "SEO-016",
@@ -1244,7 +1460,10 @@
           "effort": "easy",
           "fix_suggestion": "If emoji is purely decorative, use role=\"presentation\" instead:\n\n<span className=\"text-4xl\" role=\"presentation\">&#x270D;&#xFE0F;</span>\n\nIf it's content, current approach (role=\"img\" + aria-label) is correct.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "role=\"img\" aria-label=\"Journal\" on emoji span",
+          "line": 133,
+          "impact": "Low. Current implementation works; aria-label is functional. Guidance is about semantic preference."
         },
         {
           "id": "SEO-017",
@@ -1258,7 +1477,10 @@
           "effort": "easy",
           "fix_suggestion": "If pages are added frequently, consider build-time sitemap generation:\n\n1. Create build script that generates sitemap.xml at build time from route map\n2. Or: accept manual sitemap.xml updates when adding pages\n3. Or: switch to hybrid rendering (output: 'standalone') with API routes to enable dynamic sitemap generation\n\nFor now, document in HANDOFF.md: 'Remember to update public/sitemap.xml when adding routes'",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "output: 'export' prevents dynamic route generation; sitemap.xml is static and misses 46 pages",
+          "line": 4,
+          "impact": "Low operational SEO overhead. Static export is correct for S3+CloudFront deployment; sitemap just requires manual updates or build-time generation."
         },
         {
           "id": "SEO-018",
@@ -1272,7 +1494,10 @@
           "effort": "easy",
           "fix_suggestion": "Add speakable schema to feature descriptions and how-it-works sections:\n\n{\n  '@context': 'https://schema.org',\n  '@type': 'WebPage',\n  speakable: {\n    '@type': 'SpeakableSpecification',\n    xpathSelector: '/html/body/section[1]/h2,/html/body/section[1]/p'\n  }\n}",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No speakable schema found in codebase",
+          "line": 0,
+          "impact": "Info. Speakable is optional; improves voice search but not critical."
         },
         {
           "id": "SEO-019",
@@ -1286,7 +1511,10 @@
           "effort": "moderate",
           "fix_suggestion": "Optional enhancement: Implement IndexNow endpoint at /api/indexnow to notify Bing/Yandex of URL changes:\n\n// pages/api/indexnow.ts\nexport async function POST(req: Request) {\n  const { urlList, keyLocation } = await req.json();\n  // Validate IndexNow key\n  // POST to IndexNow API\n  return Response.json({ success: true });\n}",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No /api/indexnow route or IndexNow API key handling",
+          "line": 0,
+          "impact": "Info. IndexNow is optional; improves indexation speed but not critical."
         },
         {
           "id": "SEO-020",
@@ -1300,7 +1528,10 @@
           "effort": "easy",
           "fix_suggestion": "Expand Organization schema with E-E-A-T signals:\n\n{\n  '@context': 'https://schema.org',\n  '@type': 'Organization',\n  name: 'Cordivent',\n  url: SITE_URL,\n  email: CONTACT_EMAIL,\n  description: SITE_DESCRIPTION,\n  founder: {\n    '@type': 'Person',\n    name: 'Cody Jo Eflin',\n    url: absoluteUrl('/contact/')\n  },\n  about: {\n    '@type': 'Thing',\n    name: 'Mobile-first event site software for conferences and expos'\n  },\n  mentionedIn: [\n    { '@type': 'WebPage', url: 'https://example.com/press' }\n  ]\n}",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Organization schema is minimal: name, url, email, description. Missing about, mentions, founder details, establishment date.",
+          "line": 78,
+          "impact": "Info. Enhanced E-E-A-T signals help AI models understand credibility and context."
         }
       ],
       "categories": {
@@ -1353,7 +1584,10 @@
           "effort": "easy",
           "fix_suggestion": "Add viewport export to the root layout. In Next.js 14+, export a viewport constant: export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No viewport export found in layout.tsx Metadata object. The metadata object contains title, description, openGraph, twitter, and robots, but no viewport property.",
+          "line": 1,
+          "impact": "Potential mobile rendering issues on older devices or edge cases where Next.js default viewport may not apply. Could affect mobile usability and Core Web Vitals. Modern browsers will still work fine."
         },
         {
           "id": "SEO-002",
@@ -1367,7 +1601,10 @@
           "effort": "easy",
           "fix_suggestion": "Expand descriptions to 120-160 characters with specific value proposition: 'Privacy policy for The New Beautiful Me. Learn how we protect your data, what information we collect, and your privacy rights. GDPR and CCPA compliant.'",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "description: 'Privacy policy for The New Beautiful Me.' - Only 43 characters, lacks specificity about what the policy covers.",
+          "line": 6,
+          "impact": "Reduced click-through rate from search results. Accessibility page has similar minimal description. Users won't understand what the page covers before clicking."
         },
         {
           "id": "SEO-003",
@@ -1381,7 +1618,10 @@
           "effort": "moderate",
           "fix_suggestion": "Generate dynamic OG images using the existing Lambda. For card pages: images: [{ url: `/api/og?type=card&name=${encodeURIComponent(card.name)}`, width: 1200, height: 630 }]",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Card pages: images: [{ url: '/og.svg', width: 1200, height: 630 }]. Guide pages and blog pages have same static image.",
+          "line": 31,
+          "impact": "Reduced social sharing engagement. Generic OG images don't communicate content specificity. When users share card or article pages on Twitter/Facebook, they see the same generic image for all links, reducing click-through rates from social platforms."
         },
         {
           "id": "SEO-004",
@@ -1395,7 +1635,10 @@
           "effort": "moderate",
           "fix_suggestion": "For blog articles with Q&A structure, add FAQPage schema with mainEntity array containing Question/Answer pairs.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Blog pages export Article schema only, not FAQPage. Content like 'Three Card Tarot Spread Explained' contains implicit Q&A but lacks FAQPage markup.",
+          "line": 15,
+          "impact": "Missed opportunity for AI search integration. Content is well-structured for FAQ extraction but markup is not present. This reduces visibility in voice search results and AI-powered search engines."
         },
         {
           "id": "SEO-005",
@@ -1409,7 +1652,10 @@
           "effort": "easy",
           "fix_suggestion": "Convert PNG icons to WebP format and serve with fallbacks. Consider adding preload directives for critical images.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "og.svg is served as-is without optimization. Icon images (icon-192.png, icon-512.png) are PNG without modern format variants.",
+          "line": 1,
+          "impact": "Slight performance impact on LCP and CLS. While not severe, optimized images could reduce bandwidth by 20-30% and improve Core Web Vitals scores by 1-2 points."
         },
         {
           "id": "SEO-006",
@@ -1423,7 +1669,10 @@
           "effort": "easy",
           "fix_suggestion": "Add speakable property to Article schema with xPath targeting key content sections for voice read-aloud.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Article schema is present but lacks 'speakable' property. Card pages have detailed descriptions but no speakable markup.",
+          "line": 62,
+          "impact": "Missed opportunity in voice-activated device search and accessibility. Content is well-suited for voice interaction but lacks explicit voice optimization markup."
         },
         {
           "id": "SEO-007",
@@ -1437,7 +1686,10 @@
           "effort": "easy",
           "fix_suggestion": "Implement IndexNow submission in the build pipeline: POST to https://www.bing.com/indexnow with host, key, and urlList parameters.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "robots.txt references sitemap.xml but does not reference IndexNow endpoints. No IndexNow implementation found in codebase.",
+          "line": 1,
+          "impact": "Search engines may take 1-7 days to discover and index new content pages. With IndexNow, new content could be indexed within hours."
         },
         {
           "id": "SEO-008",
@@ -1451,7 +1703,10 @@
           "effort": "easy",
           "fix_suggestion": "Consider expanding abbreviated navigation labels where context is minimal. This is a low-priority enhancement.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Footer links and navigation use good descriptive text overall. This is a minor optimization opportunity.",
+          "line": 98,
+          "impact": "Minor - current implementation is acceptable. Expanding labels like 'Learn' to 'Learn Tarot' would provide marginal SEO and accessibility improvements."
         },
         {
           "id": "SEO-009",
@@ -1465,7 +1720,10 @@
           "effort": "easy",
           "fix_suggestion": "Add twitter card configuration to guides/page.tsx metadata export with card: 'summary_large_image', title, and description.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Metadata exports openGraph but does not include twitter: { card: 'summary_large_image', ... }.",
+          "line": 5,
+          "impact": "When guides page is shared on Twitter, the platform cannot optimize the preview card layout. Users will see a default card instead of the optimized format."
         },
         {
           "id": "SEO-010",
@@ -1479,7 +1737,10 @@
           "effort": "easy",
           "fix_suggestion": "If web fonts are added in future, include preload directives. Current system font approach is already optimized.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No <link rel='preload'> tags in head for critical resources. Current setup (using system fonts) is optimal but could add preload for future font assets.",
+          "line": 48,
+          "impact": "Minimal impact - current implementation is efficient. Would be a 1-2% performance optimization opportunity."
         },
         {
           "id": "SEO-011",
@@ -1493,7 +1754,10 @@
           "effort": "easy",
           "fix_suggestion": "Add entity definition to Article schema with sameAs properties linking to external knowledge bases for card references.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Article schema includes headline, description, keywords, but does not include Thing.sameAs or explicit entity linking to related concepts.",
+          "line": 64,
+          "impact": "Low priority - current implementation is sufficient. Could improve AI model understanding by 5-10% through enhanced semantic markup."
         },
         {
           "id": "SEO-012",
@@ -1507,7 +1771,10 @@
           "effort": "easy",
           "fix_suggestion": "For future monetization, expand to AggregateOffer schema with lowPrice, highPrice, aggregateRating, and availability properties.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "WebApplication schema includes Offer with price: '0'. Could be expanded with AggregateOffer for future monetization.",
+          "line": 62,
+          "impact": "Informational only - current schema is correct for free service. Would become relevant if premium tier is added."
         }
       ],
       "categories": {

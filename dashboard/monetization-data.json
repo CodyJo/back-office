@@ -1,6 +1,6 @@
 {
   "department": "monetization",
-  "generated_at": "2026-03-23T00:18:03.946234+00:00",
+  "generated_at": "2026-03-23T01:15:00.859197+00:00",
   "totals": {
     "critical": 0,
     "high": 0,
@@ -45,6 +45,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Implement three pricing tiers: Free (1 active gallery, 100 photos max, basic stats), Pro ($39/month, 10 galleries, 5K photos, advanced analytics, custom domain), Studio ($79/month, unlimited galleries, unlimited photos, API access, white-label). Free tier drives adoption and network effects; paid tiers monetize active photographers with real delivery volume.",
           "revenue_estimate": "$2,500-4,000/month",
           "phase": 2
         }
@@ -121,6 +124,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Implement a freemium SaaS model with three subscription tiers: Free (1 repo, manual scans only), Starter ($49/month, up to 10 repos, scheduled scans, basic support), Pro ($199/month, unlimited repos, custom agents, API access, white-label dashboards), and Enterprise (custom pricing for on-premises deployment). The existing API server and dashboard infrastructure are production-ready for this implementation. Target audience: development teams (SMB to mid-market) and enterprises managing multiple codebases.",
           "revenue_estimate": "$2,000-8,000/month",
           "phase": 2
         },
@@ -137,6 +143,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Monetize API access through usage-based billing: $0.01-0.05 per scan, $5-25/month minimum for API tier subscribers. Include request quotas (100 scans/month for free, unlimited for Pro). This targets development teams integrating Back Office into their CI/CD workflows (pre-commit hooks, PR gating, scheduled audits). Existing API server (`backoffice/api_server.py`) already supports this; add authentication and metering.",
           "revenue_estimate": "$500-3,000/month",
           "phase": 2
         },
@@ -153,6 +162,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Offer professional services to build custom audit agents for specialized tech stacks or compliance requirements. Example: 'Kubernetes Audit Agent', 'Healthcare HIPAA Audit Agent', 'Financial Services Audit Agent'. Price at $2,000-10,000 per custom agent, with ongoing support at $500-2,000/month. Also offer pre-built audit template packs ($99-499) targeting specific frameworks (Next.js, FastAPI, React Native, etc.). This leverages the existing agent infrastructure and expertise.",
           "revenue_estimate": "$1,000-5,000/month",
           "phase": 2
         },
@@ -169,6 +181,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "License Back Office to agencies, consultancies, and tool vendors as a white-label product. They resell audits under their own branding with their own pricing. Back Office takes 30-40% commission on scans or charges a $2,000-5,000/month platform license. Target: code review shops, DevOps consultancies, dev agencies. This expands reach without direct marketing. The dashboard infrastructure already supports custom branding (site-branding.js exists).",
           "revenue_estimate": "$1,000-4,000/month",
           "phase": 3
         },
@@ -185,6 +200,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Offer implementation consulting at $150-250/hour: onboarding teams, interpreting findings, integrating into CI/CD pipelines, setting compliance baselines, designing remediation workflows. Also offer fixed-price 'Audit Baseline' projects ($5,000-15,000) where we scan a large codebase, provide deep analysis, and hand off a findings matrix with remediation roadmap. Target: enterprises, regulated industries, companies with complex codebases.",
           "revenue_estimate": "$2,000-6,000/month",
           "phase": 1
         },
@@ -201,6 +219,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Create paid video courses on 'Code Audit Best Practices', 'Building Custom Audit Agents', 'Compliance Auditing for Healthcare/Finance'. Offer $49-199 per course. Also create certifications (e.g., 'Cody Jo Back Office Certified Auditor') at $299 with exam and badge. Target: individual developers, team leads, consultants. Host on Teachable, Udemy, or standalone platform.",
           "revenue_estimate": "$300-2,000/month",
           "phase": 3
         },
@@ -217,6 +238,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Premium feature: historical trend analysis, regression detection, finding predictions, team productivity metrics, and custom reports. Show: 'code quality trending up 15% over 3 months', 'new bugs introduced per developer', 'time to fix by severity'. This adds strategic value for CTOs and drives higher-tier upgrades. Requires storing historical scan data (currently not persisted).",
           "revenue_estimate": "$500-2,000/month",
           "phase": 3
         },
@@ -233,6 +257,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Free tier: manual scans only. Starter/Pro tiers: scheduled scans (daily, weekly) with auto-remediation suggestions. Include smart defaults: 'aggressive mode' (max findings, all departments) vs 'lightweight mode' (critical only, faster). This encourages adoption and distinguishes tiers. Existing infrastructure (agent scripts, cron) supports this.",
           "revenue_estimate": "$300-1,500/month",
           "phase": 1
         },
@@ -249,6 +276,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Enterprise add-on: Back Office team manages scans, interprets findings, and produces weekly summary reports (executive summary + detailed findings). Priced at $3,000-10,000/month depending on number of repos and SLA. Target: enterprises without internal DevOps capacity. This is a high-touch, high-margin service.",
           "revenue_estimate": "$2,000-5,000/month",
           "phase": 2
         },
@@ -265,6 +295,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Create a marketplace for pre-built audit templates ($99-499 each): 'Next.js Best Practices', 'Python Security Audit', 'GraphQL API Audit', 'Kubernetes Config Audit', 'GDPR Compliance Audit'. Developers/agencies buy templates, customize for their stack, and reuse. Revenue model: 70/30 split with template creators, or direct sales if created in-house. This builds a library of reusable IP.",
           "revenue_estimate": "$300-1,500/month",
           "phase": 3
         },
@@ -281,6 +314,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Enterprise feature: SSO via Okta, Azure AD, Google Workspace. Allows enterprises to provision users in bulk and manage permissions centrally. Charged as add-on ($500-2,000/month) or included in Enterprise tier. This is table-stakes for enterprise sales.",
           "revenue_estimate": "$500-2,000/month",
           "phase": 2
         },
@@ -297,6 +333,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Premium feature: export findings in multiple formats (JSON, CSV, PDF, XML). Include custom report builder UI to select departments, severity levels, and formatting. Target compliance officers and auditors who need to share findings with stakeholders/regulators. Charged as add-on or included in Pro tier.",
           "revenue_estimate": "$200-800/month",
           "phase": 1
         },
@@ -313,6 +352,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Recommend complementary tools in Back Office dashboards: GitHub Advanced Security, Snyk, SonarQube, Dependabot, Vercel, Netlify, etc. Earn 10-20% commission on referred customers. Place affiliate links in: email reports, dashboard recommendations, knowledge base articles. This is passive revenue that doesn't affect user experience if done carefully.",
           "revenue_estimate": "$100-500/month",
           "phase": 1
         },
@@ -329,6 +371,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Partner with framework vendors (React, Next.js, FastAPI, Django) to create co-branded audit templates and promote them in their docs/communities. In exchange, they promote Back Office to their user base. Examples: 'React Best Practices Audit powered by Back Office', 'Next.js Security Checklist'. This is brand-building but also drives free organic traffic and user acquisition.",
           "revenue_estimate": "$500-2,000/month",
           "phase": 2
         },
@@ -345,6 +390,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Low-value but fun: create a merchandise store (Bonfire, Printful) selling Back Office-branded gear: t-shirts, hoodies, stickers, mugs. Price at 2-3x cost. This is brand awareness and community building more than revenue. Low effort to set up via Printful (drop-shipping).",
           "revenue_estimate": "$50-200/month",
           "phase": 4
         },
@@ -361,6 +409,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Sponsor open source projects and developer communities that Back Office benefits from (e.g., Python, Node.js, security projects) and/or run a GitHub Sponsors page. This is brand building and good optics, not direct revenue. Cost: $500-2,000/month to sponsor projects. Back Office position itself as 'giving back to the community'.",
           "revenue_estimate": "$0/month (cost only, -$500 to -$2,000/month budget)",
           "phase": 3
         },
@@ -377,6 +428,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Add collaboration to Back Office: comment on findings, assign to team members, create remediation workflows, track status. Priced as Pro/Enterprise feature. This makes Back Office a more complete DevOps platform and increases stickiness. Medium effort, moderate ROI.",
           "revenue_estimate": "$200-1,000/month",
           "phase": 3
         },
@@ -393,6 +447,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Create a browser extension that injects Back Office scan results into GitHub/GitLab pull requests and commits. Show findings inline with code. This is a UI/UX enhancement and brand visibility tool. Free to users, generates affiliate revenue if it drives SaaS signups. Requires minimal development (wrapper around existing API).",
           "revenue_estimate": "$100-500/month (indirect through SaaS upgrades)",
           "phase": 4
         }
@@ -469,6 +526,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Selah already has the core ingredients for a freemium SaaS model: authenticated accounts, rate-limited AI study, account backup, encryption, and analytics-friendly page structure. The strongest monetization path is a paid Selah Plus tier that keeps core Bible reading free while gating higher-cost and higher-perceived-value features such as higher AI study limits, synced reading plans across devices, offline study packs, premium wallpaper themes, and deeper insights. A realistic starting point is free with basic reading, bookmarks, journals, and limited AI; Plus at $7.99/month or $69/year with 5x-10x AI volume, sync, and premium habit tooling.",
           "revenue_estimate": "$300-1,200/month",
           "phase": 2
         },
@@ -485,6 +545,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "The AI Lambda already rate limits requests per user and per IP, which creates a clean bridge to metered monetization. Offer a free monthly AI allowance, include a larger allowance in Selah Plus, and let users buy small top-up packs such as 50 or 100 extra study prompts. This reduces churn from occasional power users who do not want a full subscription and helps align margin with Anthropic usage cost.",
           "revenue_estimate": "$100-700/month",
           "phase": 2
         },
@@ -501,6 +564,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Selah's current individual study, journaling, plans, and AI features can be extended into a church or group subscription. The monetizable unit is the leader, church staff member, or Bible study organizer rather than the individual believer. A group plan could include shareable reading plans, discussion prompts, attendance or completion insights, and a branded invite flow for 10-100 members. A practical launch price is $19-49/month for small groups and $99+/month for churches using leader features.",
           "revenue_estimate": "$250-1,500/month",
           "phase": 3
         },
@@ -517,6 +583,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "A faith product can monetize without hard paywalls by offering a supporter tier framed around sustaining free Bible reading for everyone. This is especially useful while traffic and retention are still maturing. Benefits can stay modest: supporter badge, monthly founder note, early access to new study styles, and a few premium themes. Suggested pricing is $3-5/month or $30-40/year.",
           "revenue_estimate": "$50-300/month",
           "phase": 1
         },
@@ -533,6 +602,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Affiliate revenue fits Selah better than display ads because it can stay respectful and context-driven. Add a small 'Recommended resources' shelf on public pages and in settings/help surfaces, pointing to study Bibles, devotional journals, commentaries, and prayer books relevant to the user's chosen reading plan or study style. Start with Christianbook and Amazon Associates because they cover the broadest Christian catalog. Keep links off deep reading surfaces unless they are clearly opt-in and separated from Scripture content.",
           "revenue_estimate": "$25-200/month",
           "phase": 1
         },
@@ -549,6 +621,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "The best affiliate conversions will come from intent-matched recommendations, not generic banners. A user choosing academic study style can be shown an ESV Study Bible, commentary sets, or lexicon-friendly tools; a contemplative user can be shown prayer journals or devotional books; a church leader page can recommend group study books. Christianbook's catalog size and church-friendly positioning make it a strong first partner. This can later expand to Bible publishers or digital resource vendors.",
           "revenue_estimate": "$40-250/month",
           "phase": 1
         },
@@ -565,6 +640,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Selah already has verse history, reading plans, reflections, and wallpaper generation. That can be packaged into digital seasonal products with low fulfillment overhead: Lent and Advent packs, 30-day anxiety or gratitude guides, church small-group discussion kits, printable verse cards, and premium wallpaper bundles. These are one-time purchases that can coexist with subscriptions and are easier to ship before full billing maturity.",
           "revenue_estimate": "$50-350/month",
           "phase": 2
         },
@@ -581,6 +659,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Display advertising is a weak fit for Selah's current product. The app has limited public content depth, sacred reading surfaces where ads would feel intrusive, and no dedicated blog or SEO article archive to support ad inventory. If a future public content hub is built, light ads could be tested on informational articles only, not on Daily, Books, Study, Journal, or Plans. That means ads are a long-tail add-on, not a primary business model.",
           "revenue_estimate": "$10-75/month",
           "phase": 3
         },
@@ -597,6 +678,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Sponsored plans are a better brand fit than banner ads. A publisher, conference, church network, or Christian nonprofit could sponsor a plan such as 'Advent with Isaiah' or '30 Days of Peace in the Psalms'. Sponsorship should be clearly labeled, editorially screened, and kept on opt-in plan pages rather than injected into active reading. Revenue can start as flat-fee sponsorships before ad-tech complexity enters the stack.",
           "revenue_estimate": "$75-500/month",
           "phase": 3
         },
@@ -613,6 +697,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Longer term, Selah can move beyond direct-to-consumer revenue into branded ministry tooling. A church, conference, or Christian organization could license a co-branded sub-experience with custom plans, welcome screens, leader notes, and event follow-up flows. This is more valuable than basic sponsorship because it becomes recurring software revenue. The current app is not multi-tenant yet, so this is a platform play, not a quick win.",
           "revenue_estimate": "$250-1,000/month",
           "phase": 4
         }
@@ -682,6 +769,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "The site and blog frequently reference cloud infrastructure, serverless functions (Lambda), S3, and CloudFront. Cody Jo's enterprise automation background makes credible recommendations for AWS services, VPS providers, and deployment tools. Target audience of technical builders actively makes these purchasing decisions.",
           "revenue_estimate": "$200-600/month",
           "phase": 1
         }
@@ -759,6 +849,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Offer a white-labeled SaaS service where Puppet customers, resellers, and partners can provision PE demo environments on-demand without managing GCP infrastructure themselves. Cody Jo or the team acts as the infrastructure provider, handling billing, quota management, compliance, and multi-tenancy. Users pay per deployment or monthly subscription for unlimited deployments. Eliminates friction of GCP setup, IAM, billing coordination.",
           "revenue_estimate": "$1500-3000/month",
           "phase": 2
         },
@@ -775,6 +868,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Offer professional services for Puppet customers who need custom PE architectures not covered by the standard templates (e.g., multi-region HA, integration with existing infrastructure, compliance-specific setups like FIPS, airgapped environments). Charge hourly or per-engagement for architecture design, customization, deployment, and documentation. Position as 'PE Deployment Accelerators' for TAMs and sales team to upsell to customers.",
           "revenue_estimate": "$800-2000/month",
           "phase": 2
         },
@@ -791,6 +887,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Introduce a freemium subscription model: Free tier for individuals/small labs (1 deployment, standard architecture, 7-day auto-destroy), Professional tier ($29/month: 5 concurrent deployments, all architectures, no auto-destroy), Enterprise tier ($99/month: unlimited deployments, priority support, advanced quota, custom retention). Monetize via subscription. Free tier drives adoption and community goodwill; paid tiers target teams and organizations.",
           "revenue_estimate": "$1200-2500/month",
           "phase": 1
         },
@@ -807,6 +906,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Create a marketplace for premium, pre-built Bolt playbooks and Puppet modules that extend PE Bootstrap. Examples: 'PE Incident Response Playbook' ($49), 'Multi-Cloud Failover Module' ($99), 'Compliance Baseline (NIST/CIS)' ($79), 'Prometheus Monitoring Stack' ($69). Sell via Gumroad or a custom marketplace. These target operators who want to extend their PE labs beyond the base provisioning.",
           "revenue_estimate": "$300-800/month",
           "phase": 3
         },
@@ -823,6 +925,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Offer a priority support tier ($49/month or $400/year) that includes guaranteed response SLAs (4-hour response for P1, 24-hour for P2). Includes Slack channel, direct email support, and quarterly architecture reviews. Differentiate from open-source community support. Target power users and organizations who can't wait for GitHub issue responses.",
           "revenue_estimate": "$200-400/month",
           "phase": 1
         },
@@ -839,6 +944,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Create an online training course (video + hands-on labs via PE Bootstrap) that teaches PE deployment patterns, PEADM architecture, and ops best practices. Offer it as a standalone course ($99-149) or bundle with consulting. Include a 'PE Bootstrap Practitioner' certification ($49 exam fee). Sell via Udemy, Coursera, or own Teachable site. Target ops teams and students.",
           "revenue_estimate": "$400-1200/month",
           "phase": 3
         },
@@ -855,6 +963,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Partner with Google Cloud to promote GCP in PE Bootstrap documentation and onboarding. Earn referral fees for customers who sign up for GCP via your affiliate link (typically $50-150 per signup + ongoing revenue share). Additionally, create a 'cost optimization guide' ($29 ebook or included in consulting) that teaches customers how to minimize GCP spend while running PE demos (spot instances, committed discounts, resource cleanup automation).",
           "revenue_estimate": "$150-300/month",
           "phase": 1
         },
@@ -871,6 +982,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Offer a premium tier where Cody Jo or a team member handles the full deployment on behalf of the customer. Customer provides GCP project + parameters; team handles VMs, networking, PE installation, post-deployment validation, and handoff. Priced as engagement fee ($2,000-5,000 per deployment) or retainer ($1,500/month for ongoing deployments + support). Targets enterprises who want white-glove service without internal expertise.",
           "revenue_estimate": "$1500-3500/month",
           "phase": 2
         },
@@ -887,6 +1001,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Sell pre-built architecture templates for specific industries/use cases: 'PE for K8s Operators' ($39), 'PE for Hybrid Cloud DevOps' ($49), 'PE for Compliance-Heavy Orgs' ($59). These are JSON/Terraform configs with industry-specific best practices, compliance mappings, and documentation. Sell via own store or marketplace. Low content creation (reuse existing docs).",
           "revenue_estimate": "$100-250/month",
           "phase": 3
         },
@@ -903,6 +1020,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Approach GCP, HashiCorp, and Red Hat to sponsor PE Bootstrap documentation, training content, or community events. Sponsorship might include: logo placement on docs, featured blog posts, co-created case studies, or direct financial sponsorship ($1,000-2,000/quarter per sponsor). Sell the value: 'reach infrastructure automation professionals.'",
           "revenue_estimate": "$100-400/month",
           "phase": 3
         },
@@ -919,6 +1039,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Create downloadable runbooks for industry-specific disaster scenarios using PE Bootstrap: 'PE Primary Failure Runbook', 'Multi-Region Failover Guide', 'Certificate Expiry Recovery', etc. Sell as bundles ($99 for 5-pack) or individually ($29 each). Target ops teams who need procedures. Low content creation (extract from consulting engagements).",
           "revenue_estimate": "$50-150/month",
           "phase": 3
         },
@@ -935,6 +1058,9 @@
           "fix_suggestion": "",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "",
+          "line": null,
+          "impact": "Partner with complementary Puppet ecosystem tools (CD4PE, Relay, Foreman, Foreman Discovery, r10k, etc.) to create joint offerings. PE Bootstrap includes trial links or discounts for partner tools. Partners pay 5-10% revenue share for referred customers. Example: bundled pricing for PE Bootstrap + Relay trial + CD4PE trial.",
           "revenue_estimate": "$50-200/month",
           "phase": 3
         }

@@ -1,6 +1,6 @@
 {
   "department": "qa",
-  "generated_at": "2026-03-23T00:18:03.935994+00:00",
+  "generated_at": "2026-03-23T01:15:00.844377+00:00",
   "totals": {
     "critical": 6,
     "high": 18,
@@ -60,6 +60,9 @@
           "fix_suggestion": "Implement email allowlist validation: (1) Add 'allowed_emails' and/or 'allowed_domains' fields to the gallery DynamoDB item, (2) In handle_view_auth(), after validating the gallery exists, check if the provided email is in the allowlist before issuing a JWT, (3) Return 403 Forbidden if email is not authorized.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Lines 252-258 contain a TODO comment documenting this gap:\n  # TODO (CLIENT-03): Validate email against a per-gallery allowlist or\n  # domain-based access control.  Currently any syntactically valid email\n  # grants a JWT for any gallery, which is effectively unauthenticated\n  # access.  An allowlist (stored on the gallery item, e.g.\n  # \"allowed_emails\" or \"allowed_domains\") should be checked here before\n  # issuing a token.  Leaving the flow intact for now to avoid breaking\n  # existing client links.",
+          "line": 252,
+          "impact": "Any person with knowledge of a gallery ID and a valid email address can access restricted galleries without authorization. This undermines the gallery access control model.",
           "commit": "",
           "fixed_at": ""
         },
@@ -76,6 +79,9 @@
           "fix_suggestion": "Implement token revocation: (1) Add a token revocation check in authenticate() function before accepting a JWT, (2) Option A: Implement a revocation table that tracks invalidated token JTI claims with expiration, or (3) Option B: Use short-lived access tokens (15 min) with a refresh token flow. The code already has CAT-022 comment about re-validating account status (line 406) - extend this to also check a revocation list.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Comment in admin/handler.py:\n  # TODO: Gallery admin JWTs have no revocation mechanism. Reduced from 30 to 7 days\n  # to limit the window of risk. Consider implementing a token blocklist or short-lived\n  # tokens with refresh for a proper solution.",
+          "line": 1024,
+          "impact": "If a gallery admin account is compromised or deactivated, an attacker with a valid JWT can continue accessing the system for up to 7 days. This violates the principle of least privilege and increases the blast radius of account compromise.",
           "commit": "",
           "fixed_at": ""
         },
@@ -92,6 +98,9 @@
           "fix_suggestion": "Remove the duplicate import on line 25 and consolidate all imports at the top of the file in the standard order: stdlib imports first, then third-party imports, then local imports.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Line 9: import uuid\nLine 25: import uuid",
+          "line": 9,
+          "impact": "Code clarity issue. While Python handles duplicate imports safely, it indicates sloppy code organization and could hide real import issues.",
           "commit": "",
           "fixed_at": ""
         },
@@ -108,6 +117,9 @@
           "fix_suggestion": "Add a Global Secondary Index (GSI) on the demo_sessions table with demo_key as the partition key. Then use query() instead of scan(). This would reduce the operation from O(n) to O(1) or O(log n). Alternatively, use FilterExpression with a Limit on the number of pages returned (e.g., limit to 10 items scanned before returning).",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Lines 361-365:\n  # NOTE: No Limit= here \u2014 DynamoDB Scan Limit applies BEFORE FilterExpression,\n  # so Limit=1 would miss any session that isn't the very first item scanned.\n  items = _scan_all(demo_sessions_table,\n      FilterExpression=boto3.dynamodb.conditions.Attr(\"demo_key\").eq(key),\n  )",
+          "line": 363,
+          "impact": "If the demo_sessions table has thousands of items, the full table scan could consume significant provisioned read capacity and add latency to demo key validation requests. This is a potential performance bottleneck.",
           "commit": "",
           "fixed_at": ""
         },
@@ -124,6 +136,9 @@
           "fix_suggestion": "Consider increasing the cache TTL to 5-10 seconds and evaluating whether cross-tenant leaks are actually a risk in the deployment environment. If multi-origin setup is indeed a risk, consider caching per-origin or per-request-context instead of globally. Monitor DynamoDB scan metrics to validate the impact.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Line 519: _GALLERIES_CACHE_TTL = 2  # seconds \u2014 very short to prevent cross-tenant leaks in multi-origin setups",
+          "line": 519,
+          "impact": "Under concurrent load, the 2-second cache may be too short, resulting in many full table scans of the galleries table within a short period. This could spike DynamoDB costs and add latency to gallery listing requests.",
           "commit": "",
           "fixed_at": ""
         },
@@ -140,6 +155,9 @@
           "fix_suggestion": "Define a single canonical email validation regex at module level (or in a shared constants file) and use it consistently across all handlers. The admin/handler.py pattern is more restrictive and preferred. Create a utility function email_is_valid(email) in each handler or import from a shared module.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "lambda/auth_view/handler.py:231: r\"^[a-zA-Z0-9._%+-]+@[^@\\s]+\\.[^@\\s]+$\"\nlambda/admin/handler.py:3894: r\"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$\"\nlambda/demo/handler.py: r\"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$\"",
+          "line": 231,
+          "impact": "Different handlers may accept or reject emails differently, creating inconsistency and potential security loopholes. An email that passes validation in one handler might fail in another.",
           "commit": "",
           "fixed_at": ""
         },
@@ -156,6 +174,9 @@
           "fix_suggestion": "Catch specific exceptions: (1) ValueError for JSON decode errors, (2) KeyError for missing JWT fields, (3) TypeError for type mismatches. Add logging for unexpected exceptions before returning None so errors can be diagnosed in production.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Lines 440-441 in authenticate():\n  except Exception:\n      pass\n\nAlso lambda/auth_view/handler.py:85:\n  except Exception:\n      return None",
+          "line": 440,
+          "impact": "If JWT verification fails due to an unexpected error (e.g., malformed JSON, missing attributes), the bare exception silently returns None/fails instead of logging the error. This makes it hard to debug production issues.",
           "commit": "",
           "fixed_at": ""
         },
@@ -172,6 +193,9 @@
           "fix_suggestion": "Remove the unused imports: remove BytesIO from line 5, and remove MagicMock from line 6 (keep patch).",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Line 5: from io import BytesIO  (unused)\nLine 6: from unittest.mock import MagicMock, patch (MagicMock unused, patch used)",
+          "line": 5,
+          "impact": "Minor code quality issue. Unused imports can be confusing and waste development time.",
           "commit": "",
           "fixed_at": ""
         },
@@ -188,6 +212,9 @@
           "fix_suggestion": "Run 'ruff format tests/' to auto-fix import ordering in all test files. Or manually reorganize imports to group stdlib, then third-party, then local imports alphabetically within each group.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Ruff found I001 warnings in:\n  - tests/smoke/test_live_domains.py:1\n  - tests/unit/test_admin_optimize_helpers.py:2\n  - tests/unit/test_public_route_boundaries.py:1\n  - tests/unit/test_zip_handler.py:2\n  - tests/unit/test_zip_privacy.py:2",
+          "line": 1,
+          "impact": "Code style/consistency issue. Makes the codebase harder to maintain and violates the ruff linting configuration.",
           "commit": "",
           "fixed_at": ""
         },
@@ -204,6 +231,9 @@
           "fix_suggestion": "Consider extracting cache management into a helper utility class with consistent expiration semantics, or use a simple cache decorator. Alternatively, document the cache invalidation strategy clearly in comments.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Lines 517-519:\n  _galleries_response_cache = None\n  _galleries_cache_expires = 0.0\n  _GALLERIES_CACHE_TTL = 2  # seconds",
+          "line": 517,
+          "impact": "Cache management is error-prone and could lead to bugs if expiration logic is not consistently applied. Also, multiple caches across different handlers make it hard to reason about cache invalidation.",
           "commit": "",
           "fixed_at": ""
         },
@@ -220,6 +250,9 @@
           "fix_suggestion": "Add comments explaining why specific values were chosen. Group related constants (e.g., all timeout values) and document in a constants section at the top of each handler.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Examples:\n  - lambda/admin/handler.py:478: bcrypt.gensalt(rounds=12) \u2014 why 12 rounds?\n  - lambda/auth_view/handler.py:50: JWT_TTL_SECONDS = 14400 \u2014 is this 4 hours? (needs comment)\n  - lambda/auth_download/handler.py:44: PIN_MAX_ATTEMPTS = 5 \u2014 documented\n  - Multiple timeout values (3000ms, 2000ms) in different handlers",
+          "line": 478,
+          "impact": "Code is harder to understand and maintain. Magic numbers can hide tuning opportunities and make it harder to reason about system behavior.",
           "commit": "",
           "fixed_at": ""
         }
@@ -270,6 +303,9 @@
           "fix_suggestion": "Run 'python3 -m ruff check . --fix' to automatically remove unused imports and variables. Manually rename ambiguous variable names like 'l' to clearer names like 'lane'.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Key issues:\n- backoffice/config.py:12 - unused 'sys' import\n- backoffice/regression.py:24 - unused 'sys' import\n- backoffice/server.py:18 - unused 'os' import\n- tests/test_aggregate.py:6 - unused 'pytest' import\n- tests/test_delivery.py:782,798,804 - ambiguous variable name 'l'",
+          "line": 0,
+          "impact": "Code cleanliness, potential hidden bugs, reduced maintainability. Unused imports consume memory.",
           "commit": "",
           "fixed_at": ""
         },
@@ -286,6 +322,9 @@
           "fix_suggestion": "Replace broad except clauses with specific exception types:\n- Instead of 'except Exception:', use 'except (json.JSONDecodeError, OSError)'\n- Use 'except FileNotFoundError:' instead of bare except\n- Add explicit re-raise for unexpected exceptions",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "backoffice/regression.py:191,205,206 - bare 'except Exception:' in LCOV parsing\nbackoffice/server.py:75 - broad exception in _load_manual_items()\nMultiple sync provider files with unspecific exception handling",
+          "line": 191,
+          "impact": "Masks errors during development, makes debugging harder, can hide real bugs in error handling paths.",
           "commit": "",
           "fixed_at": ""
         },
@@ -302,6 +341,9 @@
           "fix_suggestion": "Use list-based command passing instead of shell=True. Replace:\nsubprocess.run('python3 -m pytest --cov=.', shell=True)\nWith:\nsubprocess.run(['python3', '-m', 'pytest', '--cov', '.'], shell=False)\nFor dynamic commands, use shlex.split() to safely tokenize.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "proc = subprocess.run(\n    cmd,\n    cwd=cwd,\n    shell=True,  # SECURITY ISSUE\n    capture_output=True,\n    text=True,\n    timeout=timeout_s,\n    env={**os.environ},\n)",
+          "line": 96,
+          "impact": "If configuration handling changes to accept user input, this becomes a shell injection vulnerability. Commands with dynamic interpolation could be exploited.",
           "commit": "",
           "fixed_at": ""
         },
@@ -318,6 +360,9 @@
           "fix_suggestion": "Rewrite CORS logic to be explicit about allowing all vs. whitelisting:\nif \"*\" in allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", \"*\")\nelif origin and origin in allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", origin)",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "if \"*\" in allowed or origin in allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", origin or \"*\")\nelif allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", allowed[0])",
+          "line": 184,
+          "impact": "If '*' is ever added to allowed_origins, the server echoes any origin sent by browser. This defeats CORS protection by allowing any site to read responses.",
           "commit": "",
           "fixed_at": ""
         },
@@ -334,6 +379,9 @@
           "fix_suggestion": "Check return codes and log failures:\nresult = subprocess.run(args, cwd=str(r), capture_output=True)\nif result.returncode != 0:\n    logger.error(f\"Agent {dept} failed: {result.stderr}\")",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "api_server.py run_agent() at line 102:\nsubprocess.run(args, cwd=str(r))\nNo check of returncode - failures are silent",
+          "line": 102,
+          "impact": "If agent scripts fail to start or crash, user gets 200 OK saying scan started, but scan never runs. Silent failures lead to missed findings.",
           "commit": "",
           "fixed_at": ""
         },
@@ -350,6 +398,9 @@
           "fix_suggestion": "Start the thread inside the lock:\nwith running_lock:\n    if dept in running_jobs:\n        return False\n    t = threading.Thread(...)\n    running_jobs[dept] = t\n    t.start()  # <-- Inside lock",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "with running_lock:\n    if dept in running_jobs:\n        return False\n    t = threading.Thread(...)\n    running_jobs[dept] = t\n\nt.start()  # <-- Lock released, thread not yet started",
+          "line": 107,
+          "impact": "If two requests come in for same department simultaneously, both could pass lock check and start duplicate jobs, wasting resources.",
           "commit": "",
           "fixed_at": ""
         },
@@ -366,6 +417,9 @@
           "fix_suggestion": "Rename 'l' to 'lane':\nsprint_now = next(lane for lane in result['sprint_lanes'] if lane['lane'] == 'Sprint Now')",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "Line 782: sprint_now = next(l for l in result['sprint_lanes'] if l['lane'] == 'Sprint Now')\nLine 798: sprint_now = next(l for l in ...\nLine 804: lanes = {l['lane'] for l in ...}",
+          "line": 782,
+          "impact": "Reduced code readability, increased typo risk during maintenance.",
           "commit": "",
           "fixed_at": ""
         },
@@ -382,6 +436,9 @@
           "fix_suggestion": "Remove the env parameter or pass None:\nBefore: subprocess.run(..., env={**os.environ})\nAfter: subprocess.run(...)\nOr: subprocess.run(..., env=None)",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "env={**os.environ},  # Unnecessary copy",
+          "line": 100,
+          "impact": "Creates dict copy on each subprocess call, wasting memory and CPU for large environments.",
           "commit": "",
           "fixed_at": ""
         },
@@ -398,6 +455,9 @@
           "fix_suggestion": "Add comprehensive docstrings with parameter and return type documentation following Google or NumPy format.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "Functions like load_json(), count_severities() have minimal docs.\nNo parameter types or return types documented for many utilities.",
+          "line": 0,
+          "impact": "Reduced API clarity, harder developer onboarding, less IDE autocomplete support.",
           "commit": "",
           "fixed_at": ""
         }
@@ -449,6 +509,9 @@
           "fix_suggestion": "Namespace all local storage keys by a stable user scope such as authenticated user ID or an anonymous device ID, and migrate existing data. At minimum, clear user-owned local data on logout/account switch and prevent account backup from exporting records created under a different user scope.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "const PREFIX = 'selah_';\nfunction key(name: string): string {\n  return `${PREFIX}${name}`;\n}\n...\nfunction logout() {\n  clearToken();\n  clearEncryptionCache();\n}\n...\nbackupLocalDataToAccount(undefined, masterKey);",
+          "line": 6,
+          "impact": "On a shared device, studies, journal entries, bookmarks, reading progress, and verse history from user A can be shown to user B and can be uploaded into user B's account backup. This is a real cross-account privacy breach.",
           "commit": "1c27285",
           "fixed_at": "2026-03-11T17:26:55-06:00"
         },
@@ -465,6 +528,9 @@
           "fix_suggestion": "Fail closed: block account backup until encryption is ready for any journal export, prompt the user to unlock first, and never send plaintext journal content to the API from this backup path.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "// Encrypt journals if master key is available\nconst payload = masterKey\n  ? await encryptJournalForSync(entry as unknown as Record<string, unknown>, masterKey)\n  : entry;\n...\nconst result = await backupLocalDataToAccount(undefined, masterKey);\n...\n\"Only you can read your entries \u2014 not even our servers can see them.\"",
+          "line": 107,
+          "impact": "Sensitive prayer journal content can be exfiltrated to the backend in plaintext after a refresh, unlock loss, or encryption setup failure, directly violating the app's confidentiality guarantees.",
           "commit": "580a96e",
           "fixed_at": "2026-03-11T17:28:39-06:00"
         },
@@ -481,6 +547,9 @@
           "fix_suggestion": "Return `_encrypted`, `_encVersion`, `_payload`, and preserved metadata for encrypted entries, and add an integration test that saves an encrypted journal and then reads back the exact encrypted blob.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "if (entry._encrypted && entry._payload) {\n  item._encrypted = true;\n  item._encVersion = entry._encVersion || 1;\n  item._payload = entry._payload;\n}\n...\nconst journals = (result.Items || []).map(item => ({\n  id: item.id,\n  userId: user.userId,\n  studyId: item.studyId || null,\n  date: item.date,\n  content: item.content,\n  prompts: item.prompts || [],\n  mood: item.mood || null,\n  prayerRequests: item.prayerRequests || [],\n  tags: item.tags || [],\n}));",
+          "line": 1064,
+          "impact": "Users can believe encrypted journal entries are safely backed up to the account, but the API cannot return the encrypted payload needed to restore them. This creates silent data-loss risk the first time server recovery is attempted.",
           "commit": "a1eb898",
           "fixed_at": "2026-03-11T17:30:37-06:00"
         },
@@ -497,6 +566,9 @@
           "fix_suggestion": "Extract a reusable paginated query helper that loops on `LastEvaluatedKey`, and use it for all collection reads and count computations. For stats, prefer `Select: 'COUNT'` with pagination or precomputed counters.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "const result = await ddb.send(new QueryCommand({ ... }));\nconst studies = (result.Items || [])...\n...\nconst result = await ddb.send(new QueryCommand({ ... }));\nconst journals = (result.Items || [])...\n...\nlastKey = result.LastEvaluatedKey; // present only in handleDeleteAccount",
+          "line": 964,
+          "impact": "Larger accounts will see missing history, incomplete journal/bookmark lists, and wrong dashboard stats. Because the failure mode is silent truncation, it is likely to be misdiagnosed as random data loss.",
           "commit": "",
           "fixed_at": ""
         },
@@ -513,6 +585,9 @@
           "fix_suggestion": "Hash reset and verification codes before storage, compare hashes in constant time, and keep only metadata like expiry and attempt counts in plaintext.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "Item: {\n  PK: `RESET#${normalEmail}`,\n  SK: 'CODE',\n  code,\n  attempts: 0,\n  ...\n}\n...\nif (resetItem.code !== code) {\n  ...\n}\n...\nItem: {\n  PK: `VERIFY#${userId}`,\n  SK: 'CODE',\n  code: verifyCode,\n  ...\n}",
+          "line": 545,
+          "impact": "A read-only compromise of the application table is enough to turn active reset or verification codes into account takeover material.",
           "commit": "a1eb898",
           "fixed_at": "2026-03-11T17:30:37-06:00"
         }
@@ -563,6 +638,9 @@
           "fix_suggestion": "Run 'npm audit fix' to update h3 to a patched version. Ensure all devDependencies are updated to their latest secure versions.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "npm audit output shows: h3 <=1.15.8 - Severity: high - Path Traversal via Percent-Encoded Dot Segments in serveStatic, SSE Event Injection via Unsanitized Carriage Return, Double Decoding in serveStatic",
+          "line": 0,
+          "impact": "Although h3 is a devDependency used by Astro's development server, these vulnerabilities could be exploited during development or in build environments. The static site output is not directly affected at runtime, but the development process is at risk.",
           "commit": "5787cbb",
           "fixed_at": "2026-03-09T16:18:00Z"
         },
@@ -579,6 +657,9 @@
           "fix_suggestion": "Run 'npm audit fix' to update devalue to a patched version that addresses the prototype pollution vulnerability.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "npm audit output shows: devalue <=5.6.3 - Severity: moderate - devalue has prototype pollution in devalue.parse and devalue.unflatten",
+          "line": 0,
+          "impact": "This is a devDependency used by Astro internally. The static site output is not directly vulnerable, but the development environment could be affected during build time.",
           "commit": "f0949ce",
           "fixed_at": "2026-03-09T16:18:00Z"
         },
@@ -595,6 +676,9 @@
           "fix_suggestion": "Run 'npm audit fix' to update lodash and its dependents to patched versions. May require updating @astrojs/check or other Astro tooling.",
           "fixable_by_agent": true,
           "status": "skipped",
+          "evidence": "npm audit output shows: lodash 4.0.0 - 4.17.21 - Severity: moderate - Lodash has Prototype Pollution Vulnerability in _.unset and _.omit functions.",
+          "line": 0,
+          "impact": "This is a devDependency chain used by Astro's language server support. The static site output is not directly vulnerable, but the development environment could be affected.",
           "commit": null,
           "fixed_at": null
         },
@@ -611,6 +695,9 @@
           "fix_suggestion": "Consider using a nonce-based CSP instead of unsafe-inline. Update the Plausible script initialization to use a nonce attribute. The current implementation is acceptable for a static site, but nonce-based CSP would be more secure.",
           "fixable_by_agent": false,
           "status": "fixed",
+          "evidence": "CSP header: default-src 'self'; script-src 'self' 'unsafe-inline' https://plausible.io",
+          "line": 66,
+          "impact": "Allows inline scripts to execute without nonce validation, which could increase XSS attack surface if user input were ever rendered unsafely. However, the site correctly uses textContent instead of innerHTML for DOM updates, mitigating this risk.",
           "commit": "fada676",
           "fixed_at": "2026-03-09T16:18:00Z"
         },
@@ -627,6 +714,9 @@
           "fix_suggestion": "The current regex is acceptable for client-side validation. Server-side validation on the AWS Lambda endpoint is what truly matters for security.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;",
+          "line": 338,
+          "impact": "Some valid email addresses may be rejected. However, server-side validation should catch edge cases, so this is low-impact for user experience.",
           "commit": "5787cbb",
           "fixed_at": "2026-03-09T16:18:00Z"
         },
@@ -643,6 +733,9 @@
           "fix_suggestion": "The current implementation with requestAnimationFrame and passive listeners is already optimized. This is acceptable as-is.",
           "fixable_by_agent": false,
           "status": "fixed",
+          "evidence": "Custom parallax implementation using requestAnimationFrame. Code correctly checks for prefers-reduced-motion.",
+          "line": 308,
+          "impact": "Potential janky scrolling experience on low-end devices. Users with prefers-reduced-motion are correctly excluded.",
           "commit": "5787cbb",
           "fixed_at": "2026-03-09T16:18:00Z"
         }
@@ -693,6 +786,9 @@
           "fix_suggestion": "Add logging for all exception handlers: `except Exception as e: logger.error(f'License secret check failed: {e}')`",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "try:\n    from google.cloud import secretmanager\n    sm_check = secretmanager.SecretManagerServiceClient()\n    sm_check.access_secret_version(...)\nexcept Exception:\n    pass  # No license secret, skip",
+          "line": 517,
+          "impact": "Failed API calls and critical errors are silently ignored, making it impossible to detect security issues, API failures, or authentication problems. Users may get unexpected behavior without any indication of what went wrong.",
           "commit": "",
           "fixed_at": ""
         },
@@ -709,6 +805,9 @@
           "fix_suggestion": "1) Remove password from metadata completely\n2) Never log or include password in build substitutions\n3) Store only in Secret Manager immediately\n4) Use `bytes` type to prevent accidental string conversion in logs",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "data['console_password'].encode()",
+          "line": 684,
+          "impact": "If the console password is ever exposed (e.g., in logs, error messages, or build output), an attacker could compromise the PE installation. This violates secure password handling practices.",
           "commit": "",
           "fixed_at": ""
         },
@@ -725,6 +824,9 @@
           "fix_suggestion": "Add logging: `except Exception as e: app.logger.warning(f'Auth secret load failed: {e}'); return ''`",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "try:\n    sm = secretmanager.SecretManagerServiceClient()\n    result = sm.access_secret_version(...)\n    _cached_passphrase = result.payload.data.decode('utf-8')\n    return _cached_passphrase\nexcept Exception:\n    return ''",
+          "line": 563,
+          "impact": "Auth failures are silently ignored; users may see cryptic '401 Unauthorized' errors without knowing why. Secret Manager failures won't be visible, making troubleshooting impossible. Security issues in authentication code go unnoticed.",
           "commit": "",
           "fixed_at": ""
         },
@@ -741,6 +843,9 @@
           "fix_suggestion": "Validate against GCP API requirements or use stricter regex that checks for consecutive/trailing hyphens",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "PROJECT_RE = re.compile(r\"^[a-z][a-z0-9-]{5,29}$\")",
+          "line": 115,
+          "impact": "Invalid GCP project IDs could be accepted by the API, causing Terraform apply failures when the build job tries to use them. This wastes resources and confuses users with cryptic GCP API errors.",
           "commit": "",
           "fixed_at": ""
         },
@@ -757,6 +862,9 @@
           "fix_suggestion": "Add recursion depth limit and visited set for cycle detection",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "def removesubgroups(data_rsg,id_rsg):\n    groups = list(filter(lambda x:x [\"parent\"]==id_rsg,data_rsg))\n    for group in groups:\n        subid = group[\"id\"]\n        data_rsg = removesubgroups(data_rsg,subid)  # Recursive call",
+          "line": 13,
+          "impact": "Malformed or tampered classification JSON with cycles would crash the Bolt task, failing the entire PE deployment. This is a denial-of-service vector.",
           "commit": "",
           "fixed_at": ""
         },
@@ -773,6 +881,9 @@
           "fix_suggestion": "Add try-except around file operations with clear error messages",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "with open(source_classification_file) as data_file:\n    data = json.load(data_file)",
+          "line": 54,
+          "impact": "Missing classification backup files cause the entire Bolt task to fail with unclear error messages, blocking PE deployment restore operations.",
           "commit": "",
           "fixed_at": ""
         },
@@ -789,6 +900,9 @@
           "fix_suggestion": "Use functools.lru_cache or thread-safe cache mechanism",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "_cached_passphrase = None\n\ndef _get_passphrase():\n    global _cached_passphrase\n    if _cached_passphrase is not None:\n        return _cached_passphrase\n    ...\n    _cached_passphrase = result.payload.data.decode('utf-8')",
+          "line": 545,
+          "impact": "Under high concurrency, multiple Secret Manager requests could be made simultaneously, or stale/corrupted passphrase values could be used.",
           "commit": "",
           "fixed_at": ""
         },
@@ -805,6 +919,9 @@
           "fix_suggestion": "Use meta.get() with defaults instead of direct key access",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "meta = read_metadata(deployment_id)\nif not meta:\n    return jsonify({'error': 'Deployment not found'}), 404\n# Later: meta['build_id'], meta['status'] - no existence check",
+          "line": 760,
+          "impact": "Corrupted GCS metadata could cause API 500 errors instead of graceful degradation. This blocks users from managing deployments.",
           "commit": "",
           "fixed_at": ""
         },
@@ -821,6 +938,9 @@
           "fix_suggestion": "Use secrets.compare_digest() for timing-safe comparison",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "passphrase = _get_passphrase()\nif passphrase and token == passphrase:\n    return True",
+          "line": 460,
+          "impact": "An attacker on the same network could brute-force the passphrase character by character using timing side-channels.",
           "commit": "",
           "fixed_at": ""
         }
@@ -871,6 +991,9 @@
           "fix_suggestion": "Replace Math.random() with crypto.randomBytes() for generating verification codes. Example: `const verifyCode = crypto.randomBytes(3).toString('hex').toUpperCase();` (generates 6-char hex codes). The crypto module is already imported.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "function generateCode() {\n  return String(Math.floor(100000 + Math.random() * 900000));\n}\n\n// Used at lines 638, 749, 938 for critical operations:\n// const verifyCode = generateCode();",
+          "line": 287,
+          "impact": "An attacker could predict or brute force verification codes used for email verification, password reset flows, and other security-sensitive operations. This completely undermines the security of the authentication system.",
           "commit": "",
           "fixed_at": ""
         },
@@ -887,6 +1010,9 @@
           "fix_suggestion": "Run `npm audit fix` to update fast-xml-parser to a patched version. The override in package.json (line 56) already specifies `fast-xml-parser >= 5.5.6`, but the constraint may be too loose. Update to the latest version and verify AWS SDK dependencies are compatible.",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "npm audit output:\nfast-xml-parser  4.0.0-beta.3 - 5.5.6\nSeverity: moderate\nEntity Expansion Limits Bypassed When Set to Zero Due to JavaScript Falsy Evaluation in fast-xml-parser\nhttps://github.com/advisories/GHSA-jp2q-39xq-3w4g",
+          "line": 55,
+          "impact": "XXE (XML External Entity) attacks could potentially be carried out if XML parsing is involved. This could lead to information disclosure or denial of service.",
           "commit": "",
           "fixed_at": ""
         },
@@ -903,6 +1029,9 @@
           "fix_suggestion": "Consider using sessionStorage instead of localStorage to limit the lifetime of cached keys to the current session. Alternatively, implement a timeout mechanism that clears cached keys after 30 minutes of inactivity. Document this as a known limitation and advise users to re-enter their password after closing and reopening the browser for maximum security.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "function cacheEncryptionMaterial(keys: EncryptionKeys) {\n  if (typeof window === 'undefined') return;\n  localStorage.setItem(ENC_CACHE_KEY, JSON.stringify(keys));\n}",
+          "line": 55,
+          "impact": "If an attacker gains access to the browser's localStorage (through XSS or local access), they could retrieve the cached encryption key material. This would allow them to decrypt encrypted notes without needing the password.",
           "commit": "",
           "fixed_at": ""
         },
@@ -919,6 +1048,9 @@
           "fix_suggestion": "Use `crypto.getRandomValues()` for the random portion or use a UUID library. Example: `return `${Date.now()}-${crypto.getRandomValues(new Uint8Array(4)).reduce((a,b) => a + b.toString(16), '')}`",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "export function generateId(): string {\n  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);\n}",
+          "line": 106,
+          "impact": "Low probability of ID collision if two IDs are generated within the same millisecond. Could cause data loss or corruption if duplicate IDs occur.",
           "commit": "",
           "fixed_at": ""
         },
@@ -935,6 +1067,9 @@
           "fix_suggestion": "Replace with Next.js Image component: `import Image from 'next/image'; ... <Image src=\"/cody-jo-eflin.jpg\" alt=\"Cody Jo Eflin\" className=\"h-auto w-full object-cover\" width={400} height={500} priority />`",
           "fixable_by_agent": true,
           "status": "open",
+          "evidence": "<img\n  src=\"/cody-jo-eflin.jpg\"\n  alt=\"Cody Jo Eflin\"\n  className=\"h-auto w-full object-cover\"\n  loading=\"eager\"\n/>",
+          "line": 23,
+          "impact": "Slower page load performance, higher bandwidth usage, potential impact on Core Web Vitals and SEO ranking.",
           "commit": "",
           "fixed_at": ""
         },
@@ -951,6 +1086,9 @@
           "fix_suggestion": "Complete the web-push and Polly implementations when ready. These are intentionally incomplete and documented.",
           "fixable_by_agent": false,
           "status": "open",
+          "evidence": "// TODO: Wire up web-push library when VAPID keys are configured (line 1947)\n// TODO: Wire up @aws-sdk/client-polly when IAM permissions are granted (line 1960)",
+          "line": 1947,
+          "impact": "Push notifications and text-to-speech features are stubbed but not fully implemented. This is acceptable during development but should be tracked for completion.",
           "commit": "",
           "fixed_at": ""
         }
@@ -1002,6 +1140,9 @@
           "fix_suggestion": "Replace with cryptographically secure random using crypto.getRandomValues(). Generate an 8-character alphanumeric code or longer numeric code with sufficient entropy.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "function generateCode() {\n  return String(Math.floor(100000 + Math.random() * 900000));\n}",
+          "line": 1692,
+          "impact": "Password reset codes can be brute-forced in minutes, allowing account takeover without user knowledge or notification.",
           "commit": "",
           "fixed_at": "2026-03-10T03:30:00Z"
         },
@@ -1018,6 +1159,9 @@
           "fix_suggestion": "Update Next.js to 16.2.1 or later: npm audit fix --force. Verify CSRF protection uses Origin/Referer headers, not null origin trust.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "next@16.1.6 with advisories GHSA-ggv3-7p47-pfv8, GHSA-3x4c-7xq6-9pq8, GHSA-h27x-g6w4-24gq, GHSA-mq59-m269-xvcx, GHSA-jcc7-9wpm-mj36",
+          "line": 20,
+          "impact": "Request smuggling can bypass security controls. Cache/buffering exhaustion causes DoS. CSRF bypass in Server Actions compromises form submissions. HMR CSRF affects dev deployments.",
           "commit": "",
           "fixed_at": "2026-03-10T03:30:00Z"
         },
@@ -1034,6 +1178,9 @@
           "fix_suggestion": "Run npm audit fix to update @aws-sdk/xml-builder. Ensure entity expansion is explicitly limited (non-zero) when parsing XML.",
           "fixable_by_agent": true,
           "status": "skipped",
+          "evidence": "@aws-sdk/xml-builder depends on vulnerable fast-xml-parser without entity limit enforcement",
+          "line": 26,
+          "impact": "DoS via XML bomb attacks if untrusted XML is parsed without entity limits.",
           "commit": "",
           "fixed_at": null
         },
@@ -1050,6 +1197,9 @@
           "fix_suggestion": "Replace with Next.js Link: import Link from 'next/link'; then <Link href=\"/path\">Text</Link> for each of the 3 links.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "<a href=\"/cards\" className=\"hover:text-foreground transition-colors\">Card Meanings</a>\n<a href=\"/guides\" className=\"hover:text-foreground transition-colors\">Spread Guides</a>\n<a href=\"/blog\" className=\"hover:text-foreground transition-colors\">Blog</a>",
+          "line": 98,
+          "impact": "Performance degradation: loses Next.js prefetching, client-side navigation, and automatic code splitting. Full page reloads instead of SPA-style transitions.",
           "commit": "",
           "fixed_at": "2026-03-10T03:45:00Z"
         },
@@ -1066,6 +1216,9 @@
           "fix_suggestion": "For user-uploaded images, either: (1) Use next/image with fill or fixed sizes, ensuring proper alt text and sizes are set; OR (2) Keep <img> but suppress ESLint warning if user uploads don't justify optimization overhead.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "<img src={imageUrls[key]} alt=\"Journal attachment\" loading=\"lazy\" width={80} height={80} className=\"h-full w-full object-cover\" />",
+          "line": 442,
+          "impact": "Images served unoptimized: no format conversion, no responsive sizing, no lazy loading benefit. Larger payloads, slower LCP, higher bandwidth costs.",
           "commit": "",
           "fixed_at": "2026-03-10T03:40:00Z"
         },
@@ -1082,6 +1235,9 @@
           "fix_suggestion": "Add missing dependencies to useEffect arrays: [masterKey] for history/page.tsx, [refreshSavedReadings] for reading/page.tsx.",
           "fixable_by_agent": true,
           "status": "skipped",
+          "evidence": "useEffect(() => { ... uses masterKey ... }, []); // masterKey missing from dependency array",
+          "line": 95,
+          "impact": "Stale closures: effect references old masterKey if it changes. State consistency bugs, encryption failures if masterKey is re-derived.",
           "commit": "",
           "fixed_at": null
         },
@@ -1098,6 +1254,9 @@
           "fix_suggestion": "Remove unused variables. If intentionally left for future use or to match a pattern, prefix with _ to silence linter.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "const { content, prompts, mood, tags } = ...; // assigned but never used",
+          "line": 318,
+          "impact": "Code bloat, reduced readability, potential confusion about intended API usage.",
           "commit": "",
           "fixed_at": "2026-03-10T03:30:00Z"
         },
@@ -1114,6 +1273,9 @@
           "fix_suggestion": "Add aria-label to parent div: aria-label=\"Image failed to load\" or wrap in a semantic <figure> with <figcaption>.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "<Image size={16} className=\"text-muted\" /> (no alt, inside fallback for missing image)",
+          "line": 445,
+          "impact": "Accessibility violation: screen reader users cannot understand the image placeholder purpose.",
           "commit": "",
           "fixed_at": "2026-03-10T03:30:00Z"
         },
@@ -1130,6 +1292,9 @@
           "fix_suggestion": "Use GSI1 (email-based) with Query instead of Scan. Implement proper cursor-based pagination with ExclusiveStartKey.",
           "fixable_by_agent": true,
           "status": "skipped",
+          "evidence": "Scan operation on full table with client-side filter for email search; no GSI utilization",
+          "line": 95,
+          "impact": "O(n) scan costs; latency increases linearly with user count. Read capacity wasted. Poor scalability for large user bases.",
           "commit": "",
           "fixed_at": null
         },
@@ -1146,6 +1311,9 @@
           "fix_suggestion": "Log only err.message, not full err objects. Use structured logging and filter PII before logging. Consider using a logging service with automatic PII masking.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "console.error('Failed to load history:', err); // full error object logged",
+          "line": 42,
+          "impact": "Error details (stack traces, request data) visible in CloudWatch logs. PII or auth tokens could be exposed if included in error objects.",
           "commit": "",
           "fixed_at": "2026-03-10T03:30:00Z"
         },
@@ -1162,6 +1330,9 @@
           "fix_suggestion": "Add optional JSDoc warnings and dev-time assertions that toBase64 is never called with plaintext. Or seal functions in closure to prevent external misuse.",
           "fixable_by_agent": true,
           "status": "fixed",
+          "evidence": "export function toBase64(buf: ArrayBuffer): string { /* converts to string */ }",
+          "line": 23,
+          "impact": "Low risk: encryption implementation is sound. But if developer error causes plaintext to be converted and logged, keys could leak.",
           "commit": "",
           "fixed_at": "2026-03-10T03:40:00Z"
         }

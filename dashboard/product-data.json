@@ -1,6 +1,6 @@
 {
   "department": "product",
-  "generated_at": "2026-03-23T00:18:03.947780+00:00",
+  "generated_at": "2026-03-23T01:15:00.861794+00:00",
   "totals": {
     "critical": 23,
     "high": 38,
@@ -36,7 +36,10 @@
           "effort": "hard",
           "fix_suggestion": "Migrate photos to separate DynamoDB table with gallery_id+filename composite key. Update get_gallery() and list_galleries() to join.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Photos dictionary grows unbounded; CAT-002 marked as unfixed in PROJECT-LOG",
+          "line": 2200,
+          "impact": "Blocks scaling to large shoots (weddings, events 2000+ photos). Production blocker."
         },
         {
           "id": "PROD-002",
@@ -50,7 +53,10 @@
           "effort": "easy",
           "fix_suggestion": "Add AbortController to upload fetch calls. Create cancel button in progress UI. Handle abort errors with retry.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "wizUploadPhotos() uses fetch() without AbortController; no cancel button in UI",
+          "line": 3500,
+          "impact": "Poor UX on unreliable networks. Users waste bandwidth on failed uploads."
         },
         {
           "id": "PROD-003",
@@ -64,7 +70,10 @@
           "effort": "hard",
           "fix_suggestion": "Write unit tests for auth (PIN validation, rate limiting, JWT, session expiry). Test maintenance (trash cleanup, orphans). Add 80% coverage gate to CI.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "PROJECT-LOG notes 0% coverage; PIN brute-force, JWT validation, rate limiting untested",
+          "line": 1,
+          "impact": "Auth bugs slip through. Security-critical functions unprotected. Data corruption in maintenance undetected."
         },
         {
           "id": "PROD-004",
@@ -78,7 +87,10 @@
           "effort": "easy",
           "fix_suggestion": "Add IAM policy: secretsmanager:GetSecretValue for admin-api-key secret ARN. Test with real operations.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Missing secretsmanager:GetSecretValue permission in Lambda execution role",
+          "line": 227,
+          "impact": "Admin operations requiring secret signing fail. Security-critical bug."
         },
         {
           "id": "PROD-005",
@@ -92,7 +104,10 @@
           "effort": "easy",
           "fix_suggestion": "Add WebACLAssociation resources to attach WAF ACL to CloudFront distributions. Test blocks with curl.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "PROJECT-LOG lists as High Priority #3. DDoS/rate-limit rules have no effect.",
+          "line": 1,
+          "impact": "No active protection against common attacks. Configured infrastructure unenforced."
         },
         {
           "id": "PROD-006",
@@ -106,7 +121,10 @@
           "effort": "moderate",
           "fix_suggestion": "Replace sequential with Promise.all() for 4-6 concurrent. Implement queue and aggregate progress. Add concurrency limit.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "wizUploadPhotos() loops sequentially with await; PROJECT-LOG lists as medium-priority",
+          "line": 3600,
+          "impact": "Slow upload experience. Photographers wait longer to reach curation. Painful on slower connections."
         },
         {
           "id": "PROD-007",
@@ -120,7 +138,10 @@
           "effort": "easy",
           "fix_suggestion": "Add download icon to lightbox header. Expose presigned URL or simple download endpoint. Cache URLs 24h.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Lightbox missing download icon; requires separate modal to select single photo",
+          "line": 2100,
+          "impact": "Friction for clients wanting one photo. Increases modal clicks and complexity."
         },
         {
           "id": "PROD-008",
@@ -134,7 +155,10 @@
           "effort": "hard",
           "fix_suggestion": "Decision: (1) Ship Zen desktop/web app, (2) Remove from marketing, (3) Build as Studio module. For now route Zen prospects to Studio.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "HANDOFF: 'Zen is currently marketing surface only. No shipped app, backend, or download path'",
+          "line": 1,
+          "impact": "Product positioning doesn't match shipped reality. Can mislead prospects."
         },
         {
           "id": "PROD-009",
@@ -148,7 +172,10 @@
           "effort": "hard",
           "fix_suggestion": "Extract all routes from deploy.sh into terraform/api_gateway.tf. Use modules for route groups. Verify match. Delete script definitions.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "PROJECT-LOG lists as High Priority #6. Manual changes won't be tracked.",
+          "line": 1,
+          "impact": "Infrastructure not fully code-controlled. Risk of untracked changes. Hard to audit."
         },
         {
           "id": "PROD-010",
@@ -162,7 +189,10 @@
           "effort": "moderate",
           "fix_suggestion": "Define all 4 tables in terraform/dynamodb.tf with billing, TTL, GSI. Add backup vault. Sync schema from running tables. Test apply.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "PROJECT-LOG lists as High Priority #7",
+          "line": 1,
+          "impact": "Tables undocumented in IaC. Risk of deletion. No automated backups."
         },
         {
           "id": "PROD-011",
@@ -176,7 +206,10 @@
           "effort": "easy",
           "fix_suggestion": "Create ResponseHeadersPolicy with CSP: 'default-src self; script-src self; style-src self fonts.googleapis.com'. Apply to distributions.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "PROJECT-LOG lists as High Priority #8. Frontend uses inline scripts.",
+          "line": 1,
+          "impact": "XSS vulnerability vector. Inline scripts bypass CSP if attacker injects HTML."
         },
         {
           "id": "PROD-012",
@@ -190,7 +223,10 @@
           "effort": "easy",
           "fix_suggestion": "Replace s3:CopyObject with GetObject,PutObject. Replace hardcoded IDs with '${data.aws_caller_identity.current.account_id}'. Run plan.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "PROJECT-LOG lists 'Fix hardcoded ARN' and 's3:CopyObject' as High Priority",
+          "line": 150,
+          "impact": "Policies fail or have unintended permissions. IDs break in other accounts."
         },
         {
           "id": "PROD-013",
@@ -204,7 +240,10 @@
           "effort": "easy",
           "fix_suggestion": "Add touchstart/touchend listeners. Track swipe distance/velocity. Navigate on >50px swipe.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Keyboard nav works but no touch event handlers. Listed as medium-priority in PROJECT-LOG",
+          "line": 1800,
+          "impact": "Poor mobile UX. Expected pattern missing. Increases friction."
         },
         {
           "id": "PROD-014",
@@ -218,7 +257,10 @@
           "effort": "easy",
           "fix_suggestion": "Parse error responses. Show specific messages: 'File too large (max 500MB)'. Handle rate limits, auth, file types separately.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "wizUploadPhotos() error handling generic. Toast messages lack detail.",
+          "line": 4200,
+          "impact": "Users don't know why operations failed. Problematic for first-time photographers."
         },
         {
           "id": "PROD-015",
@@ -232,7 +274,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add date range picker, action filter (view/download/comment/ban). Paginate 50/page. Sort by date/email.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All rows rendered without pagination or filtering",
+          "line": 6500,
+          "impact": "Photographers can't find relevant activity. Slow to load."
         },
         {
           "id": "PROD-016",
@@ -246,7 +291,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add drag handles. Implement PATCH /photo-order endpoint. Persist in gallery.photos array.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Staging grid has no drag handles. Listed as medium-priority in PROJECT-LOG",
+          "line": 5500,
+          "impact": "Photographers can't curate presentation. Problematic for narrative shoots."
         },
         {
           "id": "PROD-017",
@@ -260,7 +308,10 @@
           "effort": "easy",
           "fix_suggestion": "Add loading spinner component. Show during operations. Display duration estimate if >2s.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "approveStaging() disables button but no visual loading spinner",
+          "line": 4800,
+          "impact": "Unclear feedback. Can cause duplicate submissions. Frustrating."
         },
         {
           "id": "PROD-018",
@@ -274,7 +325,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add favorites table. Show heart icon in lightbox. POST /favorites. Display count in admin.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No favorites endpoint. MODULARIZATION-PLAN lists as Module 4 'Client Proofing' (future)",
+          "line": 3000,
+          "impact": "Lost insight into client preferences. Photographers don't know which photos resonated."
         },
         {
           "id": "PROD-019",
@@ -288,7 +342,10 @@
           "effort": "easy",
           "fix_suggestion": "Run pip-audit. Add GitHub Actions scan job. Consider dependabot.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No pip-audit or dependabot configured",
+          "line": 1,
+          "impact": "Potential vulnerabilities undetected. No early warning."
         },
         {
           "id": "PROD-020",
@@ -302,7 +359,10 @@
           "effort": "easy",
           "fix_suggestion": "Remove all defaults. Require all config in Lambda env vars. Add startup validation.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "os.environ.get() with defaults for OPTIMIZE_LAMBDA_NAME, AWS_REGION, tables",
+          "line": 36,
+          "impact": "Harder to deploy to different regions. Config scattered."
         },
         {
           "id": "PROD-021",
@@ -316,7 +376,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add JSDoc with types, response shape, errors. Generate OpenAPI spec. Expose via Swagger UI.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Minimal docstrings. No spec. README lacks API docs.",
+          "line": 1,
+          "impact": "Hard to understand API contracts. Slow onboarding. No machine-readable reference."
         },
         {
           "id": "PROD-022",
@@ -330,7 +393,10 @@
           "effort": "easy",
           "fix_suggestion": "Create docs/adr/. Write ADRs for serverless, DynamoDB, multi-style generation, photo table migration.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No docs/adr/ directory. Decisions scattered.",
+          "line": 1,
+          "impact": "Future changes risk undoing decisions. New team members don't understand 'why'."
         },
         {
           "id": "PROD-023",
@@ -344,7 +410,10 @@
           "effort": "easy",
           "fix_suggestion": "Move to env vars. Set to support@analogifystudio.com, noreply@analogifystudio.com. Test send.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "NOTIFICATION_EMAIL, SENDER_EMAIL hardcoded. HANDOFF pending.",
+          "line": 76,
+          "impact": "Notifications reach developer instead of support. Scalability issue."
         },
         {
           "id": "PROD-024",
@@ -358,7 +427,10 @@
           "effort": "hard",
           "fix_suggestion": "Implement public API: (1) API key generation, (2) token auth on /api/* routes, (3) Webhooks. Start with gallery CRUD.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No API keys or webhook events",
+          "line": 1,
+          "impact": "Limits integrations with booking, CRM, asset tools. Blocks white-label/agency use."
         },
         {
           "id": "PROD-025",
@@ -372,7 +444,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add analytics: views/downloads over time, top photos, client heatmap, geography. Use access_log data.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Cost dashboard present. No analytics section.",
+          "line": 6800,
+          "impact": "Photographers can't gauge client interest or identify resonating photos."
         },
         {
           "id": "PROD-026",
@@ -386,7 +461,10 @@
           "effort": "moderate",
           "fix_suggestion": "Complete watermark in optimize pipeline or hide UI and implement as future module. Use feature flag.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Form fields exist but unclear if applied. Module planning lists as future.",
+          "line": 5200,
+          "impact": "UI suggests feature exists but incomplete. Confuses users."
         },
         {
           "id": "PROD-027",
@@ -400,7 +478,10 @@
           "effort": "hard",
           "fix_suggestion": "Plan: (1) preset table, (2) LUT loading from S3, (3) upload UI. Defer to Studio module.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "MULTI_STYLE_NAMES hardcoded. No LUT processing.",
+          "line": 200,
+          "impact": "Advanced photographers want custom grading. Blocks Studio module development."
         },
         {
           "id": "PROD-028",
@@ -414,7 +495,10 @@
           "effort": "easy",
           "fix_suggestion": "Add git tag to artifact. Track version in Terraform. Add S3 versioning. Document rollback.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "scripts/build-admin-lambda.sh creates admin.zip with no version numbering",
+          "line": 1,
+          "impact": "Hard to roll back bad deployments. No visibility into deployed version."
         },
         {
           "id": "PROD-029",
@@ -428,7 +512,10 @@
           "effort": "easy",
           "fix_suggestion": "Enable PITR on critical tables. Add AWS Backup vault with 30d retention. Document recovery.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No PITR or backup vault configured",
+          "line": 1,
+          "impact": "Risk of permanent data loss from truncation/corruption."
         },
         {
           "id": "PROD-030",
@@ -442,7 +529,10 @@
           "effort": "easy",
           "fix_suggestion": "Add playwright/cypress test with @axe-core/playwright. Run on key routes. Flag warnings on PR.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No existing axe test config",
+          "line": 1,
+          "impact": "A11y regressions can sneak in. Manual review time-consuming."
         }
       ],
       "categories": {
@@ -498,7 +588,10 @@
           "effort": "hard",
           "fix_suggestion": "Create a complete Privacy/Data Protection department: (1) Write agents/prompts/privacy-audit.md with GDPR (right to erasure, data portability, consent), UK Online Safety Act (age verification, duty of care), and CCPA coverage. (2) Create agents/privacy-audit.sh script following existing patterns. (3) Create dashboard/privacy.html dashboard. (4) Update Makefile with privacy target. (5) Register privacy in workflow.py DEPARTMENT_SCRIPTS, aggregate.py, and HQ dashboard.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "DEPARTMENT_SCRIPTS dict in workflow.py includes only 6 departments. tasks.py line 41 references 'privacy' in FINDINGS_FILE_BY_DEPARTMENT but no corresponding audit script. Dashboard missing privacy.html. No agents/prompts/privacy-audit.md file exists.",
+          "line": 39,
+          "impact": "Users cannot systematically audit GDPR, data retention, consent, child safety, and international data transfer compliance. Privacy is a critical selling point for the product but lacks automated coverage. Regulatory audits must fall back to manual review or external tools."
         },
         {
           "id": "PROD-002",
@@ -512,7 +605,10 @@
           "effort": "hard",
           "fix_suggestion": "Design and document a public REST API: (1) Define endpoints: GET /api/v1/targets, GET /api/v1/targets/{name}/findings/{department}, POST /api/v1/targets/{name}/audit, GET /api/v1/audit-status/{job_id}. (2) Implement OAuth2 or API key authentication with per-target scoping. (3) Add rate limiting (per key/IP). (4) Document with OpenAPI 3.0 spec. (5) Create webhook system for audit completion (POST to user-provided URL). (6) Add client SDKs (Python, JS). This enables integrations and extends market reach.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "api_server.py has basic HMAC auth (commented out in parts), no rate limiting, no API versioning, no OpenAPI spec. No public API documentation. endpoints are discovery-hostile (no /api/v1 convention). Results are JSON files on S3 \u2014 integration requires AWS credentials and custom parsing.",
+          "line": 1,
+          "impact": "Back Office cannot integrate into modern DevOps toolchains (ArgoCD, Kubernetes, CI/CD pipelines). Users building on Back Office findings must write custom ETL. No webhook support means audit results require polling. Users cannot build customer-facing audit dashboards on top of Back Office data."
         },
         {
           "id": "PROD-003",
@@ -526,7 +622,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement real-time job progress updates: (1) Add WebSocket support to server.py (use websockets or socket.io library). (2) Have agent scripts write progress to a job status server instead of files. (3) Server broadcasts updates to connected dashboard clients. (4) Update jobs.html to connect to WebSocket and render live findings as they arrive. (5) Add SSE fallback for environments where WebSocket isn't supported. This enables dramatic UX improvements.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "jobs.html contains polling logic, not websocket subscriptions. server.py has POST endpoints to trigger scans but no streaming output. Job updates require files to be written to disk and read by polling clients.",
+          "line": 1,
+          "impact": "Poor user experience during long audits. Users cannot see live progress of agent work. Impossible to provide real-time error feedback (user has to wait 5+ min to see an audit failed). Limits productization \u2014 SaaS customers expect real-time updates."
         },
         {
           "id": "PROD-004",
@@ -540,7 +639,10 @@
           "effort": "easy",
           "fix_suggestion": "Enhance dashboard filtering: (1) Add filter inputs for severity, category, effort, priority_phase. (2) Add full-text search box that filters findings by title + description in real-time. (3) Add 'quick filters' for common views (e.g., 'Must-Have', 'Next Sprint', 'High Effort'). (4) Persist filter state in URL query params (deeplinks). (5) Add column sorting. This is a low-effort high-value UX improvement.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Dashboard HTML has hard-coded severity filter logic. No dynamic search input. No category/effort/phase filters. No faceted search UI.",
+          "line": 200,
+          "impact": "Auditors with large finding sets must manually scan through rows. Difficult to find all 'high' effort items for sprint planning. Cannot quickly surface findings affecting a specific module or component."
         },
         {
           "id": "PROD-005",
@@ -554,7 +656,10 @@
           "effort": "easy",
           "fix_suggestion": "Complete the migration to unified config: (1) Consolidate all config into a single config/backoffice.yaml schema (already exists in config.py). (2) Update all shell scripts to use the new path. (3) Add a config migration tool that converts old format to new. (4) Remove references to legacy format from README. (5) Add config validation at startup (fail loudly if schema is invalid). (6) Update workflow.py to use Config object instead of direct YAML loads.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "workflow.py hardcodes CONFIG_PATH = 'config/targets.yaml' but config.py loads from 'config/backoffice.yaml'. agents/qa-scan.sh references 'config/qa-config.yaml' (line 18). No central config module controls all three formats. README documents backoffice.yaml but existing deployments may still use targets.yaml.",
+          "line": 26,
+          "impact": "Confusion during onboarding. Deployments may use inconsistent config files. Future changes require updates in three places. Risk of config drift between environments."
         },
         {
           "id": "PROD-006",
@@ -568,7 +673,10 @@
           "effort": "easy",
           "fix_suggestion": "Add request tracing: (1) Generate a trace_id (UUID) at audit start. (2) Pass trace_id to all agent scripts via environment variable. (3) Include trace_id in all log output (structured logs). (4) Add trace_id to findings JSON. (5) Add trace_id to job status records. (6) Create a dashboard view that shows audit timeline by department with trace_id linking all artifacts.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "job-status.sh tracks departments independently. Each agent script runs independently with no shared trace ID. No correlation ID in log output. Findings have no trace_id field linking them to a specific audit run.",
+          "line": 15,
+          "impact": "Difficult to debug multi-department audit failures. Cannot measure end-to-end audit latency. Cannot correlate agent output with specific user requests."
         },
         {
           "id": "PROD-007",
@@ -582,7 +690,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add audit history: (1) Archive findings to results/history/{repo}/{dept}/{timestamp}/findings.json on each audit. (2) Create comparison endpoint: GET /api/v1/targets/{name}/findings/{dept}?compare_to=<timestamp> returns delta (added, fixed, unchanged). (3) Add 'Improvements' chart to dashboard showing critical findings over time. (4) Add ability to export finding timeseries data for analysis. (5) Consider S3 versioning for long-term storage.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Agent scripts write to results/{repo}/{dept}-findings.json, overwriting previous scans. No timestamped archives. No findings history table. No comparison API to show finding delta between two audits.",
+          "line": 1,
+          "impact": "Cannot measure product quality improvements. Cannot see if fixes are regressing. Cannot show stakeholders 'we fixed 8 critical issues' because old audit data is gone. Hard to prioritize fixes without historical trend data."
         },
         {
           "id": "PROD-008",
@@ -596,7 +707,10 @@
           "effort": "moderate",
           "fix_suggestion": "Enhance task queue UI: (1) Add kanban board view (Proposed \u2192 Ready \u2192 In Progress \u2192 Blocked \u2192 Review \u2192 Done). (2) Add sprint view with burndown chart. (3) Add task search and filtering. (4) Make tasks draggable between columns (statuses). (5) Add task detail modal with notes and history. Medium effort, high UX impact.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "tasks.html renders a simple list. No kanban columns, no burndown, no sprint grouping. No drag-drop task reordering.",
+          "line": 1,
+          "impact": "Hard to visualize sprint progress. Team cannot easily see blockers at a glance. Poor collaboration UX compared to Jira/Linear."
         },
         {
           "id": "PROD-009",
@@ -610,7 +724,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add retry and checkpoint logic: (1) Implement exponential backoff retry (3 attempts) in agent runner. (2) Add checkpoint mechanism \u2014 save partial results after each department completes. (3) Add resume-audit command that skips completed departments and retries failed ones. (4) Track retry count in job status. (5) Add circuit breaker to cancel remaining departments if 2+ departments fail.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Makefile audit-all chains scripts with && operators. Shell scripts exit on first error (set -e). No retry loop in workflow.py. Job status is 'failed' with no mechanism to resume.",
+          "line": 100,
+          "impact": "Large audits are unreliable. Flaky network or resource issues cause full audit reruns. Users lose time."
         },
         {
           "id": "PROD-010",
@@ -624,7 +741,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement async S3 sync: (1) Move S3 uploads to a background thread pool. (2) Return upload status immediately after initiating transfers. (3) Add upload progress tracking (bytes transferred / total). (4) Queue pending uploads so multiple audits don't overwhelm network. (5) Add dashboard endpoint to check sync status. (6) Consider using multipart upload for large files.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "engine.py's upload methods are blocking HTTP calls. No async/await, no background jobs. Dashboard sync is part of the audit workflow (--deploy flag) not a separate async step.",
+          "line": 1,
+          "impact": "Large audits with many findings (multi-MB JSON) cause 30+ second delays. Poor UX when users refresh dashboard \u2014 they wait for sync to complete. Cannot deploy dashboard updates without blocking scans."
         },
         {
           "id": "PROD-011",
@@ -638,7 +758,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add rate limiting and quotas: (1) Implement per-API-key rate limiting (token bucket, e.g., 10 audits/hour). (2) Track quota consumption per target per month. (3) Reject requests exceeding quota. (4) Add cost tracking (estimate AI tokens per department, charge appropriately). (5) Add admin dashboard to set quotas per customer. (6) Add alerts for quota approaching or overages.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "api_server.py handles POST /scan requests with no rate limit check. HMAC auth is basic. No quota tracking. No cost tracking for AI agent usage.",
+          "line": 100,
+          "impact": "Security risk. Cost overruns possible if API is exposed. Cannot productize as SaaS without quotas."
         },
         {
           "id": "PROD-012",
@@ -652,7 +775,10 @@
           "effort": "easy",
           "fix_suggestion": "Centralize department registry: (1) Create backoffice/departments.py with a DEPARTMENTS constant (dataclass or registry). (2) Each department: name, script_path, prompt_path, dashboard_path, findings_filename, dashboard_json_field. (3) Import DEPARTMENTS everywhere instead of hardcoding. (4) Generate Makefile targets from registry. (5) Validate at startup that all department files exist. (6) Add tooling to scaffold a new department (auto-generate files from registry).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Department list is duplicated in workflow.py (DEPARTMENT_SCRIPTS), server.py (DEPT_SCRIPTS), api_server.py (DEPT_SCRIPTS). No single source of truth. Adding 'privacy' department required manual updates in 5+ files.",
+          "line": 39,
+          "impact": "Hard to add new departments. High error rate when extending the system. Difficult to validate that all department infrastructure is in place."
         },
         {
           "id": "PROD-013",
@@ -666,7 +792,10 @@
           "effort": "easy",
           "fix_suggestion": "Document the API: (1) Write openapi.yaml spec for all endpoints (GET /api/v1/findings, POST /api/v1/audit, etc.). (2) Generate API docs with Swagger UI. (3) Add client library generators (OpenAPI codegen for Python, JS, Go). (4) Add curl/requests examples for common workflows. (5) Publish API docs to a dedicated page or README section. (6) Version the API (v1, v2) to enable backward-compatibility.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No openapi.yaml or swagger.json files. README has no API reference section. Server code has minimal docstrings for endpoints. No postman collection or curl examples.",
+          "line": 1,
+          "impact": "Friction for third-party integrations. Cannot generate client SDKs automatically from OpenAPI spec. Difficult for teams to discover what endpoints exist."
         },
         {
           "id": "PROD-014",
@@ -680,7 +809,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add audit scheduling: (1) Add schedule config to backoffice.yaml (e.g., audit_schedule: 'nightly', 'weekly', or cron expression). (2) Implement scheduler in backoffice/scheduler.py using APScheduler. (3) Run scheduler as background service (or cron via systemd timer). (4) Add ability to manually trigger audit-on-demand. (5) Store last audit timestamp in job status. (6) Show 'Last audited: X hours ago' on dashboard with warning if stale (>24h).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No scheduler code in the codebase. No cron integration. audit-all sequences are manually triggered. No way to set audit frequency per target.",
+          "line": 18,
+          "impact": "Audits don't automatically keep findings up-to-date. Dashboard becomes stale without manual refreshes. Cannot catch new issues until someone manually runs an audit."
         },
         {
           "id": "PROD-015",
@@ -694,7 +826,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add notifications: (1) Integrate SES for email delivery. (2) Send email on audit completion with summary (total findings, critical count, trend). (3) Add email alerts for new critical findings. (4) Support digest emails (daily/weekly summary). (5) Add Slack integration (optional) for critical findings. (6) Allow users to subscribe/unsubscribe per target and severity. (7) Include direct links to findings in emails.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No email or notification code in any module. No SES integration. TODO.md mentions this as future work but no implementation exists.",
+          "line": 1,
+          "impact": "Teams miss critical security issues until someone manually checks dashboard. Audit results don't reach stakeholders. Low engagement with audit findings."
         },
         {
           "id": "PROD-016",
@@ -708,7 +843,10 @@
           "effort": "easy",
           "fix_suggestion": "Refactor agent scripts: (1) Create a generic agent-runner wrapper script that accepts department name and prompt file. (2) Have qa-scan.sh, seo-audit.sh, etc. call the wrapper with department-specific args. (3) Or: port all agent logic to Python (backoffice.audit_manager module) and call from a single CLI entry point. (4) Update Makefile to use the unified wrapper.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All agent scripts share the same structure: check TARGET_REPO, load config, call run-agent.sh, write results. Code duplication is high. Changing the agent runner interface requires updates to 6 scripts.",
+          "line": 1,
+          "impact": "DRY violation. Bug fixes must be applied to 6 scripts. Adding new departments means copying and modifying a script."
         },
         {
           "id": "PROD-017",
@@ -722,7 +860,10 @@
           "effort": "easy",
           "fix_suggestion": "Expand server tests: (1) Add tests for concurrent job submission (same target, different departments). (2) Mock WebSocket behavior and test lifecycle (connect \u2192 receive updates \u2192 disconnect). (3) Add tests for auth failures, malformed payloads, missing params. (4) Add integration test with actual agent script. (5) Aim for 85%+ coverage of server code.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "test_servers.py has 895 lines of tests but skips several scenarios: (1) concurrent scans on same target, (2) WebSocket connection lifecycle, (3) auth failure handling, (4) cleanup after scan cancellation.",
+          "line": 1,
+          "impact": "Server edge cases may not be well-tested. Risk of bugs in production API. Difficult to add features to server without confidence."
         },
         {
           "id": "PROD-018",
@@ -736,7 +877,10 @@
           "effort": "hard",
           "fix_suggestion": "Modernize dashboard frontend: (1) Extract JS from HTML into separate modules. (2) Add TypeScript for type safety. (3) Add a build step (esbuild or Vite) to bundle and minify. (4) Add ESLint for code quality. (5) Consider lightweight framework (Vue.js, Svelte, htmx) if complexity justifies it. Start with a single dashboard (qa.html) as pilot. Medium effort, long-term productivity gain.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Dashboard HTML contains large <script> blocks with imperative DOM manipulation. No TypeScript. No bundler. No linting for JS.",
+          "line": 200,
+          "impact": "Dashboard development is slow. Refactoring is risky. No IDE support for autocomplete. Hard to add new features."
         },
         {
           "id": "PROD-019",
@@ -750,7 +894,10 @@
           "effort": "easy",
           "fix_suggestion": "Extract shared design system: (1) Create dashboard/styles/design-system.css with shared colors, typography, spacing, components. (2) Import into all dashboards. (3) Or: use Tailwind CSS with PostCSS. (4) Create a component library for common UI elements (finding cards, stat cards, buttons). (5) Document design system (colors, spacing, typography) in a style guide.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Each dashboard defines its own CSS variables and styles. Color definitions like '--critical: #ff4757' are repeated. No shared stylesheet.",
+          "line": 12,
+          "impact": "High maintenance burden. Design inconsistencies across dashboards. Difficult to apply global style changes."
         },
         {
           "id": "PROD-020",
@@ -764,7 +911,10 @@
           "effort": "easy",
           "fix_suggestion": "Create architecture documentation: (1) Write docs/ADRs.md or docs/adr/ directory with ADR files. (2) Document key decisions: Python package structure, config format consolidation, S3/CloudFront vs. other deployment, agent architecture. (3) Include trade-offs (shell scripts vs. Python, sync vs. async). (4) Create ARCHITECTURE.md explaining system design, data flow, and layers. (5) Document API contract expectations.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "docs/ has spec documents but no ADRs. No ARCHITECTURE.md explaining design decisions. Comments in code explain what but not why.",
+          "line": 1,
+          "impact": "Future maintainers don't understand design rationale. Risk of reworking already-decided architecture. Difficult to onboard new contributors."
         },
         {
           "id": "PROD-021",
@@ -778,7 +928,10 @@
           "effort": "moderate",
           "fix_suggestion": "Create repo-specific audit dashboard: (1) Design a minimal dashboard that takes repo name/URL as input. (2) Generate a standalone HTML file that can be committed to /audit or /_audit in target repo. (3) Embed a JS script that fetches findings from Back Office API. (4) Or: generate a static dashboard with pre-computed findings (works offline). (5) Include CI step to regenerate dashboard after each audit. (6) Market this as 'Audit Transparency' feature.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Dashboard is centralized. No per-repo audit dashboard that repo teams can self-serve.",
+          "line": 1,
+          "impact": "Would increase adoption by repo teams. Enables self-service audit viewing without access to central Back Office. Positions Back Office as infrastructure for distributed audit workflows."
         },
         {
           "id": "PROD-022",
@@ -792,7 +945,10 @@
           "effort": "moderate",
           "fix_suggestion": "Create portfolio benchmark dashboard: (1) Aggregate findings across all repos by department. (2) Create heatmap: repos \u00d7 departments, cells show severity distribution. (3) Rank repos by readiness score, critical findings, etc. (4) Show trend lines (readiness over time across portfolio). (5) Identify outliers ('this repo has 10x the critical issues').",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "HQ dashboard shows repos but no comparative analysis. No cross-repo metrics.",
+          "line": 1,
+          "impact": "Would help leadership understand portfolio health. Could position Back Office as a portfolio governance tool."
         },
         {
           "id": "PROD-023",
@@ -806,7 +962,10 @@
           "effort": "hard",
           "fix_suggestion": "Add AI-powered fix recommendations: (1) After each department audit, feed findings to Claude with 'generate fix PR' prompt. (2) Generate fix branches with PRs for highest-priority findings. (3) Let users review and merge PRs. (4) Track fixes in task queue. (5) Integrate with GitHub API. (6) This requires careful prompt design to avoid breaking changes.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Findings include fix_suggestion text but no automated fix code generation or PR creation.",
+          "line": 1,
+          "impact": "Would dramatically increase product value. Moves Back Office from 'find problems' to 'find and fix problems'. Could enable automation tier or 'FaaSt Fixes' service."
         },
         {
           "id": "PROD-024",
@@ -820,7 +979,10 @@
           "effort": "hard",
           "fix_suggestion": "Build mobile app: (1) Consider React Native or Flutter for code sharing. (2) Create apps for iOS and Android. (3) Connect to Back Office API. (4) Features: audit list, findings by severity, drill-down to details, push notifications. (5) Publish to App Store and Google Play. (6) This is a long-term growth play.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Dashboards are responsive but not mobile-first. No native app.",
+          "line": 1,
+          "impact": "Would extend market to teams that prefer mobile-first workflows. Push notifications are high-value for critical findings."
         },
         {
           "id": "PROD-025",
@@ -834,7 +996,10 @@
           "effort": "easy",
           "fix_suggestion": "Add compliance badges: (1) Define badge criteria per department (e.g., 'ADA Certified' = 0 critical ADA findings + 85+ compliance score). (2) Generate dynamic badge SVG that teams can embed in READMEs. (3) Track badge history. (4) Display badges on HQ dashboard. (5) Consider integration with Open Badges standard.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No badge system exists.",
+          "line": 1,
+          "impact": "Gamification could drive engagement. Teams want to display compliance badges publicly."
         },
         {
           "id": "PROD-026",
@@ -848,7 +1013,10 @@
           "effort": "easy",
           "fix_suggestion": "Enhance docs: (1) Create config/examples/ directory with multiple example configurations. (2) Add configs for: single target, multi-target, QA-only, production-like setup. (3) Add commented-out optional fields. (4) Add 'Getting Started' walkthrough with config and first audit. (5) Add troubleshooting section for common config issues.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only one config example. No multi-target walkthrough. No 'QA-only' config example.",
+          "line": 200,
+          "impact": "Onboarding friction. Users must infer config patterns."
         },
         {
           "id": "PROD-027",
@@ -862,7 +1030,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add branch and PR audit support: (1) Allow specifying branch in config or CLI: audit --branch feature/x. (2) Check out branch before audit. (3) Integrate with GitHub to comment audit results on PRs. (4) Add GitHub Actions workflow to run audits on every PR. (5) Gate PR merge on critical findings. This would position Back Office as part of CI.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Agent scripts check out TARGET_REPO as-is (whatever branch is current). No branch selection, no CI integration for PR audits.",
+          "line": 1,
+          "impact": "Cannot provide pre-merge audit feedback. Teams must wait until after merge to discover issues. Limits CI integration."
         },
         {
           "id": "PROD-028",
@@ -876,7 +1047,10 @@
           "effort": "easy",
           "fix_suggestion": "Make timeouts configurable: (1) Add timeout_seconds config per department in backoffice.yaml. (2) Pass timeout to agent scripts. (3) Set reasonable defaults (QA: 30min, SEO: 20min, compliance: 45min). (4) Document expected timeouts by repo size.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "run-agent.sh likely has a timeout parameter but audit scripts don't expose it to users. No timeout config in backoffice.yaml.",
+          "line": 1,
+          "impact": "Large repos may timeout. Users must modify scripts to change timeouts."
         }
       ],
       "categories": {
@@ -928,7 +1102,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add bookmark actions to the daily verse, books reader, and study reader surfaces. Wire them to `saveBookmark()`, show saved-state feedback, prevent duplicate bookmarks per reference/version, and add tests covering bookmark creation from at least one reading flow.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`saveBookmark()` is defined at `src/lib/storage.ts:111`, while `rg -n \"saveBookmark\\(\" src` only finds the definition and tests. `src/app/bookmarks/page.tsx:115-122` still instructs users to bookmark verses while reading and studying.",
+          "line": 111,
+          "impact": "This breaks an advertised saved-verses workflow and makes the entire bookmarks surface effectively unreachable for normal users, which is a core product-value failure."
         },
         {
           "id": "PROD-002",
@@ -942,7 +1119,10 @@
           "effort": "hard",
           "fix_suggestion": "Add an account restore/sync flow in Settings and optionally at sign-in. Fetch account datasets via the existing GET endpoints, decrypt journal payloads when needed, let the user choose merge vs replace, and surface conflict resolution rules for duplicates and newer local data.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "`backupLocalDataToAccount()` only POSTs to `/api/studies`, `/api/journals`, `/api/bookmarks`, and `/api/daily` in `src/lib/account-sync.ts:100-129`. Meanwhile `lambda/api/index.mjs:340-357` exposes GET routes for the same resources, and no frontend code calls them.",
+          "line": 94,
+          "impact": "Users can back up a device but cannot restore on a new device or after clearing local storage, which undercuts trust in the account system and increases churn risk after device changes."
         },
         {
           "id": "PROD-003",
@@ -956,7 +1136,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add a verification card in Settings or after registration with code input, resend button, success state, and token/user refresh after verification. Reuse the existing backend routes and expose clear copy about why verification matters.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`lambda/api/index.mjs:331-332` exposes `/api/auth/verify-email` and `/api/auth/resend-verification`. In the product UI, `src/app/settings/page.tsx:48-50` derives a status label and `src/app/settings/page.tsx:223-245` only renders account details plus sign-out.",
+          "line": 48,
+          "impact": "Unverified users have no path to complete account setup, which weakens deliverability trust, blocks future account-security flows, and leaves a visible product state unresolved."
         },
         {
           "id": "PROD-004",
@@ -970,7 +1153,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add a destructive account section in Settings with password confirmation, explicit warnings about local-vs-account data loss, success/logout handling, and a final confirmation dialog before calling `DELETE /api/account`.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`lambda/api/index.mjs:363` routes `DELETE /api/account` and `lambda/api/index.mjs:847-904` implements deletion. `src/app/settings/page.tsx` contains account, backup, password, support, and help sections but no delete-account control.",
+          "line": 363,
+          "impact": "Users cannot self-serve a basic account lifecycle expectation, which creates support overhead and leaves a trust gap around data control."
         },
         {
           "id": "PROD-005",
@@ -984,7 +1170,10 @@
           "effort": "moderate",
           "fix_suggestion": "Persist the initial AI commentary and subsequent assistant/user messages to the saved study session. Either store the transcript or a summary plus the latest commentary, and update the history UI to render that richer session data.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`src/app/study/page.tsx:248-258` saves `studyPrompts?.prompts.join('\\n')` as `commentary`. `src/components/StudyChat.tsx:22-83` handles AI replies entirely in local component state and never writes them back to storage.",
+          "line": 248,
+          "impact": "History and insights underrepresent the value users actually received from AI study, making saved sessions less useful for review and reducing the perceived quality of the study archive."
         },
         {
           "id": "PROD-006",
@@ -998,7 +1187,10 @@
           "effort": "easy",
           "fix_suggestion": "Replace the canned 'coming soon' copy with explicit degraded-mode messaging. Distinguish configuration errors, signed-out states, and transient API failures, and offer retry or sign-in guidance without pretending the feature is unfinished.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`src/components/StudyChat.tsx:30-35` and `79-82` fall back to local canned responses. The canned text at `src/components/StudyChat.tsx:149-160` says detailed AI study is 'coming soon' or 'when the full AI study is enabled.'",
+          "line": 30,
+          "impact": "This creates trust erosion during outages or environment misconfiguration because users receive misleading product messaging instead of a clear degraded-state explanation."
         },
         {
           "id": "PROD-007",
@@ -1012,7 +1204,10 @@
           "effort": "easy",
           "fix_suggestion": "Expand the precache list to include all static local-first routes, validate offline navigation for installed PWAs, and add fallback messaging for surfaces that still require network resources such as AI study or remote Bible text fetches.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`public/sw.js:2-10` precaches only `/`, `/daily/`, `/study/`, `/plans/`, `/books/`, `/journal/`, and `/manifest.json`, while README core surfaces include `/history`, `/insights`, `/bookmarks`, and `/settings` at `README.md:15-25`.",
+          "line": 2,
+          "impact": "The app presents itself as installable and mobile-first, but offline or flaky-network behavior will feel inconsistent across major destinations, especially for review surfaces that are local-first by design."
         },
         {
           "id": "PROD-008",
@@ -1026,7 +1221,10 @@
           "effort": "hard",
           "fix_suggestion": "Document and enforce the two-step deploy path, or better, package real Lambda artifacts in CI and feed versioned build outputs into Terraform so infra can reference deployable code instead of placeholders.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "`terraform/lambda.tf:97-98` and `127-128` set both Lambda `filename` and `source_code_hash` from `placeholder.zip`.",
+          "line": 97,
+          "impact": "Operational setup is more fragile because infra state can be green while the runtime code is non-functional or stale until a second system deploys real artifacts."
         },
         {
           "id": "PROD-009",
@@ -1040,7 +1238,10 @@
           "effort": "moderate",
           "fix_suggestion": "Prototype one growth loop first: a weekly review card in Insights or Home that surfaces unfinished reflections, your most-studied book, and a next-step suggestion. Measure return visits before expanding into reminders or recommendation systems.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "`src/app/insights/page.tsx:65-157` derives top books, studies by month, mood distribution, top reflected verses, activity by month, awaiting-reflection counts, prayer-request totals, and plan summaries from local data.",
+          "line": 65,
+          "impact": "Selah is collecting enough behavioral and reflection context to support stronger retention features such as weekly review prompts, personalized study recommendations, or plan nudges without needing major new backend primitives."
         },
         {
           "id": "PROD-010",
@@ -1054,7 +1255,10 @@
           "effort": "easy",
           "fix_suggestion": "Add inline name editing in Settings with validation, submit/cancel states, and token/user refresh using the existing `PUT /api/auth/name` endpoint.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "`lambda/api/index.mjs:334` routes `PUT /api/auth/name`, and `lambda/api/index.mjs:802-824` updates the profile name. `src/app/settings/page.tsx:223-245` shows the current profile fields with no edit affordance.",
+          "line": 334,
+          "impact": "This leaves account profiles oddly static compared with the rest of the account management surface and creates avoidable support friction for simple corrections."
         }
       ],
       "categories": {
@@ -1110,7 +1314,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add a newsletter signup form section on the homepage (or in footer). Integrate with an email service like Mailchimp, Substack, ConvertKit, or AWS SES Lambda. Include opt-in checkbox on contact form. Display signup prompt on blog pages. Add post-subscribe confirmation and welcome sequence.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "The contact form exists (line 250-289) for general inquiries but has no newsletter signup option. No email service integration (Mailchimp, Substack, etc.) is configured.",
+          "line": 250,
+          "impact": "Lost opportunity for audience growth, customer retention, and direct communication channel. Users cannot stay informed about new products or blog posts without manually checking the site."
         },
         {
           "id": "PROD-002",
@@ -1124,7 +1331,10 @@
           "effort": "easy",
           "fix_suggestion": "Add prominent CTA button to each product page linking to the canonical domain. Example: 'Visit Analogify Studio' or 'Launch Analogify'. Include CTA near top of page, in footer of page, and in product card metadata.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "ProductPage component describes products but lacks external href attributes linking to cordivent.com, analogifystudio.com, selahscripture.com, etc.",
+          "line": 1,
+          "impact": "Reduces conversion to actual product engagement. Users interested in a product must search for it separately. Wasted traffic and diminished user experience."
         },
         {
           "id": "PROD-003",
@@ -1138,7 +1348,10 @@
           "effort": "hard",
           "fix_suggestion": "Establish a content calendar and publish 2-4 posts per month. Topics: product strategy, privacy-first design principles, automation thinking, case studies, lessons learned. Repurpose existing handoff documents and learning notes into blog posts.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only 2 markdown files in src/content/blog/ directory. Blog index page shows no filtering UI benefits with such minimal content.",
+          "line": 0,
+          "impact": "Reduced organic search visibility, limited thought leadership signal, minimal content marketing value. Visitors find little reason to return to the blog."
         },
         {
           "id": "PROD-004",
@@ -1152,7 +1365,10 @@
           "effort": "moderate",
           "fix_suggestion": "Create a new page /products/comparison or add a comparison section to the homepage. Build a comparison matrix showing: product name, category, use case, audience, key features, privacy posture. Allow filtering/sorting by category or feature.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Products are displayed as individual cards in a grid with no comparison interface. src/data/products.ts defines product metadata but no comparison view is rendered.",
+          "line": 155,
+          "impact": "Reduces discoverability within the portfolio. Users cannot quickly understand product differentiation or find the best product for their needs."
         },
         {
           "id": "PROD-005",
@@ -1166,7 +1382,10 @@
           "effort": "easy",
           "fix_suggestion": "Add a success modal, toast notification, or banner that appears after form submission. Include a checkmark icon and clear messaging: 'Your message was sent successfully! I'll respond within 48 hours.' Option: redirect to a thank-you page.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Form success feedback sets text color to 'var(--green)' and displays 'Sent! I'll be in touch.' No modal, toast, or more prominent confirmation.",
+          "line": 368,
+          "impact": "Users may be unsure if their message was actually sent. Reduces confidence in form submission and contact channel."
         },
         {
           "id": "PROD-006",
@@ -1180,7 +1399,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement query parameter handling for filters (e.g., ?q=privacy&product=tnbm-tarot&category=reflection). Update URL on filter change and restore filters from URL on page load. Consider using a state library or URL API.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Client-side JavaScript filters manipulate the DOM but don't update URL search parameters. No way to share a filtered view or reload with filters intact.",
+          "line": 170,
+          "impact": "Reduces usefulness of filtering. Users cannot bookmark or share filtered views. Filter state is lost on refresh."
         },
         {
           "id": "PROD-007",
@@ -1194,7 +1416,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add 'author' field to blog content schema (src/content.config.ts). Create /contribute page with guidelines for guest posts. Plan quarterly interviews or guest articles from other privacy/automation thought leaders.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "All blog posts are authored by Cody Jo Eflin. No guest post frontmatter field exists in the blog content schema. No /blog/guest-posts or contribution guidelines page.",
+          "line": 0,
+          "impact": "Limited thought leadership signals, reduced SEO diversity, missed cross-promotion opportunities with other creators in the privacy and automation space."
         },
         {
           "id": "PROD-008",
@@ -1208,7 +1433,10 @@
           "effort": "hard",
           "fix_suggestion": "Create case study templates and interview customers for 2-3 documented success stories per product. Publish on dedicated /case-studies page or as blog series. Include metrics: time saved, friction reduced, privacy gains. Add short testimonials to product pages.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Product pages are bridge pages with descriptions but no case studies. No /case-studies or /stories route. No testimonials or user success narratives.",
+          "line": 0,
+          "impact": "Reduced credibility, less compelling narrative for potential users, weaker differentiation from competitors."
         },
         {
           "id": "PROD-009",
@@ -1222,7 +1450,10 @@
           "effort": "easy",
           "fix_suggestion": "Add a floating 'Back to Top' button (fixed position, bottom-right) that appears after scrolling past the fold. Implement smooth scroll-to-top behavior. Alternatively, add keyboard shortcut (e.g., Home key) for back-to-top.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Homepage has multiple sections but no back-to-top button or link. Only relies on native scroll behavior.",
+          "line": 64,
+          "impact": "Minor UX friction on long pages, especially on slower devices or for users with accessibility needs."
         },
         {
           "id": "PROD-010",
@@ -1236,7 +1467,10 @@
           "effort": "easy",
           "fix_suggestion": "Add a Related Products section at the bottom of each product page. Show 2-3 other products from the portfolio, prioritizing complementary categories (e.g., on Cordivent, suggest Analogify). Link to those product pages.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "ProductPage component doesn't render product recommendations. No logic to determine related products by category or audience overlap.",
+          "line": 1,
+          "impact": "Reduces portfolio discoverability. Visitors viewing one product don't see alternatives or complementary products."
         },
         {
           "id": "PROD-011",
@@ -1250,7 +1484,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add unit tests for: FadeIn component intersection observer, Nav dropdown behavior, blog filter logic, contact form validation. Add E2E tests (Playwright or Cypress) for: navigation links, form submission, responsive layout on mobile.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "vitest.config.ts lists only 3 files for coverage: scripts/verify-dist.mjs, src/data/products.ts, and a nonexistent back-office file. No E2E tests for contact form, blog filtering, or navigation.",
+          "line": 1,
+          "impact": "Low confidence in refactoring, higher risk of regressions. No safety net for CSS/JS changes."
         },
         {
           "id": "PROD-012",
@@ -1264,7 +1501,10 @@
           "effort": "moderate",
           "fix_suggestion": "Refactor filtering to use URL search parameters (e.g., ?q=search&product=slug&category=topic&tag=tag). Populate URL on filter change and restore filters from URL on load. Consider extracting to a separate utility function.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Inline script directly queries and manipulates DOM elements. No use of URLSearchParams or history.replaceState for filter state.",
+          "line": 170,
+          "impact": "Filter state is lost on page refresh, and users cannot share or bookmark filtered views."
         },
         {
           "id": "PROD-013",
@@ -1278,7 +1518,10 @@
           "effort": "easy",
           "fix_suggestion": "Document the Lambda API contract: expected request shape, validation rules, possible error responses. Add logging/monitoring for form submissions. Consider using a form service (Formspree, Basin, etc.) instead of custom Lambda.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "CONTACT_API endpoint is hardcoded AWS Lambda URL. Error handling catches generic HTTP status codes but doesn't document expected API responses or validation logic.",
+          "line": 317,
+          "impact": "Difficult to debug form failures. Unclear what validation happens server-side vs. client-side. Risk of inconsistent error messages."
         },
         {
           "id": "PROD-014",
@@ -1292,7 +1535,10 @@
           "effort": "moderate",
           "fix_suggestion": "Extract shared styles to src/styles/ modules. Move reusable JS logic to separate utility files. Consider using Astro's CSS modules or a utility class system (Tailwind). Keep component-specific styles inline if small.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "index.astro contains ~600 lines of inline CSS and inline JavaScript for parallax and form handling. Same pattern in other pages.",
+          "line": 390,
+          "impact": "Reduced code reusability, harder to maintain consistent styling, larger component files, missed optimization opportunities."
         },
         {
           "id": "PROD-015",
@@ -1306,7 +1552,10 @@
           "effort": "easy",
           "fix_suggestion": "Add breadcrumb component to Base layout (or include in Nav). Show hierarchy: Home > Section > Current Page. For blog: Home > Blog > [Product] > Article. For products: Home > Projects > Product.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Blog detail pages and product pages lack breadcrumb components. No Navigation component that shows current page position in site hierarchy.",
+          "line": 1,
+          "impact": "Users unsure how to navigate back to parent pages. Reduces perceived site structure clarity."
         },
         {
           "id": "PROD-016",
@@ -1320,7 +1569,10 @@
           "effort": "easy",
           "fix_suggestion": "Add email contact option: display plaintext email (or use email obfuscation) in footer or contact section. Consider adding social media handles if Cody Jo is active there. Add link to LinkedIn profile.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Contact section only shows form. Footer links to LinkedIn and product domains but no email or other contact options.",
+          "line": 250,
+          "impact": "Some users may prefer email or direct messaging and won't find easy ways to connect. Reduces accessibility of contact."
         },
         {
           "id": "PROD-017",
@@ -1334,7 +1586,10 @@
           "effort": "easy",
           "fix_suggestion": "Track which field failed validation. Display field-specific error messages or add visual highlighting (red border, error icon) on invalid fields. Example: show tooltip or inline error near the field.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Generic error: 'Please fill in all required fields.' Could instead say 'Name field is required' or highlight the specific missing field.",
+          "line": 334,
+          "impact": "Minor UX friction, users must scan form to find missing field."
         },
         {
           "id": "PROD-018",
@@ -1348,7 +1603,10 @@
           "effort": "easy",
           "fix_suggestion": "Add readingTime field to blog post frontmatter or calculate from markdown. Display '~5 min read' or '2000 words' on post cards. Add reading time to blog detail pages.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Post metadata includes time, product, category. No readingTime or wordCount field in post frontmatter or UI.",
+          "line": 126,
+          "impact": "Users cannot gauge how long a post will take to read before clicking."
         },
         {
           "id": "PROD-019",
@@ -1362,7 +1620,10 @@
           "effort": "moderate",
           "fix_suggestion": "Set up GitHub Actions workflow to: run tests, build site, deploy to S3 on push to main. Add pull request checks to run npm run check and npm test. Document deployment process.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "HANDOFF.md mentions manual S3 sync and CloudFront invalidation commands. No .github/workflows/ or other CI/CD configuration file.",
+          "line": 98,
+          "impact": "Manual deployment steps are error-prone. No automated testing on commit. Slower iteration time."
         },
         {
           "id": "PROD-020",
@@ -1376,7 +1637,10 @@
           "effort": "easy",
           "fix_suggestion": "Add updated field to blog post frontmatter. Display both publish and update date on post pages (e.g., 'Published March 5 | Updated March 20'). Update on any edits.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Blog posts show publish date but no updated date. Product pages have no timestamp metadata.",
+          "line": 1,
+          "impact": "Users may question content freshness. SEO signals: search engines may down-rank old content without update signals."
         },
         {
           "id": "PROD-021",
@@ -1390,7 +1654,10 @@
           "effort": "easy",
           "fix_suggestion": "Create src/pages/sitemap.astro page that lists all main pages and blog posts in a browsable format. Include Last Updated dates. Link from footer or help section.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "astro.config.mjs includes @astrojs/sitemap for XML sitemap generation. No HTML sitemap page at /sitemap or /site-map. No reference in Footer or Help section.",
+          "line": 0,
+          "impact": "Minor issue, mostly for edge cases. XML sitemap is sufficient for search engines."
         },
         {
           "id": "PROD-022",
@@ -1404,7 +1671,10 @@
           "effort": "easy",
           "fix_suggestion": "Create /faq page with common questions: What are the differences between products? Do you offer consulting? How do I report a bug? How is my data handled? Link from footer, header, and product pages.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No /faq, /help, or /support route exists. Contact form is the only support mechanism. Footer has no Help or Support link.",
+          "line": 0,
+          "impact": "Support friction, users may give up if they have questions before contacting."
         },
         {
           "id": "PROD-023",
@@ -1418,7 +1688,10 @@
           "effort": "easy",
           "fix_suggestion": "If community contributions aren't planned, no action needed. If they are: create CONTRIBUTING.md with guidelines for: reporting issues, submitting PRs, coding standards, review process. Link from README.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No CONTRIBUTING.md file in repo root. AGENTS.md requires handoff updates but doesn't describe contribution pathways for others.",
+          "line": 0,
+          "impact": "Unclear if community contributions are welcome. No guidance for potential contributors."
         },
         {
           "id": "PROD-024",
@@ -1432,7 +1705,10 @@
           "effort": "easy",
           "fix_suggestion": "Add Plausible event tracking to: contact form submission, product page visits, blog filter interactions, navigation clicks. Use Plausible's JavaScript API (window.plausible) to log custom events.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Base layout includes Plausible script reference, but no custom event calls in contact form or navigation JavaScript.",
+          "line": 66,
+          "impact": "Limited insight into user behavior and engagement. Cannot measure form conversion, product page interest, or feature adoption."
         },
         {
           "id": "PROD-025",
@@ -1446,7 +1722,10 @@
           "effort": "easy",
           "fix_suggestion": "Add status field to ProductMeta: active, maintained, legacy, archived. Display status badge on product pages (e.g., Actively Developed or Maintenance Mode). Update src/data/products.ts and ProductPage component.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Product metadata includes description, category, audience, privacy, but no status field. Product pages render no status indicator.",
+          "line": 1,
+          "impact": "Users uncertain if a product is still active or being developed. Potential support expectations for abandoned products."
         },
         {
           "id": "PROD-026",
@@ -1460,7 +1739,10 @@
           "effort": "hard",
           "fix_suggestion": "If products have APIs: create /developers page with API docs, SDK reference, quickstart guides, code examples. Consider using Swagger/OpenAPI for API documentation. If not applicable, disregard.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No /docs, /api, /integrations, or /developers route. No API keys, SDK examples, or webhook documentation.",
+          "line": 0,
+          "impact": "Missed developer-focused growth opportunity. Cannot attract integration partners."
         },
         {
           "id": "PROD-027",
@@ -1474,7 +1756,10 @@
           "effort": "moderate",
           "fix_suggestion": "Collect testimonials from product users. Create a testimonials section on homepage with 3-5 short quotes + customer name/role. Add metrics to product pages (if available): number of active users, events managed, photos processed, etc.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Homepage and product pages have no testimonial section or user quotes. No metrics like X customers or Y events managed.",
+          "line": 0,
+          "impact": "Reduced credibility and trust. No social proof to convert new visitors."
         },
         {
           "id": "PROD-028",
@@ -1488,7 +1773,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add CSS media query: @media (prefers-color-scheme: light) { /* light colors */ }. Optionally add a toggle button to override system preference. Use localStorage to persist user choice.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "CSS uses dark color variables with no media query for (prefers-color-scheme: light). No toggle component exists.",
+          "line": 1,
+          "impact": "Accessibility issue for users with visual preferences. Some users may find dark mode harder to read for extended periods."
         }
       ],
       "categories": {
@@ -1540,7 +1828,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement auto-polling with exponential backoff: poll every 5 seconds initially, backing off to 30 seconds once deployment status is 'complete' or 'failed'. Show loading spinner and last-update timestamp on deployment rows. Alternatively, implement Server-Sent Events (SSE) from backend for true push updates.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "loadDeployments() loads full list each time; fetchDetail() fetches single deployment on demand, but no auto-refresh or polling loop exists.",
+          "line": 1074,
+          "impact": "Users cannot see deployment progress in real-time. For deployments taking 20-60 minutes, users must manually click 'Refresh' repeatedly. This creates anxiety about deployment status and frustration."
         },
         {
           "id": "PROD-002",
@@ -1554,7 +1845,10 @@
           "effort": "easy",
           "fix_suggestion": "Add 'Clone Deployment' button on the detail view that pre-fills the deploy form with the original deployment's parameters. Store deployment config in metadata when created so it can be reproduced exactly.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Export/Import buttons exist but export only saves current form state, not a deployment's actual configuration.",
+          "line": 271,
+          "impact": "Users running similar test scenarios repeatedly must remember and re-type configurations. This slows iteration and increases mistakes."
         },
         {
           "id": "PROD-003",
@@ -1568,7 +1862,10 @@
           "effort": "easy",
           "fix_suggestion": "Render audit_trail in the deployment detail view after console outputs. Show action, timestamp, and user for each event. This requires no API changes, only UI changes.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "append_audit_event() function exists but UI does not render audit_trail from the metadata JSON responses.",
+          "line": 436,
+          "impact": "No visibility into deployment lifecycle. Teams cannot track resource cleanup or identify rogue deployments. Regulatory/compliance audits lack visibility."
         },
         {
           "id": "PROD-004",
@@ -1582,7 +1879,10 @@
           "effort": "easy",
           "fix_suggestion": "After successful deployment creation, show a success toast message (e.g., 'Deployment queued! Redirecting to details...'). Display the deployment ID prominently on the detail page.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "handleDeploy() submits form and shows confirm modal. confirmDeploy() navigates to detail view without any success message.",
+          "line": 1054,
+          "impact": "Users may not realize the deployment succeeded and click Deploy again, creating duplicate deployments. No feedback reduces perceived responsiveness."
         },
         {
           "id": "PROD-005",
@@ -1596,7 +1896,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add filter/search row above the deployments table with: search box (name/project), status dropdown, architecture dropdown, date range picker. Wire to frontend filtering or backend query parameters.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "loadDeployments() loads and renders all deployment rows without filtering UI.",
+          "line": 1074,
+          "impact": "With 50+ deployments, finding a specific one is hard. TAMs managing multiple teams cannot filter by requestor."
         },
         {
           "id": "PROD-006",
@@ -1610,7 +1913,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add checkboxes to deployments table. Add 'Destroy Selected' button that appears when rows are checked.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Deployments table has no checkbox column. Destroy is only on detail view.",
+          "line": 284,
+          "impact": "TAMs cleaning up test cycles must destroy 20+ deployments one at a time manually."
         },
         {
           "id": "PROD-007",
@@ -1624,7 +1930,10 @@
           "effort": "easy",
           "fix_suggestion": "Add a 'Reset Form' button next to Deploy that clears all fields to defaults and regenerates the deployment name.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Form has Export/Import and Deploy buttons but no Reset button.",
+          "line": 270,
+          "impact": "Users wanting to create a different configuration after filling the form must refresh, losing state."
         },
         {
           "id": "PROD-008",
@@ -1638,7 +1947,10 @@
           "effort": "easy",
           "fix_suggestion": "Extract last 20 lines of Cloud Build log and display in detail view. Add 'Retry Deployment' button for failed deployments that re-submits with original config.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "fetchDetail() shows metadata but doesn't surface error messages or offer retry.",
+          "line": 1125,
+          "impact": "Debugging failures requires leaving the app. Failed deployments cannot be retried without manual re-entry."
         },
         {
           "id": "PROD-009",
@@ -1652,7 +1964,10 @@
           "effort": "moderate",
           "fix_suggestion": "Implement a background job (Cloud Scheduler + Cloud Function) that calls list_expired() and destroys each. Show warning in UI when within 1 hour of expiry.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "list_expired() endpoint lists them but nothing calls it or destroys them.",
+          "line": 815,
+          "impact": "TTL creates false sense of safety. Deployments exceeding TTL remain running, causing unexpected cloud costs."
         },
         {
           "id": "PROD-010",
@@ -1666,7 +1981,10 @@
           "effort": "easy",
           "fix_suggestion": "Format console_url as a prominent button/link with instructions. Display username 'admin'. Provide copy-to-clipboard for SSH commands.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "renderDetail() displays outputs as raw JSON without formatting or instructions.",
+          "line": 1132,
+          "impact": "New users confused about how to access PE environment. Outputs are cryptic."
         },
         {
           "id": "PROD-011",
@@ -1680,7 +1998,10 @@
           "effort": "easy",
           "fix_suggestion": "Wire Impact Analysis through to backend or remove local adjustment if it doesn't affect actual deployment.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "getSizingRecommendation() checks Impact Analysis locally but backend doesn't receive this flag.",
+          "line": 487,
+          "impact": "Users checking 'Impact Analysis' see a sizing bump in UI but actual deployment uses original sizing. Misleading."
         },
         {
           "id": "PROD-012",
@@ -1694,7 +2015,10 @@
           "effort": "moderate",
           "fix_suggestion": "Integrate with GCP Cloud Billing API for regional pricing. Display actual billed spend after deployment.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "GCE_HOURLY_COST is hardcoded. No GCP Billing API integration.",
+          "line": 58,
+          "impact": "Cost estimates are approximate. No spend visibility or budget alerts."
         },
         {
           "id": "PROD-013",
@@ -1708,7 +2032,10 @@
           "effort": "moderate",
           "fix_suggestion": "Break into multi-step wizard or add expandable help with links to Puppet docs.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Single large form with fieldsets. Help text is minimal.",
+          "line": 40,
+          "impact": "Form completion takes 5+ minutes. Unfamiliar users don't understand PE concepts."
         },
         {
           "id": "PROD-014",
@@ -1722,7 +2049,10 @@
           "effort": "easy",
           "fix_suggestion": "Standardize help text clearly stating install status (Auto-Installed, VM Only, Configuration Only). Add badges next to addon labels.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "ADD_ON_GUIDANCE has inconsistent detail about auto-setup.",
+          "line": 248,
+          "impact": "Users check 'CD4PE' expecting it ready but must manually install. Frustration."
         },
         {
           "id": "PROD-015",
@@ -1736,7 +2066,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add Jest/Vitest tests for form validation, API calls, detail rendering. Target 70%+ coverage.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No test files for app.js. Only Python backend tests exist.",
+          "line": 1,
+          "impact": "Refactoring risks breaking functionality without detection."
         },
         {
           "id": "PROD-016",
@@ -1750,7 +2083,10 @@
           "effort": "easy",
           "fix_suggestion": "Fetch all config from backend /api/config. Remove hardcoded values from frontend.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "ZONES, PE_VERSIONS, machine costs defined in both places.",
+          "line": 128,
+          "impact": "Config drift when updates applied to one side only."
         },
         {
           "id": "PROD-017",
@@ -1764,7 +2100,10 @@
           "effort": "easy",
           "fix_suggestion": "Use environment variable substitution at build time with fallback to relative '/api'.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "window.PE_API_BASE hardcoded to production Cloud Run URL.",
+          "line": 1,
+          "impact": "Developers cannot run frontend locally without modifying config. CI/CD must inject URL at build time."
         },
         {
           "id": "PROD-018",
@@ -1778,7 +2117,10 @@
           "effort": "easy",
           "fix_suggestion": "Restrict CORS to known origins. Add CSRF token validation if using passphrase auth.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "CORS(app) with no arguments. No CSRF tokens.",
+          "line": 25,
+          "impact": "CSRF risk if passphrase auth is used."
         },
         {
           "id": "PROD-019",
@@ -1792,7 +2134,10 @@
           "effort": "moderate",
           "fix_suggestion": "Use Pydantic models for validation and type hints.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "validate_params() is 50-line manual validation. No type hints.",
+          "line": 178,
+          "impact": "Hard to understand request format. No IDE autocomplete."
         },
         {
           "id": "PROD-020",
@@ -1806,7 +2151,10 @@
           "effort": "easy",
           "fix_suggestion": "Add Flask-Limiter with rate limits per endpoint.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "create_deployment() has no rate limit.",
+          "line": 637,
+          "impact": "Malicious actors can abuse API. Rapid deployments overwhelm quota."
         },
         {
           "id": "PROD-021",
@@ -1820,7 +2168,10 @@
           "effort": "easy",
           "fix_suggestion": "Add Python logging with JSON formatter. Send to Cloud Logging.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No logging module. Output only from Terraform/Cloud Build.",
+          "line": 100,
+          "impact": "Debugging production issues requires reading Cloud Build logs."
         },
         {
           "id": "PROD-022",
@@ -1834,7 +2185,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add integration tests for deployment lifecycle.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No tests for create_deployment(), destroy_deployment(), or GCS operations.",
+          "line": 1,
+          "impact": "Refactoring API risks breaking deployments."
         },
         {
           "id": "PROD-023",
@@ -1848,7 +2202,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add GitHub Actions: run tests on PR, deploy on merge to main.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No CI configuration files.",
+          "line": 0,
+          "impact": "Breaking changes deployed without testing."
         },
         {
           "id": "PROD-024",
@@ -1862,7 +2219,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add multi-select mode with side-by-side comparison of configurations.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No comparison feature in detail view.",
+          "line": 1109,
+          "impact": "Users must manually track differences between deployments."
         },
         {
           "id": "PROD-025",
@@ -1876,7 +2236,10 @@
           "effort": "easy",
           "fix_suggestion": "Add endpoint to export original parameters. Add 'Export Config' button on detail view.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No export endpoint for original deployment parameters.",
+          "line": 417,
+          "impact": "Cannot reproduce deployment in different project or version control."
         },
         {
           "id": "PROD-026",
@@ -1890,7 +2253,10 @@
           "effort": "easy",
           "fix_suggestion": "Include requestor name and date: 'pe-demo-jane-20250322'.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "generateName() uses uuid suffix.",
+          "line": 662,
+          "impact": "Looking at 10 deployments, names don't convey purpose."
         },
         {
           "id": "PROD-027",
@@ -1904,7 +2270,10 @@
           "effort": "easy",
           "fix_suggestion": "Add mobile breakpoints. Stack forms vertically on small screens. Increase button padding.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No mobile breakpoints or viewport handling.",
+          "line": 1,
+          "impact": "Mobile users cannot deploy easily."
         },
         {
           "id": "PROD-028",
@@ -1918,7 +2287,10 @@
           "effort": "easy",
           "fix_suggestion": "Add dark mode CSS variables and toggle.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No @media (prefers-color-scheme: dark) rules.",
+          "line": 4,
+          "impact": "Low priority but users with dark mode enabled see harsh whites."
         },
         {
           "id": "PROD-029",
@@ -1932,7 +2304,10 @@
           "effort": "easy",
           "fix_suggestion": "Add JSDoc to all public functions in app.js.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Functions have no JSDoc.",
+          "line": 8,
+          "impact": "Code harder to understand for contributors."
         },
         {
           "id": "PROD-030",
@@ -1946,7 +2321,10 @@
           "effort": "easy",
           "fix_suggestion": "Add Flask-RESTX to auto-generate OpenAPI docs.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No Flasgger or Flask-RESTX integration.",
+          "line": 1,
+          "impact": "Consumers must read code to understand endpoints."
         },
         {
           "id": "PROD-031",
@@ -1960,7 +2338,10 @@
           "effort": "easy",
           "fix_suggestion": "Add optional webhook_url in form. POST to webhook on status changes.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No webhook support in deployment creation or status changes.",
+          "line": 792,
+          "impact": "Users must manually check status."
         },
         {
           "id": "PROD-032",
@@ -1974,7 +2355,10 @@
           "effort": "easy",
           "fix_suggestion": "Create template library with 3-5 pre-built configs. Allow admins to add custom templates.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Import button exists but no template library.",
+          "line": 271,
+          "impact": "New users must learn all options."
         },
         {
           "id": "PROD-033",
@@ -1988,7 +2372,10 @@
           "effort": "easy",
           "fix_suggestion": "Aggregate metadata to track choices. Generate monthly usage reports.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Metadata stored but not aggregated for analytics.",
+          "line": 691,
+          "impact": "Product team has no usage insights."
         },
         {
           "id": "PROD-034",
@@ -2002,7 +2389,10 @@
           "effort": "moderate",
           "fix_suggestion": "Query agent count after deployment. If below threshold, recommend smaller architecture.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Cost estimate exists but no post-deployment optimization analysis.",
+          "line": 151,
+          "impact": "Users may overspend on unused resources."
         },
         {
           "id": "PROD-035",
@@ -2016,7 +2406,10 @@
           "effort": "easy",
           "fix_suggestion": "Reorganize: docs/getting-started.md, docs/web-ui-guide.md, docs/troubleshooting.md. Link from README.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All documentation in one README file.",
+          "line": 1,
+          "impact": "New users don't know where to look for specific info."
         },
         {
           "id": "PROD-036",
@@ -2030,7 +2423,10 @@
           "effort": "easy",
           "fix_suggestion": "Add help icons with hover tooltips for each field.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "<small> help text but no icons or tooltips.",
+          "line": 47,
+          "impact": "Users must read README to understand fields."
         },
         {
           "id": "PROD-037",
@@ -2044,7 +2440,10 @@
           "effort": "moderate",
           "fix_suggestion": "Add i18n library if expanding globally. Translate to other languages.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All text hardcoded. No i18n library.",
+          "line": 1,
+          "impact": "Low priority. Puppet market is primarily English-speaking."
         }
       ],
       "categories": {
@@ -2092,7 +2491,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Add 'Publish Event' button to create/page.tsx after build completes. 2) Implement POST /api/events/{slug}/publish endpoint that: transitions event state from 'draft' to 'live', populates live event with builder data, sends guest notifications. 3) Add event status field to DynamoDB schema. 4) Create post-publish confirmation and success page.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "README.md explicitly states 'real publish flow from organizer preview to fully populated live event remains incomplete'. Create page has event builder but no functional publish button or completion flow.",
+          "line": 83,
+          "impact": "Core product promise broken: coordinators cannot launch events. This blocks the entire go-to-market story and makes the product non-viable for production use."
         },
         {
           "id": "PROD-002",
@@ -2106,7 +2508,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Implement WebSocket layer using API Gateway WebSocket API or Socket.io. 2) Add sync status indicator (Connected/Reconnecting/Offline) to event manage pages. 3) Subscribe coordinator dashboard to real-time updates: attendee check-ins, booth scans, new photos, activity feed. 4) Add offline queue for operations and sync on reconnect. 5) Test with concurrent edits to validate conflict resolution.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Activity dashboard shows only DEMO_ACTIVITY static data. No API fetch for real activity. No sync indicators in UI. No WebSocket connections in codebase.",
+          "line": 60,
+          "impact": "Marketing promise of 'live engagement' is false for production events. Coordinators cannot see real-time attendee activity, booths, or check-ins. This is a trust/brand risk if discovered by customers."
         },
         {
           "id": "PROD-003",
@@ -2120,7 +2525,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Generate or retrieve VAPID keys from AWS Secrets Manager. 2) Wire up web-push library in Lambda. 3) Implement notification payload construction and delivery. 4) Add ServiceWorker push event handler. 5) Create notification preferences persistence. 6) Test end-to-end with demo event.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Code: // TODO: Wire up web-push library when VAPID keys are configured. Returns { message: 'Push sending not yet configured', queued: 0 }",
+          "line": 1947,
+          "impact": "Settings show push preference but notifications never arrive. Users enable notifications and then don't receive them, creating support burden and feature distrust."
         },
         {
           "id": "PROD-004",
@@ -2134,7 +2542,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Add error boundary wrapper to all manage pages. 2) Implement consistent error toast notification: Toast.error(error.message, { actionLabel: 'Retry', onAction: retry }). 3) Catch all Promise rejections and display to user. 4) Provide 'Retry' button on all errors. 5) Log errors to backend for debugging. 6) Test with network offline scenario.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "handleDelete() has catch { /* silently fail */ }. Same pattern in guest-list-content.tsx line 119 for check-in, booths-content.tsx line 133 for clipboard operations.",
+          "line": 123,
+          "impact": "High: Users perform operations without knowing outcome. They may retry, causing duplicates or incorrect state. Causes support escalations and product distrust."
         },
         {
           "id": "PROD-005",
@@ -2148,7 +2559,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Create ConfirmDeleteModal component with 'Cancel' and 'Delete' buttons. 2) Show what will be deleted. 3) Add 5-second undo window after successful delete. 4) Implement soft-delete in backend (mark deleted_at timestamp). 5) Add restore endpoint. 6) Show undo toast: Toast.success('Deleted. ', { actionLabel: 'Undo', onAction: restore }).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "handleDelete directly sends DELETE request without modal. Same in guest-list-content.tsx member removal, emails-content.tsx suppression.",
+          "line": 111,
+          "impact": "Critical: Destructive actions are irreversible. Users lose data to accidental clicks. No soft-delete means no recovery window."
         },
         {
           "id": "PROD-006",
@@ -2162,7 +2576,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Add loading state to all forms: const [isLoading, setIsLoading] = useState(false). 2) Disable submit button while loading: disabled={isLoading}. 3) Show spinner: {isLoading && <Loader2 className='animate-spin' />}. 4) Prevent duplicate submissions. 5) Show progress toast during long operations. 6) Test with slow network via DevTools.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Form submission starts async operation but no disabled state on button, no spinner, no progress indicator. User can click submit multiple times.",
+          "line": 197,
+          "impact": "High: Duplicate submissions, duplicate data creation, user confusion about operation state."
         },
         {
           "id": "PROD-007",
@@ -2176,7 +2593,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Implement POST /api/events/{slug}/emails endpoint accepting: { to, subject, body, scheduleTime, recurrence }. 2) Store in DynamoDB with status 'scheduled'. 3) Create Lambda scheduled rule (EventBridge) to send queued emails at scheduled time. 4) Implement email delivery via SES. 5) Add delivery confirmation and bounce handling. 6) Show email history with delivery status.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Code comment: // Real mode would POST to API. Demo mode hardcoded, schedule selection present but not functional.",
+          "line": 104,
+          "impact": "High: Core feature for event organizers is non-functional. Cannot send scheduled reminders, causing low attendance and user frustration."
         },
         {
           "id": "PROD-008",
@@ -2190,7 +2610,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Choose photo provider: AWS S3 + CloudFront, or third-party API (Flickr, Unsplash, etc). 2) Implement POST /api/events/{slug}/gallery/upload for S3 signed URLs. 3) Add photo list endpoint GET /api/events/{slug}/gallery/photos. 4) Implement coordinator approval workflow: POST /api/events/{slug}/gallery/approve/{photoId}. 5) Add photo gallery viewing to attendee event pages. 6) Add image optimization (resize, compress).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "hardcoded 'Not Set' string. Demo mode returns placeholder. Code mentions providers but no API integration.",
+          "line": 99,
+          "impact": "High: Gallery feature promised but completely non-functional. Event organizers cannot add photos; attendees cannot browse gallery."
         },
         {
           "id": "PROD-009",
@@ -2204,7 +2627,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Add event update endpoint: PUT /api/events/{slug} for name, tagline, location, dates. 2) Add booth patch: PATCH /api/events/{slug}/booths/{id} for description, image. 3) Add bulk operations: POST /api/events/{slug}/members/bulk-invite with CSV. 4) Add analytics endpoints: GET /api/events/{slug}/analytics/attendees, /booths, /sessions. 5) Implement all CRUD operations with proper auth. 6) Add OpenAPI schema.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No PUT /api/events/{slug}, no PATCH /api/events/{slug}/booths/{id}, no POST /api/events/{slug}/members/bulk-invite, no GET /api/events/{slug}/analytics/*, no DELETE /api/events/{slug} endpoints.",
+          "line": 1,
+          "impact": "Critical: Prevents features from being implemented. Frontend has UI for operations but no backend support."
         },
         {
           "id": "PROD-010",
@@ -2218,7 +2644,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Create centralized src/data/demo-factory.ts exporting all demo data. 2) Create one place to toggle demo vs real mode (already done in EventProvider). 3) Replace all inline DEMO_* with imports from factory. 4) Update hook to handle demo in one place: useEventData(apiPath, fallbackDemoData). 5) Add demo mode toggle in DemoExperienceBar to easily switch between demo/real on same page for testing.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "DEMO_MEMBERS hardcoded with 5 members. Same pattern in booths-content (DEMO_BOOTHS), activity-content, emails-content, gallery-admin-content, etc. Pattern: if (isDemo) { setMembers(DEMO_*); } else { fetch() }",
+          "line": 11,
+          "impact": "Medium-High: Difficult to maintain demo consistency. Hard to test real API. Each page must implement its own demo fallback. 325 occurrences create maintenance burden."
         },
         {
           "id": "PROD-011",
@@ -2232,7 +2661,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Target 85%+ statement coverage, 75%+ branch coverage for src/app. 2) Add integration tests for coordinator workflows: event creation, guest invitation, check-in, booth scan. 3) Add tests for email scheduling end-to-end. 4) Test error handling: network failures, validation errors, auth failures. 5) Use test coverage reports to identify low-coverage files. 6) Add E2E tests with Playwright for critical flows.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "README reports statements 74.60%, branches 61.76%. Specific gaps in create/page.tsx, guest-list-content.tsx, booths-content.tsx, emails-content.tsx, settings/page.tsx.",
+          "line": 1,
+          "impact": "Medium-High: Cannot confidently refactor or fix bugs in critical paths. Branch coverage of 61% means many conditional paths never executed. Regressions likely."
         },
         {
           "id": "PROD-012",
@@ -2246,7 +2678,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Create EmptyState component showing: icon, title, description, call-to-action button. 2) Use in all list views: if (members.length === 0 && !loading) { return <EmptyState icon={Users} title='No guests yet' action='Invite guests' /> }. 3) Link CTA to relevant form. 4) Show step number if part of guided flow. 5) Update all manage page list views.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "No empty state component when booths.length === 0. Same in guest-list, activity, gallery pages. Shows loading indicator indefinitely on empty state.",
+          "line": 230,
+          "impact": "Medium: New coordinators don't know what to do next. No call-to-action to create first booth or invite first guest. Causes confusion and support escalations."
         },
         {
           "id": "PROD-013",
@@ -2260,7 +2695,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Add real-time validation: handleChange triggers validate(). 2) Show inline error message on blur or submit. 3) Email validation: const isValidEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email). 4) Booth name: min 2 chars, max 100 chars, trim whitespace. 5) CSV validation: parse, validate each row, show errors. 6) Disable submit if validation fails. 7) Show character count on text fields.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Booth name input only has 'required' attribute, no validation feedback. Guest email field accepts any input. CSV fields accept paste without validation.",
+          "line": 200,
+          "impact": "Medium: Users submit invalid data, operations fail on backend, error shows but no clear guidance on fix. Frustration and support load."
         },
         {
           "id": "PROD-014",
@@ -2274,7 +2712,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Refactor manage page layouts to mobile-first: stack vertically by default, grid on sm: breakpoint. 2) Booth QR: Add full-screen QR button, downloadable image. 3) Tables: add horizontal scroll with indicator, collapse columns on mobile. 4) Ensure tap targets >= 44px. 5) Add swipe-to-delete on list items. 6) Test on iPhone 12, Android phones.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Form uses sm:grid-cols-[1fr_auto_auto] but inputs full-width on mobile. QR code w-24 h-24 hard to scan on small screens. No horizontal scroll indicator.",
+          "line": 197,
+          "impact": "Medium: Coordinators managing events from mobile (common during live events) have poor experience. Forms hard to use, QR codes too small, button tap targets might be small."
         },
         {
           "id": "PROD-015",
@@ -2288,7 +2729,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Add aria-label to all icon buttons: <button aria-label='Delete booth'><X /></button>. 2) Add aria-live='polite' to toast region. 3) Add role='region' aria-label='Booth list' to lists. 4) Add aria-expanded, aria-controls to collapsible sections. 5) Add aria-busy='true' during loading. 6) Test with NVDA/JAWS screen reader.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Icon-only buttons (X, check, chevron) have no aria-label. No aria-live on success/error toasts. No role='region' on collapsible sections.",
+          "line": 1,
+          "impact": "Medium: Screen reader users cannot navigate manage pages effectively. Fails WCAG AA compliance. Blocks enterprise adoption where accessibility is required."
         },
         {
           "id": "PROD-016",
@@ -2302,7 +2746,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Create useApiToken hook: const { token, refreshToken, logout } = useApiToken(). 2) Implement token refresh: if token close to expiry, refresh before API call. 3) Listen for storage change event to sync logout across tabs. 4) Use SameSite=Strict cookies instead of localStorage. 5) Update all components to use hook instead of direct localStorage access.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Token fetched in lines 56, 76, 83, 106. Same pattern in guest-list, emails, settings, admin pages. No token refresh, no expiry checking, no tab sync on logout.",
+          "line": 56,
+          "impact": "Medium-High: Hard to maintain. Logout doesn't clear token from all tabs. Token expiry not handled. Session hijacking risks if token exposed."
         },
         {
           "id": "PROD-017",
@@ -2316,7 +2763,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Create ErrorBoundary component that catches React errors. 2) Wrap all manage pages in <ErrorBoundary>. 3) Implement centralized error logger: logError(error, context). 4) Send errors to Sentry or CloudWatch. 5) Standardize error response format. 6) Show user-friendly error messages, log full error for debugging.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Booths page shows error toast, guests page swallows errors, emails page logs to console only. No error boundary. No centralized error logging.",
+          "line": 1,
+          "impact": "Medium: Difficult to maintain. Hard to debug production issues. Users see inconsistent error experiences."
         },
         {
           "id": "PROD-018",
@@ -2330,7 +2780,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Create src/lib/api-client.ts with typed fetch wrapper. 2) Define request/response types for each endpoint. 3) Use zod for runtime validation of responses. 4) Generate types from OpenAPI/GraphQL schema if available. 5) Replace all fetch calls with typed client: api.get('/events/:slug/members', token).",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "All manage pages: fetch(...).then(r => r.json()).then(data => { ... }). No type validation, no request schemas, untyped response.",
+          "line": 1,
+          "impact": "Medium: Type-unsafe. Hard to refactor APIs. Runtime errors possible. No contract between frontend/backend."
         },
         {
           "id": "PROD-019",
@@ -2344,7 +2797,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Integrate AWS Polly. 2) Accept text, voice, language params. 3) Cache results in S3. 4) Return presigned S3 URL. 5) Add cost controls (cache TTL, max chars). 6) Test with event session descriptions.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "POST /api/tts/synthesize returns 501 'AWS Polly integration pending'",
+          "line": 1960,
+          "impact": "Low: Not core to MVP but blocks accessibility feature for event materials."
         },
         {
           "id": "PROD-020",
@@ -2358,7 +2814,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Create /api/events/{slug}/export?format=csv endpoint. 2) Export attendance: members, check-in times, roles, badges. 3) Export analytics: session popularity, booth scans, photo views, leaderboard. 4) Export leads: booth visitors, contact captures, follow-ups. 5) Add async job system for large exports. 6) Add export download buttons to manage pages.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Activity page shows activity but no export button. No analytics/reporting endpoints. Settings page has handleExportData but only exports local browser data.",
+          "line": 1,
+          "impact": "High: Coordinators cannot get insights or share results with stakeholders. No lead capture tracking for sponsors/vendors. Common request for event tools."
         },
         {
           "id": "PROD-021",
@@ -2372,7 +2831,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Add CSV upload to guest page: accepts name, email, role. 2) Parse and validate before insert. 3) Show preview of imported data. 4) Create /api/events/{slug}/members/bulk-import endpoint. 5) Handle duplicates (skip, merge, update). 6) Send bulk invite emails via SES. 7) Same for booths: CSV template download, bulk import.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only single email invite form. No upload CSV button. Booth creation one at a time.",
+          "line": 40,
+          "impact": "High: Scaling events is slow. For 500-person event, adding guests manually is prohibitive. Common feature in event tools."
         },
         {
           "id": "PROD-022",
@@ -2386,7 +2848,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Create workflow builder UI (coordinator configurable). 2) Templates: reminder email 1d before, 1h before, post-event survey. 3) Triggers: send email when guest checks in, when booth is visited. 4) Use EventBridge rules for scheduled jobs, SNS for event-triggered. 5) Test with demo event workflows.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only manual reminder nudges in UI. No scheduled email automation. No trigger-based actions.",
+          "line": 1,
+          "impact": "Medium: Reduces engagement. Events with auto-reminders have higher attendance. Missed automation opportunity."
         },
         {
           "id": "PROD-023",
@@ -2400,7 +2865,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Add search input above list: onChange triggers filter. 2) Add filter buttons: role, check-in status, date joined. 3) Implement client-side filtering for now, server-side if list grows large. 4) Save frequently-used filters. 5) Same for booth, email, activity lists.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Members rendered as full list. No <input type='search'> or filter controls. For large events, unusable.",
+          "line": 39,
+          "impact": "Medium: Large events (100+ guests) become hard to manage. Cannot find specific guest, filter by role, or identify unchecked-in attendees."
         },
         {
           "id": "PROD-024",
@@ -2414,7 +2882,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Update User type: add createdAt, updatedAt, preferences (notifications, theme), subscription info. 2) Create Event type with full schema. 3) Update Member type: add permissions array, lastActiveAt, notificationPreferences, badges array. 4) Update DynamoDB schema with new fields (backfill nulls). 5) Create migrations docs.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "User type missing: createdAt, preferences, eventRoles, subscription, lastActive. Event type not in types (only in factory). Member missing: permissions, lastActiveAt, notificationPreferences.",
+          "line": 1,
+          "impact": "Low: Technical debt. Blocks future analytics, audit trails, retention features. Requires migration to add fields later."
         },
         {
           "id": "PROD-025",
@@ -2428,7 +2899,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Implement soft-delete: add deleted_at timestamp instead of removing. 2) Exclude soft-deleted items from list queries. 3) Add restore endpoint. 4) Purge hard-deleted items after 30-day retention. 5) Log deletion (who, when) for audit trail. 6) Add trash/restore UI in coordinator views.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "DELETE endpoints directly remove from DynamoDB. No soft-delete implementation.",
+          "line": 1,
+          "impact": "Low: Enterprise customers expect soft-delete and restore. Current implementation not suitable for regulated industries."
         },
         {
           "id": "PROD-026",
@@ -2442,7 +2916,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Create OpenAPI 3.0 spec file: openapi.yaml. 2) Document all endpoints: path, method, params, request body, response, error codes. 3) Generate interactive docs with Swagger UI or ReDoc. 4) Add to GitHub Pages or dev docs site. 5) Keep spec in sync with implementation.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Lambda API has no comments or schema definitions. Frontend developers guessing at endpoints.",
+          "line": 1,
+          "impact": "Low-Medium: Slows development. Makes onboarding harder. Duplicates endpoints if not documented."
         },
         {
           "id": "PROD-027",
@@ -2456,7 +2933,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Integrate Sentry or Datadog. 2) Wrap app in <Sentry.ErrorBoundary>. 3) Capture all unhandled rejections. 4) Send errors with context: user, event, operation. 5) Set up alerts for error spikes. 6) Create error dashboard.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Console.log scattered in a few places. No error reporting to backend. Sentry or CloudWatch not configured.",
+          "line": 1,
+          "impact": "Low: Cannot debug production issues quickly. Error patterns not visible."
         },
         {
           "id": "PROD-028",
@@ -2470,7 +2950,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Move admin emails to environment variable or database table. 2) Create admin user management page (create, revoke, view). 3) Implement role-based access control (RBAC) in API. 4) Store admin status in User table. 5) Audit admin actions.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "const ADMIN_EMAIL = 'cody@codyjo.com';",
+          "line": 82,
+          "impact": "Low: Blocks multiple admins, team scaling. Security risk if email changes."
         },
         {
           "id": "PROD-029",
@@ -2484,7 +2967,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Send verification email on signup. 2) Require verification before event publication. 3) Show unverified banner. 4) Resend verification link. 5) Auto-verify known email domains (gmail, outlook, etc) if appropriate.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Code checks user.emailVerified but doesn't enforce it. No verification email sent on signup.",
+          "line": 541,
+          "impact": "Low: Spam risk. Users can signup with invalid emails."
         },
         {
           "id": "PROD-030",
@@ -2498,7 +2984,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Run npm update to apply patch/minor updates. 2) Test thoroughly (run test suite). 3) Audit for breaking changes in major versions. 4) Plan Next.js 17+ upgrade for future. 5) Set up Dependabot to automate this.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "npm outdated shows 17 packages with available updates. Most are non-breaking (patch/minor).",
+          "line": 21,
+          "impact": "Low: Security patches, bug fixes, performance improvements available."
         },
         {
           "id": "PROD-031",
@@ -2512,7 +3001,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Design webhook schema (event type, payload, retry logic). 2) Implement webhook registration endpoint. 3) Store webhooks in DynamoDB. 4) Emit webhook on key events (attendee joined, booth scanned, photo approved). 5) Use SQS or SNS for reliable delivery. 6) Add webhook test/replay UI in coordinator dashboard.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No webhook endpoints or event emission system.",
+          "line": 1,
+          "impact": "Info: Limits integrations. Competitive event platforms offer webhooks for Zapier, CRM sync, etc."
         },
         {
           "id": "PROD-032",
@@ -2526,7 +3018,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Implement operation command pattern. 2) Maintain operation history stack. 3) Add undo/redo buttons or Ctrl+Z support. 4) Persist history to backend for cross-session undo. 5) Add operation history sidebar showing recent changes.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No undo/redo component or state management for operations.",
+          "line": 1,
+          "impact": "Info: Nice-to-have. Would improve confidence and reduce support burden."
         },
         {
           "id": "PROD-033",
@@ -2540,7 +3035,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Create /e/{slug}/speaker/{speakerId}/settings page. 2) Allow edit: bio, photo, social links, session description. 3) Same for /vendor/{vendorId}/settings. 4) Add save/draft functionality. 5) Require coordinator approval for changes or auto-publish. 6) Add notification when profile is edited.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Speaker pages are read-only. No edit forms for speakers/vendors.",
+          "line": 1,
+          "impact": "Info: Reduces coordinator workload. Empowers speakers/vendors."
         },
         {
           "id": "PROD-034",
@@ -2554,7 +3052,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Create survey builder UI (coordinator can create custom surveys). 2) Deploy surveys post-event or via email. 3) Collect responses with timestamp. 4) Aggregate results: charts, ratings, open-ended responses. 5) Export survey results. 6) Correlate with attendance data (who attended which sessions, rated which).",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No survey endpoints or UI.",
+          "line": 1,
+          "impact": "Info: Valuable data for organizers. Typical event tool feature."
         },
         {
           "id": "PROD-035",
@@ -2568,7 +3069,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Create gamification settings in coordinator dashboard. 2) UI for: point values per action (booth scan, photo, check-in), badge rules, leaderboard visibility. 3) Backend: Store rules in DynamoDB, compute leaderboard based on rules. 4) Real-time leaderboard updates. 5) Per-event configuration (different rules for different events).",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Leaderboard shows demo data only. No configuration UI for coordinators.",
+          "line": 1,
+          "impact": "Info: Limits engagement customization. Competitors offer configurable gamification."
         },
         {
           "id": "PROD-036",
@@ -2582,7 +3086,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Add i18n library (next-intl or i18next). 2) Extract all copy to translation files. 3) Support: English, Spanish, French, German, Mandarin (start). 4) Coordinator can set event language. 5) Attendee sees site in event language or their preference.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No i18n library, all copy hardcoded in English.",
+          "line": 1,
+          "impact": "Info: Blocks international expansion. Important for global event tool."
         },
         {
           "id": "PROD-037",
@@ -2596,7 +3103,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Enhance manifest.json with full config. 2) Implement Service Worker offline caching. 3) Cache critical routes offline. 4) Sync data when online. 5) Add 'Add to Home Screen' banner. 6) Test on mobile browsers.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Manifest exists but minimal. No offline handling beyond localStorage.",
+          "line": 1,
+          "impact": "Info: PWA would improve engagement, app-like feel, offline support."
         },
         {
           "id": "PROD-038",
@@ -2610,7 +3120,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Track custom events: event_created, booth_scanned, member_invited, photo_approved. 2) Create funnels: signup \u2192 event creation \u2192 publish. 3) Set up cohort analysis. 4) Create dashboards for KPIs. 5) Use data to prioritize roadmap.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Only Plausible script added. No custom event tracking for product events.",
+          "line": 58,
+          "impact": "Info: Limited product insights. Cannot track feature adoption or engagement."
         },
         {
           "id": "PROD-039",
@@ -2624,7 +3137,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Add 'Add as Contact' button to profiles. 2) Create attendee contact list in journal. 3) Allow comments on sessions, photos. 4) Social sharing buttons for photos/sessions. 5) @mention attendees in comments. 6) Create private chat for attendees (if appropriate).",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Directory shows profiles but no interaction/networking features.",
+          "line": 1,
+          "impact": "Info: Misses networking opportunity. Competitors (Hopin, vFairs) have social features."
         },
         {
           "id": "PROD-040",
@@ -2638,7 +3154,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Document rate limits in API docs (per endpoint). 2) Add X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers to responses. 3) Return 429 Too Many Requests with Retry-After header when limit exceeded. 4) Create rate limit FAQ. 5) Provide rate limit test endpoint.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Rate limiting implemented (lines 46-101) but not documented. No X-RateLimit-* headers returned.",
+          "line": 46,
+          "impact": "Info: Integrators don't know limits. Can cause surprises."
         },
         {
           "id": "PROD-041",
@@ -2652,7 +3171,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Generate unique referral links for each user. 2) Track referrals: who referred whom. 3) Reward: account credit, feature unlock, or commission. 4) Create referral dashboard: link, stats, earnings. 5) Marketing: referral landing page with incentive. 6) Track to Plausible for analysis.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "No referral feature in codebase.",
+          "line": 1,
+          "impact": "Info: Growth opportunity. Referral programs drive viral adoption."
         },
         {
           "id": "PROD-042",
@@ -2666,7 +3188,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Add custom domain support (CNAME for event URL). 2) Create branding settings: logo, colors, fonts, email template. 3) Hide Cordivent branding if reseller customizes. 4) Reseller account type with subdomain support. 5) Pricing tier for white-label. 6) Test with custom domain.",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "All branding hardcoded to Cordivent.",
+          "line": 1,
+          "impact": "Info: Limits enterprise/reseller channel. Competitors (Splash, Eventbrite) offer white-label."
         }
       ],
       "categories": {
@@ -2722,7 +3247,10 @@
           "effort": "moderate",
           "fix_suggestion": "1) Add 'awaitingReflection' boolean field to journal schema. 2) Implement toggle in journal entry UI. 3) Add filtering support in getJournalEntries API. 4) Filter UI should only show when entries exist with this status. 5) Add test coverage for filter behavior.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "Journal page includes filter option { key: 'unreflected', label: 'Awaiting Reflection' }, but the getJournalEntries API and filtering logic do not process this filter. The API returns all entries regardless of reflection status.",
+          "line": 1,
+          "impact": "Users cannot organize their journal by which entries need reflection. This defeats a core journaling workflow \u2014 marking entries as 'needs reflection' and coming back to them later."
         },
         {
           "id": "PROD-002",
@@ -2736,7 +3264,10 @@
           "effort": "hard",
           "fix_suggestion": "1) Implement Service Worker for Web Push API. 2) Add subscription endpoints in Lambda API. 3) Create backend notification scheduler (EventBridge + Lambda). 4) Send notifications based on stored preferences. 5) Add notification permission prompt on first interaction. 6) Provide notification history/log. Start with email notifications (simpler, requires Resend integration).",
           "fixable_by_agent": false,
-          "status": "open"
+          "status": "open",
+          "evidence": "Preferences stored in localStorage (tnbm_preferences) and synced on line 96, but never consumed. No Service Worker, no push API calls, no backend notification system. Preferences are cosmetic UI only.",
+          "line": 72,
+          "impact": "Users set reminders and notification preferences but never receive any notifications. This is a broken promise that erodes trust and reduces engagement (especially daily streak motivation)."
         },
         {
           "id": "PROD-003",
@@ -2750,7 +3281,10 @@
           "effort": "easy",
           "fix_suggestion": "1) Add 'notes' string field to READING item schema. 2) Implement saveFavoriteNote endpoint in Lambda API. 3) Load notes when fetching readings. 4) Update history UI to call saveFavoriteNote on text change (with debounce). 5) Display notes in reading detail view. 6) Add tests.",
           "fixable_by_agent": true,
-          "status": "open"
+          "status": "open",
+          "evidence": "UI has editingNoteId state and noteText input (lines 31-32), but the API call saveFavoriteNote() is imported but never called in the visible code. Backend schema has no note field on READING items.",
+          "line": 31,
+          "impact": "Users cannot add personal notes to their favorite readings. This prevents capturing insights about why a reading resonated or what happened afterward."
         }
       ],
       "categories": {

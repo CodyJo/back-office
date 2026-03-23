@@ -53,11 +53,14 @@ def normalize_finding(raw, department, repo):
     Field aliases resolved (first match wins):
       severity        <- raw["severity"] or raw["value"]
       effort          <- raw["effort"] or raw["implementation_effort"], then EFFORT_MAP
-      impact          <- raw["legal_risk"]  (compliance alias)
+      impact          <- raw["impact"] or raw["legal_risk"] (compliance alias);
+                        monetization falls back to raw["description"]
       fixable_by_agent <- raw["fixable_by_agent"] or raw["fixable"]
       fix_suggestion  <- raw["fix_suggestion"] or raw["fix"]
       description     <- raw["description"] or raw["details"]
       file            <- raw["file"] or raw["location"]
+      evidence        <- raw["evidence"] (passed through as-is)
+      line            <- raw["line"] (passed through as-is)
 
     Department-specific fields preserved when present:
       monetization:  revenue_estimate, phase
@@ -78,7 +81,12 @@ def normalize_finding(raw, department, repo):
     fix_suggestion = _get("fix_suggestion", "fix", default="")
     description = _get("description", "details", default="")
     file_path = _get("file", "location", default="")
-    legal_risk = raw.get("legal_risk", "")
+
+    # impact: raw["impact"] first, then raw["legal_risk"], then empty string.
+    # For monetization, fall back to description if neither exists.
+    impact = raw.get("impact") or raw.get("legal_risk") or ""
+    if not impact and department == "monetization":
+        impact = description
 
     canonical = {
         "id": raw.get("id", ""),
@@ -93,11 +101,13 @@ def normalize_finding(raw, department, repo):
         "fix_suggestion": fix_suggestion,
         "fixable_by_agent": bool(fixable),
         "status": raw.get("status", "open"),
+        "evidence": raw.get("evidence", ""),
+        "line": raw.get("line"),
     }
 
-    # impact is the normalized alias for legal_risk (compliance)
-    if legal_risk:
-        canonical["impact"] = legal_risk
+    # impact is always included when non-empty
+    if impact:
+        canonical["impact"] = impact
 
     # Department-specific preserved fields
     if department == "monetization":
@@ -161,11 +171,21 @@ def merge_backlog(findings, backlog_path):
             entry = existing[h]
             entry["audit_count"] = entry.get("audit_count", 1) + 1
             entry["last_seen"] = now
+            entry["hash"] = h
+            entry["department"] = dept
+            entry["repo"] = repo
+            entry["title"] = title
+            entry["file"] = file_path
             entry["severity"] = finding.get("severity", entry.get("severity", ""))
             entry["status"] = finding.get("status", entry.get("status", "open"))
             entry["current_finding"] = finding
         else:
             existing[h] = {
+                "hash": h,
+                "department": dept,
+                "repo": repo,
+                "title": title,
+                "file": file_path,
                 "audit_count": 1,
                 "first_seen": now,
                 "last_seen": now,
