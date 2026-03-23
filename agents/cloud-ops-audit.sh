@@ -48,8 +48,9 @@ echo ""
 
 # ── Check for Terraform directory ────────────────────────────────────────────
 
-if [ ! -d "$TARGET_REPO/terraform" ]; then
-  echo "No terraform/ directory found in $REPO_NAME — writing clean report."
+TF_FILES=$(find "$TARGET_REPO" -name "*.tf" -type f 2>/dev/null | head -1)
+if [ -z "$TF_FILES" ]; then
+  echo "No .tf files found in $REPO_NAME — writing clean report."
   cat > "$RESULTS_DIR/cloud-ops-findings.json" <<NOOP
 {
   "scan_id": "no-terraform",
