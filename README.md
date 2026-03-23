@@ -298,6 +298,20 @@ targets:
       Brief description of this project for the AI agent.
 ```
 
+## CI/CD
+
+Fully automated via **AWS CodeBuild**. No GitHub Actions.
+
+| Pipeline | Trigger | What it does |
+|----------|---------|-------------|
+| `back-office-ci` | Pull request | Shell syntax check, Python linting (ruff), regression suite (pytest with coverage) |
+| `back-office-cd` | Push to `main` | Validates, tests, then deploys dashboards to S3/CloudFront |
+
+- **Build configs:** `buildspec-ci.yml` (CI), `buildspec-cd.yml` (CD)
+- **Infrastructure:** `terraform/codebuild.tf` (shared module from `codyjo.com`)
+- **IAM role:** `back-office-codebuild-cd` — scoped to S3 + CloudFront only
+- **Logs:** CloudWatch `/codebuild/back-office`
+
 ## Architecture
 
 ### Package structure
