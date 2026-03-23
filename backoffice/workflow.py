@@ -43,6 +43,7 @@ DEPARTMENT_SCRIPTS = {
     "compliance": os.path.join(SCRIPT_ROOT, "agents", "compliance-audit.sh"),
     "monetization": os.path.join(SCRIPT_ROOT, "agents", "monetization-audit.sh"),
     "product": os.path.join(SCRIPT_ROOT, "agents", "product-audit.sh"),
+    "cloud-ops": os.path.join(SCRIPT_ROOT, "agents", "cloud-ops-audit.sh"),
 }
 
 FINDINGS_FILES = {
@@ -52,6 +53,7 @@ FINDINGS_FILES = {
     "compliance": "compliance-findings.json",
     "monetization": "monetization-findings.json",
     "product": "product-findings.json",
+    "cloud-ops": "cloud-ops-findings.json",
 }
 
 SCORE_FIELDS = {
@@ -60,6 +62,7 @@ SCORE_FIELDS = {
     "compliance": "compliance_score",
     "monetization": "monetization_readiness_score",
     "product": "product_readiness_score",
+    "cloud-ops": "cloud_ops_score",
 }
 
 ALL_DEPARTMENTS = list(DEPARTMENT_SCRIPTS.keys())
