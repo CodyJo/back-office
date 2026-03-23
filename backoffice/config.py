@@ -29,6 +29,20 @@ class RunnerConfig:
 
 
 @dataclass(frozen=True)
+class BackendConfig:
+    enabled: bool = True
+    command: str = ""
+    model: str = ""
+    mode: str = ""
+    local_budget: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RoutingPolicy:
+    fallback_order: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ApiConfig:
     port: int = 8070
     api_key: str = ""
@@ -100,6 +114,8 @@ class Target:
 class Config:
     root: Path = field(default_factory=lambda: Path.cwd())
     runner: RunnerConfig = field(default_factory=RunnerConfig)
+    agent_backends: dict[str, BackendConfig] = field(default_factory=dict)
+    routing_policy: RoutingPolicy = field(default_factory=RoutingPolicy)
     api: ApiConfig = field(default_factory=ApiConfig)
     deploy: DeployConfig = field(default_factory=DeployConfig)
     scan: ScanConfig = field(default_factory=ScanConfig)
@@ -149,6 +165,46 @@ def _build_dashboard_targets(raw: list | None) -> list[DashboardTarget]:
     ]
 
 
+def _build_agent_backends(
+    raw: dict | None, runner_raw: dict
+) -> dict[str, BackendConfig]:
+    """Build agent_backends from explicit config or fall back to runner: compat."""
+    if raw and isinstance(raw, dict):
+        backends = {}
+        for name, data in raw.items():
+            if not isinstance(data, dict):
+                continue
+            backends[name] = BackendConfig(
+                enabled=bool(data.get("enabled", True)),
+                command=str(data.get("command", "")),
+                model=str(data.get("model", "")),
+                mode=str(data.get("mode", "")),
+                local_budget=dict(data.get("local_budget", {})),
+            )
+        return backends
+
+    # Backward compat: synthesize a single backend from legacy runner: section
+    runner_cmd = str(runner_raw.get("command", "claude"))
+    runner_mode = str(runner_raw.get("mode", "claude-print"))
+    runner_bin = runner_cmd.split()[0] if runner_cmd else "claude"
+
+    # Detect which backend type from the runner binary name
+    if runner_bin == "codex":
+        backend_name = "codex"
+    else:
+        backend_name = "claude"
+
+    return {
+        backend_name: BackendConfig(
+            enabled=True,
+            command=runner_cmd,
+            model="",
+            mode=runner_mode,
+            local_budget={},
+        )
+    }
+
+
 def load_config(path: Path | None = None) -> Config:
     if path is None:
         root = Path(os.environ.get("BACK_OFFICE_ROOT", Path(__file__).resolve().parents[1]))
@@ -193,12 +249,25 @@ def load_config(path: Path | None = None) -> Config:
         if target.path and not Path(target.path).exists():
             logger.warning("Target '%s' path does not exist: %s", name, target.path)
 
+    # Parse agent_backends — fall back to constructing from runner: for compat
+    agent_backends = _build_agent_backends(
+        raw.get("agent_backends"), runner_raw
+    )
+
+    # Parse routing_policy
+    routing_policy_raw = raw.get("routing_policy", {}) or {}
+    routing_policy = RoutingPolicy(
+        fallback_order=dict(routing_policy_raw.get("fallback_order", {})),
+    )
+
     return Config(
         root=root,
         runner=RunnerConfig(
             command=str(runner_raw.get("command", "claude")),
             mode=str(runner_raw.get("mode", "claude-print")),
         ),
+        agent_backends=agent_backends,
+        routing_policy=routing_policy,
         api=ApiConfig(
             port=int(api_raw.get("port", 8070)),
             api_key=str(api_raw.get("api_key", "")),

@@ -19,6 +19,7 @@ fi
 PROMPT=""
 TOOLS=""
 REPO_DIR=""
+BACKEND=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -34,6 +35,10 @@ while [ $# -gt 0 ]; do
       REPO_DIR="${2:-}"
       shift 2
       ;;
+    --backend)
+      BACKEND="${2:-}"
+      shift 2
+      ;;
     *)
       echo "Unknown argument: $1" >&2
       exit 1
@@ -42,8 +47,18 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$PROMPT" ] || [ -z "$REPO_DIR" ]; then
-  echo "Usage: run-agent.sh --prompt \"...\" --tools \"...\" --repo /path/to/repo" >&2
+  echo "Usage: run-agent.sh --prompt \"...\" --tools \"...\" --repo /path/to/repo [--backend NAME]" >&2
   exit 1
+fi
+
+# If --backend specified, delegate to Python backend system
+if [ -n "$BACKEND" ]; then
+  python3 -m backoffice invoke \
+    --backend "$BACKEND" \
+    --prompt "$PROMPT" \
+    --tools "$TOOLS" \
+    --repo "$REPO_DIR"
+  exit $?
 fi
 
 RUNNER_MODE="${BACK_OFFICE_AGENT_MODE:-claude-print}"

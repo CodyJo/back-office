@@ -75,6 +75,13 @@ def build_parser() -> argparse.ArgumentParser:
     # List targets
     sub.add_parser("list-targets", help="List configured targets")
 
+    # Invoke (backend bridge)
+    invoke = sub.add_parser("invoke", help="Invoke an AI backend directly")
+    invoke.add_argument("--backend", required=True, help="Backend name (claude, codex)")
+    invoke.add_argument("--prompt", required=True, help="Prompt text")
+    invoke.add_argument("--tools", default="", help="Comma-separated tool list")
+    invoke.add_argument("--repo", required=True, help="Target repo directory")
+
     # Servers
     serve = sub.add_parser("serve", help="Local dashboard dev server")
     serve.add_argument("--port", type=int, default=8070)
@@ -152,6 +159,33 @@ def main(argv: list[str] | None = None) -> int:
         except ImportError:
             print("Scaffolding module not yet implemented", file=sys.stderr)
             return 1
+
+    if args.command == "invoke":
+        from backoffice.backends import get_backend
+        from backoffice.config import load_config
+
+        cfg = load_config()
+        backend_name = args.backend
+        backend_cfg = cfg.agent_backends.get(backend_name)
+        if backend_cfg:
+            # Convert frozen BackendConfig to plain dict for the backend constructor
+            bc = {
+                "command": backend_cfg.command,
+                "model": backend_cfg.model,
+                "mode": backend_cfg.mode,
+                "local_budget": backend_cfg.local_budget,
+            }
+        else:
+            # Allow ad-hoc backend names not in config
+            bc = {}
+        backend = get_backend(backend_name, bc)
+        tools = [t.strip() for t in args.tools.split(",") if t.strip()] if args.tools else []
+        result = backend.invoke(args.prompt, tools, args.repo)
+        if result.output:
+            print(result.output, end="")
+        if result.error:
+            print(result.error, end="", file=sys.stderr)
+        return result.exit_code
 
     if args.command == "setup":
         try:
