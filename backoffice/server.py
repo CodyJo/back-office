@@ -636,8 +636,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             t = cfg.targets.get(target_name)
             if t and t.path:
                 target_path = t.path
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to load config: {e}")
 
         if not target_path:
             self._json_response(400, {
