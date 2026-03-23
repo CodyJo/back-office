@@ -126,6 +126,10 @@ def normalize_finding(raw, department, repo):
         if "wcag_level" in raw:
             canonical["wcag_level"] = raw["wcag_level"]
 
+    if department == "cloud-ops":
+        if "pillar" in raw:
+            canonical["pillar"] = raw["pillar"]
+
     return canonical
 
 
