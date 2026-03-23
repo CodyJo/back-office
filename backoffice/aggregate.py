@@ -47,7 +47,7 @@ PRIVACY_REPO_META = {
         "owner": "marketing site",
         "processors": ["AWS"],
     },
-    "photo-gallery": {
+    "analogify": {
         "label": "Analogify Studio",
         "product_url": "https://galleries.codyjo.com/",
         "privacy_url": "https://www.codyjo.com/privacy/#analogify",
@@ -61,7 +61,7 @@ PRIVACY_REPO_META = {
         "owner": "tarot + journaling app",
         "processors": ["AWS", "Anthropic", "Resend"],
     },
-    "bible-app": {
+    "selah": {
         "label": "Selah",
         "product_url": "https://selah.codyjo.com/",
         "privacy_url": "https://www.codyjo.com/privacy/#selah",

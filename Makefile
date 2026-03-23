@@ -169,7 +169,7 @@ local-targets: ## List configured local audit targets
 local-refresh: ## Refresh local dashboard data + audit log from existing results
 	python3 -m backoffice refresh
 
-local-audit: ## Run local audit for a configured target (make local-audit TARGET_NAME=bible-app DEPTS=product,qa)
+local-audit: ## Run local audit for a configured target (make local-audit TARGET_NAME=selah DEPTS=product,qa)
 	@test -n "$(TARGET_NAME)" || (echo "Usage: make local-audit TARGET_NAME=<name> [DEPTS=qa,product]" && exit 1)
 	python3 -m backoffice audit $(TARGET_NAME) $(if $(DEPTS),--departments "$(DEPTS)",)
 
@@ -184,7 +184,7 @@ self-audit-local: ## Run the Back Office self-audit and refresh the local dashbo
 dashboard: ## Deploy all dashboards to S3
 	python3 -m backoffice sync
 
-scaffold-workflows: ## Scaffold GitHub Actions into a configured target (make scaffold-workflows TARGET_NAME=bible-app)
+scaffold-workflows: ## Scaffold GitHub Actions into a configured target (make scaffold-workflows TARGET_NAME=selah)
 	@test -n "$(TARGET_NAME)" || (echo "Usage: make scaffold-workflows TARGET_NAME=<name>" && exit 1)
 	python3 scripts/scaffold-github-workflows.py --target "$(TARGET_NAME)"
 
