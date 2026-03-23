@@ -214,23 +214,17 @@ def aggregate_qa(results_dir, dashboard_dir, valid_repos=None):
             for fix in fixes_data.get("fixes", []):
                 fix_map[fix["finding_id"]] = fix
 
+        from backoffice.backlog import normalize_finding
+
         enriched = []
         for f in findings:
             fid = f["id"]
             fix_info = fix_map.get(fid, {})
-            enriched.append({
-                "id": fid,
-                "severity": f["severity"],
-                "category": f["category"],
-                "title": f["title"],
-                "file": f.get("file", ""),
-                "line": f.get("line"),
-                "effort": f.get("effort", "unknown"),
-                "fixable": f.get("fixable_by_agent", False),
-                "status": fix_info.get("status", "open"),
-                "commit": fix_info.get("commit_hash", ""),
-                "fixed_at": fix_info.get("fixed_at", ""),
-            })
+            normalized = normalize_finding(f, "qa", repo_name)
+            normalized["status"] = fix_info.get("status", "open")
+            normalized["commit"] = fix_info.get("commit_hash", "")
+            normalized["fixed_at"] = fix_info.get("fixed_at", "")
+            enriched.append(normalized)
 
         fixed = sum(1 for e in enriched if e["status"] == "fixed")
         failed = sum(1 for e in enriched if e["status"] == "failed")
@@ -314,28 +308,14 @@ def aggregate_department(results_dir, findings_filename, department_name, valid_
             "total", summary.get("total_opportunities", len(findings))
         )
 
+        from backoffice.backlog import normalize_finding
+
         repo_entry = {
             "name": repo_name,
             "scanned_at": data.get("scanned_at", ""),
             "summary": summary,
             "findings": [
-                {
-                    "id": f["id"],
-                    "severity": f.get("severity", f.get("value", "medium")),
-                    "category": f["category"],
-                    "title": f.get("title", f.get("description", "Untitled")),
-                    "file": f.get("file") or f.get("location", ""),
-                    "line": f.get("line"),
-                    "effort": f.get("effort", f.get("implementation_effort", "unknown")),
-                    "fixable": f.get("fixable_by_agent", False),
-                    "status": "open",
-                    # Monetization-specific fields (if present)
-                    **(
-                        {"revenue_estimate": f["revenue_estimate"], "phase": f["phase"]}
-                        if "revenue_estimate" in f
-                        else {}
-                    ),
-                }
+                normalize_finding(f, department_name, repo_name)
                 for f in findings
             ],
         }
@@ -630,6 +610,71 @@ def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
         + prod_data["totals"]["total_findings"]
     )
     logger.info("Total across all departments: %d findings", total)
+
+    # Backlog merge and score history
+    from backoffice.backlog import merge_backlog, normalize_finding, update_score_history
+
+    # Collect all normalized findings across all departments for the backlog
+    all_findings = []
+    dept_data_map = {
+        "qa": qa_data,
+        "seo": seo_data,
+        "ada": ada_data,
+        "compliance": comp_data,
+        "monetization": mon_data,
+        "product": prod_data,
+    }
+    for dept_name, dept_data in dept_data_map.items():
+        for repo in dept_data.get("repos", []):
+            for f in repo.get("findings", []):
+                # findings are already normalized; ensure department/repo fields are set
+                f_copy = dict(f)
+                f_copy["department"] = f_copy.get("department") or dept_name
+                f_copy["repo"] = f_copy.get("repo") or repo["name"]
+                # Guard against None values in hash-key fields
+                f_copy["title"] = f_copy.get("title") or ""
+                f_copy["file"] = f_copy.get("file") or ""
+                all_findings.append(f_copy)
+
+    backlog_path = os.path.join(dashboard_dir, "backlog.json")
+    merge_backlog(all_findings, backlog_path)
+    logger.info("Backlog: merged %d findings into %s", len(all_findings), backlog_path)
+
+    # Collect per-repo per-dept scores for score history
+    score_snapshot = {}
+    for dept_name, dept_data in dept_data_map.items():
+        for repo in dept_data.get("repos", []):
+            repo_name = repo["name"]
+            summary = repo.get("summary", {})
+
+            if dept_name == "qa":
+                critical = summary.get("critical", 0)
+                high = summary.get("high", 0)
+                medium = summary.get("medium", 0)
+                low = summary.get("low", 0)
+                total_count = summary.get("total", len(repo.get("findings", [])))
+                score = (
+                    max(0, 100 - critical * 15 - high * 8 - medium * 3 - low)
+                    if total_count
+                    else None
+                )
+            else:
+                score = (
+                    summary.get("seo_score")
+                    or summary.get("compliance_score")
+                    or summary.get("monetization_readiness_score")
+                    or summary.get("product_readiness_score")
+                    or summary.get("score")
+                )
+
+            if score is not None:
+                if repo_name not in score_snapshot:
+                    score_snapshot[repo_name] = {}
+                score_snapshot[repo_name][dept_name] = score
+
+    history_path = os.path.join(dashboard_dir, "score-history.json")
+    update_score_history(score_snapshot, history_path)
+    logger.info("Score history: updated snapshot in %s", history_path)
 
 
 def main(results_dir=None, output_path=None):

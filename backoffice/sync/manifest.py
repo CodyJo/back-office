@@ -44,6 +44,8 @@ SHARED_META_FILES: list[str] = [
     "local-audit-log.json",
     "local-audit-log.md",
     "regression-data.json",
+    "backlog.json",
+    "score-history.json",
 ]
 
 JOB_STATUS_FILES: list[str] = [".jobs.json", ".jobs-history.json"]
