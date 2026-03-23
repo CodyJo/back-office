@@ -102,6 +102,7 @@ def extract_score(payload: dict, department: str, summary: dict) -> int | float 
         "compliance": ["complianceScore", "compliance_score"],
         "monetization": ["monetizationReadinessScore", "monetization_readiness_score", "overallScore", "overall_score"],
         "product": ["productReadinessScore", "product_readiness_score", "overallScore", "overall_score"],
+        "cloud-ops": ["cloudOpsScore", "cloud_ops_score"],
     }
     for key in meta_score_fields.get(department, []):
         value = meta.get(key)
