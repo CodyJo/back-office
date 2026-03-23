@@ -19,6 +19,7 @@ phases:
       - bash -n agents/compliance-audit.sh
       - bash -n agents/monetization-audit.sh
       - bash -n agents/product-audit.sh
+      - bash -n agents/cloud-ops-audit.sh
       - bash -n agents/fix-bugs.sh
       - bash -n agents/watch.sh
       - python3 -m py_compile scripts/*.py

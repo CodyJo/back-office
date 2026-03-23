@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       python: 3.12
     commands:
-      - pip install ruff pyyaml
+      - pip install ruff pyyaml pytest
 
   pre_build:
     commands:
@@ -18,6 +18,7 @@ phases:
       - bash -n agents/compliance-audit.sh
       - bash -n agents/monetization-audit.sh
       - bash -n agents/product-audit.sh
+      - bash -n agents/cloud-ops-audit.sh
       - bash -n agents/fix-bugs.sh
       - bash -n agents/watch.sh
       - python3 -m py_compile scripts/*.py
