@@ -1,15 +1,383 @@
 {
   "department": "monetization",
-  "generated_at": "2026-03-12T05:29:51.710229+00:00",
+  "generated_at": "2026-03-22T22:36:18.509912+00:00",
   "totals": {
     "critical": 0,
     "high": 0,
     "medium": 0,
     "low": 0,
-    "info": 45,
-    "total_findings": 45
+    "info": 42,
+    "total_findings": 42
   },
   "repos": [
+    {
+      "name": "analogify",
+      "scanned_at": "2026-03-22T22:10:47.618857+00:00",
+      "summary": {
+        "total_opportunities": 23,
+        "high_value": 7,
+        "medium_value": 11,
+        "low_value": 5,
+        "quick_wins": 3,
+        "estimated_monthly_revenue_low": 2500,
+        "estimated_monthly_revenue_high": 8500,
+        "estimated_monthly_revenue_range_note": "Low estimate (Phase 1-2, 25 paid photographers at $30-40/month + $500 print commission). High estimate (Phase 2-3, 200 paid photographers at $35-50/month + $2K print commission). Not including affiliate, digital product, or advanced features.",
+        "monetization_readiness_score": 48,
+        "scanned_at": "2026-03-22T22:10:47.618857+00:00",
+        "total": 1,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 1
+      },
+      "findings": [
+        {
+          "id": "MON-001",
+          "severity": "high",
+          "category": "premium-features",
+          "title": "Freemium SaaS subscription model with tiered storage and gallery limits",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$2,500-4,000/month",
+          "phase": 2
+        }
+      ],
+      "categories": {
+        "display_advertising": {
+          "score": 15,
+          "opportunities": 2,
+          "rationale": "Very poor fit. Admin interface is not a place for ads. Public gallery view (client-facing) would degrade professional brand and UX. Possible only on public landing page (galleries listing) or marketing blog. CPM rates ($5-10) insufficient to justify implementation complexity. Low traffic volume for programmatic advertising thresholds."
+        },
+        "affiliate_marketing": {
+          "score": 42,
+          "opportunities": 4,
+          "rationale": "Moderate fit. Relevant affiliate programs exist (camera gear, print services, software). Can be integrated into: (1) marketing blog content (tutorials, gear guides), (2) optional equipment recommendations in photographer dashboard, (3) affiliate links embedded in client-facing materials. Revenue stream secondary but viable ($100-300/month at scale). Low implementation cost if done organically (blog + dashboard recs)."
+        },
+        "premium_features": {
+          "score": 85,
+          "opportunities": 6,
+          "rationale": "Excellent fit and primary monetization lever. Clear feature differentiation for freemium tiers: storage limits, gallery/photo limits, client user limits, analytics depth, API access, custom domains. Competitive pricing: $30-60/month for paid tiers. Analogify's unique value (deterministic processing, approval workflow) supports higher-end positioning. Requires: subscription infrastructure, feature gates in code, billing UI. Medium engineering lift (2-3 weeks initial, ongoing)."
+        },
+        "print_fulfillment": {
+          "score": 78,
+          "opportunities": 5,
+          "rationale": "Excellent fit and proven revenue model. Integration with WHCC, Bay Photo, Printful for on-demand fulfillment. Photographer-set pricing with platform commission (12-20% standard). Can co-exist with subscription model: platform revenue = subscription + commission on orders. Client gallery would have 'Order Prints' button linking to print vendor. Estimated revenue: $1-2K/month at 100 photographers with average order value $100. Requires: print vendor API integration, photographer markup settings, order tracking. Medium lift (2-4 weeks)."
+        },
+        "digital_products": {
+          "score": 58,
+          "opportunities": 4,
+          "rationale": "Good fit for medium-term expansion. Three distinct product lines: (1) Paid photo downloads (photographer controls price/availability), (2) Presets (ChromaHaus styles as Lightroom/Capture One presets), (3) Templates (gallery templates, client communication templates). Revenue model: Platform takes 30% commission on downloads/preset sales, or bundled into premium tier. Requires: digital delivery infrastructure, photographer pricing controls, delivery tracking. Low to medium lift (3-5 weeks for full implementation)."
+        },
+        "client_services": {
+          "score": 64,
+          "opportunities": 4,
+          "rationale": "Good fit for tiering strategy. Can monetize: (1) Platform fees on transactions (print commission already captured, but could add 2-3% payment processing fee visibility), (2) Storage overage fees (e.g., $1/10GB after free tier), (3) Client account tiers (premium analytics dashboard for photographers), (4) Advanced features (API access, white-label options). These stack with subscription tier but remain optional. Revenue: $300-500/month at scale. Low lift (1-2 weeks for storage metering + analytics)."
+        },
+        "sponsorships": {
+          "score": 28,
+          "opportunities": 2,
+          "rationale": "Low fit for current stage. Relevant partnerships exist (camera brands, photo service companies), but Analogify is not yet high-traffic enough to command sponsorship revenue. Could revisit at 10K+ active photographers. Possible partnerships: (1) Fujifilm/Canon sponsoring ChromaHaus styles, (2) Adobe/Capture One integration partnerships. Revenue: $500-1K/month at scale. Defer to Phase 3-4."
+        }
+      }
+    },
+    {
+      "name": "back-office",
+      "scanned_at": "2026-03-22T16:30:00Z",
+      "summary": {
+        "total_opportunities": 18,
+        "high_value": 7,
+        "medium_value": 8,
+        "low_value": 3,
+        "quick_wins": 4,
+        "estimated_monthly_revenue_low": 5000,
+        "estimated_monthly_revenue_high": 75000,
+        "monetization_readiness_score": 72,
+        "total": 18,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 18,
+        "scanned_at": "2026-03-22T16:30:00Z"
+      },
+      "findings": [
+        {
+          "id": "MON-001",
+          "severity": "high",
+          "category": "premium-features",
+          "title": "Freemium SaaS Model with Tiered Subscriptions",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$2,000-8,000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-002",
+          "severity": "high",
+          "category": "premium-features",
+          "title": "API Tier and Per-Request Billing",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$500-3,000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-003",
+          "severity": "high",
+          "category": "client-services",
+          "title": "Custom Agent Development & Audit Template Service",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$1,000-5,000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-004",
+          "severity": "high",
+          "category": "client-services",
+          "title": "White-Label Reseller Program & Platform Licensing",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$1,000-4,000/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-005",
+          "severity": "high",
+          "category": "client-services",
+          "title": "Premium Implementation & Consulting Service",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$2,000-6,000/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-006",
+          "severity": "high",
+          "category": "digital-products",
+          "title": "Premium Educational Content & Certifications",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$300-2,000/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-007",
+          "severity": "medium",
+          "category": "premium-features",
+          "title": "Advanced Analytics & Insights Dashboard",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$500-2,000/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-008",
+          "severity": "medium",
+          "category": "premium-features",
+          "title": "Scheduled & Automated Scanning with Smart Defaults",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$300-1,500/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-009",
+          "severity": "medium",
+          "category": "client-services",
+          "title": "Managed Scan Service for Enterprises",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$2,000-5,000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-010",
+          "severity": "medium",
+          "category": "digital-products",
+          "title": "Audit Template Marketplace (Template-as-a-Service)",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$300-1,500/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-011",
+          "severity": "medium",
+          "category": "premium-features",
+          "title": "Single Sign-On (SSO) & Okta/Azure AD Integration",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$500-2,000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-012",
+          "severity": "medium",
+          "category": "digital-products",
+          "title": "Scan Report Export & Custom Report Builder",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$200-800/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-013",
+          "severity": "medium",
+          "category": "affiliate-marketing",
+          "title": "DevTools Affiliate Partnerships",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$100-500/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-014",
+          "severity": "medium",
+          "category": "sponsorships",
+          "title": "Framework Vendor & Tool Partnership Sponsorships",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$500-2,000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-015",
+          "severity": "low",
+          "category": "digital-products",
+          "title": "Back Office Logo & Merchandise Store",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-200/month",
+          "phase": 4
+        },
+        {
+          "id": "MON-016",
+          "severity": "low",
+          "category": "sponsorships",
+          "title": "Open Source Sponsorship & GitHub Sponsors Program",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$0/month (cost only, -$500 to -$2,000/month budget)",
+          "phase": 3
+        },
+        {
+          "id": "MON-017",
+          "severity": "low",
+          "category": "premium-features",
+          "title": "Team Collaboration Features (Comments, Assignments, Workflows)",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$200-1,000/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-018",
+          "severity": "low",
+          "category": "digital-products",
+          "title": "Browser Extension for GitHub/GitLab Integration",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$100-500/month (indirect through SaaS upgrades)",
+          "phase": 4
+        }
+      ],
+      "categories": {
+        "display_advertising": {
+          "score": 5,
+          "opportunities": 0,
+          "rationale": "Not applicable. Back Office dashboards are internal admin/developer tools, not consumer-facing content. Display ads would degrade the professional tool experience and are inappropriate for B2B SaaS."
+        },
+        "affiliate_marketing": {
+          "score": 18,
+          "opportunities": 1,
+          "rationale": "Limited opportunity. Could recommend DevTools (GitHub Advanced Security, code analysis tools, monitoring platforms) but not core revenue model."
+        },
+        "premium_features": {
+          "score": 92,
+          "opportunities": 6,
+          "rationale": "STRONGEST opportunity. Clear freemium model with high-value premium tiers. Existing API server and dashboard infrastructure support paid plans. SaaS pricing model well-established in dev tools market."
+        },
+        "print_fulfillment": {
+          "score": 0,
+          "opportunities": 0,
+          "rationale": "Not applicable. Software product, no physical goods or print integration."
+        },
+        "digital_products": {
+          "score": 78,
+          "opportunities": 5,
+          "rationale": "Excellent opportunity. Custom agents, audit templates, training materials, API docs, consulting packages. Digital products align with developer audience and can be delivered instantly."
+        },
+        "client_services": {
+          "score": 85,
+          "opportunities": 4,
+          "rationale": "Strong opportunity. Implementation consulting, custom agent development, white-label reselling, managed scans for enterprises. Professional services leverage existing expertise."
+        },
+        "sponsorships": {
+          "score": 35,
+          "opportunities": 2,
+          "rationale": "Moderate opportunity. Framework vendor partnerships, tool integrations, sponsored audit templates. Good for brand awareness but not primary revenue."
+        }
+      }
+    },
     {
       "name": "bible-app",
       "scanned_at": "2026-03-12T03:13:13.762878+00:00",
@@ -195,569 +563,343 @@
     },
     {
       "name": "codyjo.com",
-      "scanned_at": "2026-03-12T03:45:56.248787+00:00",
+      "scanned_at": "2026-03-22T00:00:00Z",
       "summary": {
-        "total_opportunities": 13,
-        "high_value": 5,
-        "medium_value": 5,
-        "low_value": 3,
-        "quick_wins": 4,
-        "estimated_monthly_revenue_low": 700,
-        "estimated_monthly_revenue_high": 4550,
-        "monetization_readiness_score": 58,
-        "scanned_at": "2026-03-12T03:45:56.248787+00:00",
-        "total": 13,
+        "total_opportunities": 18,
+        "high_value": 6,
+        "medium_value": 8,
+        "low_value": 4,
+        "quick_wins": 3,
+        "estimated_monthly_revenue_low": 800,
+        "estimated_monthly_revenue_high": 8500,
+        "monetization_readiness_score": 62,
+        "total": 1,
         "critical": 0,
         "high": 0,
         "medium": 0,
         "low": 0,
-        "info": 13
+        "info": 1,
+        "scanned_at": "2026-03-22T00:00:00Z"
       },
       "findings": [
         {
           "id": "MON-001",
           "severity": "high",
-          "category": "premium-features",
-          "title": "Launch paid Analogify subscriptions with a free demo to paid conversion path",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$300-1800/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-002",
-          "severity": "high",
-          "category": "client-services",
-          "title": "Sell paid digital downloads and full-gallery packages inside Analogify",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$150-1000/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-003",
-          "severity": "high",
-          "category": "print-fulfillment",
-          "title": "Add print ordering to Analogify galleries with photographer markup",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$150-900/month",
-          "phase": 3
-        },
-        {
-          "id": "MON-004",
-          "severity": "high",
-          "category": "premium-features",
-          "title": "Monetize advanced analytics, proofing, and studio controls as higher-tier Analogify plans",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$100-600/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-005",
-          "severity": "high",
-          "category": "client-services",
-          "title": "Package Back Office as a paid audit and advisory service before productizing it further",
+          "category": "affiliate-marketing",
+          "title": "AWS and Infrastructure Affiliate Programs",
           "file": "",
           "line": null,
           "effort": "tiny",
           "fixable": false,
           "status": "open",
-          "revenue_estimate": "$0-2000/month",
+          "revenue_estimate": "$200-600/month",
           "phase": 1
-        },
-        {
-          "id": "MON-006",
-          "severity": "medium",
-          "category": "affiliate-marketing",
-          "title": "Use the Analogify and ChromaHaus blog to drive contextual gear and workflow affiliate revenue",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-300/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-007",
-          "severity": "medium",
-          "category": "digital-products",
-          "title": "Sell ChromaHaus-inspired presets, LUTs, and workflow packs as entry products",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-400/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-008",
-          "severity": "medium",
-          "category": "premium-features",
-          "title": "Introduce white-label, multi-brand, or agency plans for studios",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$100-700/month",
-          "phase": 4
-        },
-        {
-          "id": "MON-009",
-          "severity": "medium",
-          "category": "print-fulfillment",
-          "title": "Offer albums, framed prints, and premium event packages rather than only commodity prints",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$75-500/month",
-          "phase": 3
-        },
-        {
-          "id": "MON-010",
-          "severity": "medium",
-          "category": "digital-products",
-          "title": "Expand the blog into a structured SEO acquisition engine for monetizable comparisons and guides",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$75-600/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-011",
-          "severity": "low",
-          "category": "display-advertising",
-          "title": "Use no display ads on gallery and core product pages; reserve ads only for future high-traffic editorial pages if traffic justifies it",
-          "file": "",
-          "line": null,
-          "effort": "tiny",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$0-75/month",
-          "phase": 4
-        },
-        {
-          "id": "MON-012",
-          "severity": "low",
-          "category": "affiliate-marketing",
-          "title": "Add contextual service affiliates for backup, storage, and editing software",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$25-150/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-013",
-          "severity": "low",
-          "category": "sponsorships",
-          "title": "Pursue selective brand partnerships only after Analogify usage and gallery volume are established",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$0-225/month",
-          "phase": 4
-        }
-      ],
-      "categories": {
-        "display_advertising": {
-          "score": 12,
-          "opportunities": 1
-        },
-        "affiliate_marketing": {
-          "score": 48,
-          "opportunities": 3
-        },
-        "premium_features": {
-          "score": 79,
-          "opportunities": 3
-        },
-        "print_fulfillment": {
-          "score": 71,
-          "opportunities": 2
-        },
-        "digital_products": {
-          "score": 61,
-          "opportunities": 2
-        },
-        "client_services": {
-          "score": 74,
-          "opportunities": 2
-        },
-        "sponsorships": {
-          "score": 29,
-          "opportunities": 1
-        }
-      }
-    },
-    {
-      "name": "thenewbeautifulme",
-      "scanned_at": "2026-03-10T18:00:00Z",
-      "summary": {
-        "total_opportunities": 22,
-        "high_value": 5,
-        "medium_value": 10,
-        "low_value": 7,
-        "quick_wins": 4,
-        "estimated_monthly_revenue_low": 350,
-        "estimated_monthly_revenue_high": 4500,
-        "monetization_readiness_score": 58,
-        "total": 22,
-        "critical": 0,
-        "high": 0,
-        "medium": 0,
-        "low": 0,
-        "info": 22,
-        "scanned_at": "2026-03-10T18:00:00Z"
-      },
-      "findings": [
-        {
-          "id": "MON-001",
-          "severity": "high",
-          "category": "premium-features",
-          "title": "Freemium Subscription with AI Reading Limits",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$200-1500/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-002",
-          "severity": "high",
-          "category": "premium-features",
-          "title": "Premium AI Interpretation Styles and Extended Chat",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$100-500/month (bundled with MON-001 subscription)",
-          "phase": 1
-        },
-        {
-          "id": "MON-003",
-          "severity": "high",
-          "category": "premium-features",
-          "title": "Custom Spreads and Advanced Features as Premium",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-300/month (bundled with subscription)",
-          "phase": 1
-        },
-        {
-          "id": "MON-004",
-          "severity": "high",
-          "category": "digital-products",
-          "title": "Annual Reading Report \u2014 Premium Digital Download",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-300/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-005",
-          "severity": "high",
-          "category": "premium-features",
-          "title": "Gift Readings \u2014 Purchase for Friends",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$100-800/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-006",
-          "severity": "medium",
-          "category": "affiliate-marketing",
-          "title": "Physical Tarot Deck Affiliate Links in Card Library",
-          "file": "",
-          "line": null,
-          "effort": "tiny",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$20-150/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-007",
-          "severity": "medium",
-          "category": "affiliate-marketing",
-          "title": "Spiritual Product Recommendations (Books, Crystals, Journals)",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$30-200/month",
-          "phase": 1
-        },
-        {
-          "id": "MON-008",
-          "severity": "medium",
-          "category": "affiliate-marketing",
-          "title": "Contextual Affiliate Recommendations in AI Interpretations",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-250/month",
-          "phase": 3
-        },
-        {
-          "id": "MON-009",
-          "severity": "medium",
-          "category": "digital-products",
-          "title": "Premium Tarot Learning Courses",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$100-600/month",
-          "phase": 3
-        },
-        {
-          "id": "MON-010",
-          "severity": "medium",
-          "category": "digital-products",
-          "title": "Guided Meditation Audio Paired with Readings",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-400/month",
-          "phase": 3
-        },
-        {
-          "id": "MON-011",
-          "severity": "medium",
-          "category": "client-services",
-          "title": "Storage Tiers and Extended History Retention",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$30-200/month (bundled with subscription)",
-          "phase": 2
-        },
-        {
-          "id": "MON-012",
-          "severity": "medium",
-          "category": "digital-products",
-          "title": "Downloadable High-Resolution Reading Art Cards",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$20-150/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-013",
-          "severity": "medium",
-          "category": "client-services",
-          "title": "Professional Tarot Reader Accounts (Pro Tier)",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$100-600/month",
-          "phase": 4
-        },
-        {
-          "id": "MON-014",
-          "severity": "medium",
-          "category": "client-services",
-          "title": "Premium Analytics Dashboard Gating",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-300/month (bundled with subscription)",
-          "phase": 1
-        },
-        {
-          "id": "MON-015",
-          "severity": "medium",
-          "category": "affiliate-marketing",
-          "title": "Wellness App Referral Partnerships",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-500/month",
-          "phase": 2
-        },
-        {
-          "id": "MON-016",
-          "severity": "low",
-          "category": "display-advertising",
-          "title": "Non-Intrusive Ads on Library and Learn Pages",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$5-50/month (current likely traffic), $200-1000/month (at 50K+ monthly pageviews)",
-          "phase": 4
-        },
-        {
-          "id": "MON-017",
-          "severity": "low",
-          "category": "display-advertising",
-          "title": "Sponsored Daily Card Content",
-          "file": "",
-          "line": null,
-          "effort": "small",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$0-200/month (requires significant active user base first)",
-          "phase": 4
-        },
-        {
-          "id": "MON-018",
-          "severity": "low",
-          "category": "print-fulfillment",
-          "title": "Custom Branded Tarot Deck (Print-on-Demand)",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-500/month (highly dependent on audience size and marketing effort)",
-          "phase": 4
-        },
-        {
-          "id": "MON-019",
-          "severity": "low",
-          "category": "print-fulfillment",
-          "title": "Printable Reading Summary Cards (Print-on-Demand)",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$20-200/month",
-          "phase": 3
-        },
-        {
-          "id": "MON-020",
-          "severity": "low",
-          "category": "sponsorships",
-          "title": "Tarot Deck Brand Partnerships",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$0-500/month (requires significant traffic and publisher interest)",
-          "phase": 4
-        },
-        {
-          "id": "MON-021",
-          "severity": "low",
-          "category": "sponsorships",
-          "title": "Community Features with Premium Access",
-          "file": "",
-          "line": null,
-          "effort": "large",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$50-300/month (subscription value add, not standalone revenue)",
-          "phase": 4
-        },
-        {
-          "id": "MON-022",
-          "severity": "low",
-          "category": "client-services",
-          "title": "API Access for Third-Party Developers",
-          "file": "",
-          "line": null,
-          "effort": "medium",
-          "fixable": false,
-          "status": "open",
-          "revenue_estimate": "$0-200/month (extremely niche developer audience)",
-          "phase": 4
         }
       ],
       "categories": {
         "display_advertising": {
           "score": 15,
-          "opportunities": 2,
-          "rationale": "Display ads are a poor fit for an intimate spiritual/wellness experience. Ads during tarot readings or journaling would severely degrade the core experience. Only viable on peripheral content pages (library, learn) and only after significant traffic scale (10K+ monthly pageviews). Most premium tarot apps are ad-free."
+          "opportunities": 0,
+          "reasoning": "Not recommended. Professional portfolio site serving enterprise/technical audience. Display ads would damage brand positioning and likely generate minimal CPM revenue."
         },
         "affiliate_marketing": {
-          "score": 55,
+          "score": 88,
+          "opportunities": 6,
+          "reasoning": "High-value opportunity. Audience actively seeks infrastructure, design, and software tools. Strong content positioning for natural affiliate recommendations."
+        },
+        "premium_features": {
+          "score": 72,
           "opportunities": 4,
-          "rationale": "Natural fit with the spiritual wellness audience. Physical tarot decks, books, crystals, and journaling supplies align with user interests. Amazon Associates and specialty retailers offer relevant programs. Can be integrated non-intrusively into library and learning pages without degrading the core experience."
+          "reasoning": "Strong potential for paid newsletter, courses, and community. Credibility as software strategist supports premium positioning."
+        },
+        "print_fulfillment": {
+          "score": 0,
+          "opportunities": 0,
+          "reasoning": "Not applicable. Portfolio/content site with no physical product integration."
+        },
+        "digital_products": {
+          "score": 68,
+          "opportunities": 5,
+          "reasoning": "Opportunities for paid reports, playbooks, templates, and online courses on privacy-first software design and enterprise automation."
+        },
+        "client_services": {
+          "score": 72,
+          "opportunities": 2,
+          "reasoning": "Consulting/advisory services leveraging Cody Jo's enterprise automation expertise. Premium support and strategy advising."
+        },
+        "sponsorships": {
+          "score": 78,
+          "opportunities": 1,
+          "reasoning": "High-value sponsorships from B2B SaaS vendors, design tools, and infrastructure providers targeting the same audience."
+        }
+      }
+    },
+    {
+      "name": "pe-bootstrap",
+      "scanned_at": "2026-03-22T00:00:00Z",
+      "summary": {
+        "total_opportunities": 12,
+        "high_value": 3,
+        "medium_value": 5,
+        "low_value": 4,
+        "quick_wins": 2,
+        "estimated_monthly_revenue_low": 2500,
+        "estimated_monthly_revenue_high": 8500,
+        "monetization_readiness_score": 42,
+        "context": "PE Bootstrap is an open-source infrastructure automation tool for Puppet Enterprise demo/test provisioning. Monetization is highly constrained by: (1) open-source positioning, (2) enterprise B2B audience with existing Puppet contracts, (3) infrastructure-as-code nature, (4) internal/TAM use. Primary opportunities are adjacent services and managed offerings, not product features.",
+        "total": 12,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 12,
+        "scanned_at": "2026-03-22T00:00:00Z"
+      },
+      "findings": [
+        {
+          "id": "MON-001",
+          "severity": "high",
+          "category": "client-services",
+          "title": "Managed PE Demo Provisioning Service (SaaS)",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$1500-3000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-002",
+          "severity": "high",
+          "category": "client-services",
+          "title": "Architecture Consulting & Custom Deployment Services",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$800-2000/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-003",
+          "severity": "high",
+          "category": "premium-features",
+          "title": "Freemium Model: Free Tier + Paid Tiers for Size/Features",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$1200-2500/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-004",
+          "severity": "medium",
+          "category": "digital-products",
+          "title": "Premium Bolt Playbooks & Puppet Modules Marketplace",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$300-800/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-005",
+          "severity": "medium",
+          "category": "client-services",
+          "title": "Priority Support Tier (Email & Slack SLA)",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$200-400/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-006",
+          "severity": "medium",
+          "category": "digital-products",
+          "title": "PE Bootstrap Training & Certification Program",
+          "file": "",
+          "line": null,
+          "effort": "large",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$400-1200/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-007",
+          "severity": "medium",
+          "category": "affiliate-marketing",
+          "title": "GCP Credits Affiliate Program & Cloud Cost Optimization",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$150-300/month",
+          "phase": 1
+        },
+        {
+          "id": "MON-008",
+          "severity": "medium",
+          "category": "premium-features",
+          "title": "Enterprise Managed Deployment Tier (Hands-On)",
+          "file": "",
+          "line": null,
+          "effort": "medium",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$1500-3500/month",
+          "phase": 2
+        },
+        {
+          "id": "MON-009",
+          "severity": "low",
+          "category": "digital-products",
+          "title": "Vertical-Specific PE Architecture Templates",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$100-250/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-010",
+          "severity": "low",
+          "category": "sponsorships",
+          "title": "Cloud Vendor Sponsorships (GCP, HashiCorp, Red Hat)",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$100-400/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-011",
+          "severity": "low",
+          "category": "digital-products",
+          "title": "Disaster Recovery & Failover Runbooks (Industry-Specific)",
+          "file": "",
+          "line": null,
+          "effort": "small",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-150/month",
+          "phase": 3
+        },
+        {
+          "id": "MON-012",
+          "severity": "low",
+          "category": "affiliate-marketing",
+          "title": "Puppet Ecosystem Partner Revenue Share",
+          "file": "",
+          "line": null,
+          "effort": "tiny",
+          "fixable": false,
+          "status": "open",
+          "revenue_estimate": "$50-200/month",
+          "phase": 3
+        }
+      ],
+      "categories": {
+        "display_advertising": {
+          "score": 5,
+          "opportunities": 0,
+          "notes": "Not applicable - no user-facing consumer pages. Web UI is internal/enterprise authentication-gated. Advertising would be inappropriate for infrastructure automation context."
+        },
+        "affiliate_marketing": {
+          "score": 8,
+          "opportunities": 2,
+          "notes": "Limited but viable. Cloud infrastructure affiliates (GCP credits, managed service providers) could be referenced in documentation and onboarding."
+        },
+        "premium_features": {
+          "score": 38,
+          "opportunities": 4,
+          "notes": "Moderate potential. Freemium model with free tier (small deployments) and paid tier (large/complex architectures, managed deployments, priority support)."
+        },
+        "print_fulfillment": {
+          "score": 0,
+          "opportunities": 0,
+          "notes": "Not applicable."
+        },
+        "digital_products": {
+          "score": 35,
+          "opportunities": 3,
+          "notes": "Digital products (architecture templates, Bolt playbooks, Puppet modules) for specific use cases and verticals could be sold."
+        },
+        "client_services": {
+          "score": 55,
+          "opportunities": 2,
+          "notes": "High potential. Managed provisioning service, architecture consulting, custom integrations, and ongoing support are strong fits for enterprise buyers."
+        },
+        "sponsorships": {
+          "score": 15,
+          "opportunities": 1,
+          "notes": "Limited. Could attract cloud infrastructure vendors (GCP, HashiCorp) as sponsors of docs/training."
+        }
+      }
+    },
+    {
+      "name": "thenewbeautifulme",
+      "scanned_at": "2026-03-22T00:00:00Z",
+      "summary": {
+        "total_opportunities": 47,
+        "high_value": 12,
+        "medium_value": 21,
+        "low_value": 14,
+        "quick_wins": 8,
+        "estimated_monthly_revenue_low": 2500,
+        "estimated_monthly_revenue_high": 45000,
+        "monetization_readiness_score": 72,
+        "total": 0,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 0,
+        "scanned_at": "2026-03-22T00:00:00Z"
+      },
+      "findings": [],
+      "categories": {
+        "display_advertising": {
+          "score": 45,
+          "opportunities": 5
+        },
+        "affiliate_marketing": {
+          "score": 78,
+          "opportunities": 9
         },
         "premium_features": {
           "score": 85,
-          "opportunities": 5,
-          "rationale": "Primary monetization path. The app already has a rich feature set that maps perfectly to a freemium model. Claude API interpretation costs provide a natural and honest justification for gating readings. Reading limits, advanced AI styles, pattern analysis, custom spreads, and extended chat are obvious premium features with clear value differentiation."
+          "opportunities": 11
         },
         "print_fulfillment": {
-          "score": 25,
-          "opportunities": 2,
-          "rationale": "Limited but present opportunity. The app uses text-based Rider-Waite descriptions rather than original custom artwork, which limits print product appeal. Reading summary cards and a custom tarot deck are possibilities but require significant upfront investment in artwork and fulfillment infrastructure."
+          "score": 62,
+          "opportunities": 7
         },
         "digital_products": {
-          "score": 60,
-          "opportunities": 4,
-          "rationale": "Strong potential for downloadable and gated content: premium learning courses, guided meditation audio paired with readings, beautifully formatted annual reading reports (Spotify Wrapped model), and high-res reading art cards. The existing learning path and insights data provide frameworks for paid digital products."
+          "score": 68,
+          "opportunities": 8
         },
         "client_services": {
-          "score": 40,
-          "opportunities": 3,
-          "rationale": "Current architecture is single-user focused. Platform fee model requires a multi-tenancy pivot. However, storage tiers, premium analytics gating, and professional tarot reader accounts are achievable extensions of existing features. Pro reader accounts represent a potential B2B pivot with higher revenue per customer."
+          "score": 72,
+          "opportunities": 4
         },
         "sponsorships": {
-          "score": 20,
-          "opportunities": 2,
-          "rationale": "Requires significant traffic and brand recognition first. Spiritual brand partnerships and tarot deck manufacturers are potential partners, but only viable at scale (5K+ active users). Early-stage sponsorship revenue is unlikely."
+          "score": 55,
+          "opportunities": 3
         }
       }
     }

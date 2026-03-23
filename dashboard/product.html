@@ -729,8 +729,120 @@
   function loadData() {
     fetch('product-data.json')
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => applyData(data))
+      .then(raw => applyData(normalizeData(raw)))
       .catch(() => applyData({ findings: [], categories: {}, checklist: [], trend: [], summary: { product_readiness_score: 0 }, scan_time: null }));
+  }
+
+  // -- Normalize data from either flat or multi-repo aggregate format --
+  function normalizeData(raw) {
+    if (raw.repos && Array.isArray(raw.repos)) {
+      // Multi-repo aggregate format: merge all repos together
+      let mergedFindings = [];
+      let mergedCategories = {};
+      let categoryCounts = {};
+      let mergedChecklist = [];
+      let mergedTrend = [];
+      let trendCount = 0;
+      let scoreSum = 0;
+      let scoreCount = 0;
+      let latestScanTime = raw.generated_at || null;
+
+      raw.repos.forEach(function(repo) {
+        // Merge findings, tagging each with repo_name
+        const repoFindings = (repo.findings || []).map(function(f) {
+          return Object.assign({}, f, { repo_name: repo.name });
+        });
+        mergedFindings = mergedFindings.concat(repoFindings);
+
+        // Merge categories: accumulate scores to average later
+        const repoCats = repo.categories || {};
+        Object.keys(repoCats).forEach(function(key) {
+          if (!mergedCategories[key]) {
+            mergedCategories[key] = { name: repoCats[key].name, score: 0, issues: 0 };
+            categoryCounts[key] = 0;
+          }
+          mergedCategories[key].score += (repoCats[key].score || 0);
+          mergedCategories[key].issues += (repoCats[key].issues || 0);
+          categoryCounts[key]++;
+        });
+
+        // Merge checklists (include all, avoiding exact duplicates by label)
+        (repo.checklist || []).forEach(function(item) {
+          const exists = mergedChecklist.some(function(c) { return c.label === item.label; });
+          if (!exists) {
+            mergedChecklist.push(Object.assign({}, item));
+          } else {
+            // If duplicate, keep the worse status (fail > warn > pass)
+            var existing = mergedChecklist.find(function(c) { return c.label === item.label; });
+            var statusRank = { fail: 0, warn: 1, pass: 2 };
+            if ((statusRank[item.status] || 2) < (statusRank[existing.status] || 2)) {
+              existing.status = item.status;
+            }
+          }
+        });
+
+        // Merge trend data: accumulate to average later
+        var repoTrend = repo.trend || [];
+        if (repoTrend.length > 0) {
+          trendCount++;
+          for (var i = 0; i < repoTrend.length; i++) {
+            if (i >= mergedTrend.length) mergedTrend.push(0);
+            mergedTrend[i] += repoTrend[i];
+          }
+        }
+
+        // Collect scores for averaging
+        var repoScore = null;
+        if (repo.summary && repo.summary.product_readiness_score != null) {
+          repoScore = repo.summary.product_readiness_score;
+        } else if (repo.overall_score != null) {
+          repoScore = repo.overall_score;
+        }
+        if (repoScore != null) {
+          scoreSum += repoScore;
+          scoreCount++;
+        }
+
+        // Track latest scan time
+        var repoTime = repo.scan_time || repo.scanned_at || null;
+        if (repoTime && (!latestScanTime || new Date(repoTime) > new Date(latestScanTime))) {
+          latestScanTime = repoTime;
+        }
+      });
+
+      // Average category scores
+      Object.keys(mergedCategories).forEach(function(key) {
+        if (categoryCounts[key] > 0) {
+          mergedCategories[key].score = Math.round(mergedCategories[key].score / categoryCounts[key]);
+        }
+      });
+
+      // Average trend data
+      if (trendCount > 0) {
+        mergedTrend = mergedTrend.map(function(v) { return Math.round(v / trendCount); });
+      }
+
+      // Use aggregate totals score if present, otherwise average repo scores
+      var overallScore = 0;
+      if (raw.totals && raw.totals.product_readiness_score != null) {
+        overallScore = raw.totals.product_readiness_score;
+      } else if (scoreCount > 0) {
+        overallScore = Math.round(scoreSum / scoreCount);
+      }
+
+      return {
+        findings: mergedFindings,
+        categories: mergedCategories,
+        checklist: mergedChecklist,
+        trend: mergedTrend,
+        summary: { product_readiness_score: overallScore },
+        overall_score: overallScore,
+        scan_time: latestScanTime
+      };
+    }
+
+    // Flat format: return as-is
+    return raw;
   }
 
   function applyData(data) {

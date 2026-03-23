@@ -899,8 +899,122 @@
   function loadData() {
     fetch('monetization-data.json')
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => applyData(data))
-      .catch(() => applyData(DEMO_DATA));
+      .then(raw => applyData(normalizeData(raw)))
+      .catch(() => applyData(normalizeData(DEMO_DATA)));
+  }
+
+  // -- Normalize data from flat or multi-repo aggregate format --
+  function normalizeData(raw) {
+    if (raw.repos && Array.isArray(raw.repos)) {
+      // Multi-repo aggregate format: merge all repos together
+      var mergedFindings = [];
+      var mergedCategories = {};
+      var mergedChecklist = [];
+      var mergedTrend = [];
+      var totalScore = 0;
+      var scoreCount = 0;
+      var totalOpportunities = 0;
+      var totalHighValue = 0;
+      var totalQuickWins = 0;
+      var totalRevenueLow = 0;
+      var totalRevenueHigh = 0;
+      var latestTimestamp = raw.generated_at || null;
+
+      raw.repos.forEach(function(repo) {
+        // Merge findings, tagging each with repo_name and prefixing IDs
+        var repoFindings = (repo.findings || []).map(function(f) {
+          var normalized = Object.assign({}, f, {
+            repo_name: repo.name
+          });
+          // Normalize category: dashes to underscores (e.g. premium-features -> premium_features)
+          if (normalized.category) normalized.category = normalized.category.replace(/-/g, '_');
+          // Map severity to value if value is missing (agent data uses severity, dashboard uses value)
+          if (!normalized.value && normalized.severity) normalized.value = normalized.severity;
+          return normalized;
+        });
+        mergedFindings = mergedFindings.concat(repoFindings);
+
+        // Merge categories: average scores, sum opportunities
+        var repoCats = repo.categories || {};
+        Object.keys(repoCats).forEach(function(key) {
+          // Normalize key: convert dashes to underscores for consistency
+          var normKey = key.replace(/-/g, '_');
+          var rc = repoCats[key];
+          if (!mergedCategories[normKey]) {
+            mergedCategories[normKey] = {
+              name: rc.name || CATEGORY_LABELS[normKey] || normKey,
+              scores: [],
+              opportunities: 0
+            };
+          }
+          if (typeof rc.score === 'number') mergedCategories[normKey].scores.push(rc.score);
+          mergedCategories[normKey].opportunities += (rc.opportunities || 0);
+        });
+
+        // Aggregate stats from repo summaries
+        var s = repo.summary || {};
+        if (typeof s.monetization_readiness_score === 'number') {
+          totalScore += s.monetization_readiness_score;
+          scoreCount++;
+        } else if (typeof s.overall_score === 'number') {
+          totalScore += s.overall_score;
+          scoreCount++;
+        }
+        totalOpportunities += (s.total_opportunities || 0);
+        totalHighValue += (s.high_value || 0);
+        totalQuickWins += (s.quick_wins || 0);
+        totalRevenueLow += (s.estimated_monthly_revenue_low || 0);
+        totalRevenueHigh += (s.estimated_monthly_revenue_high || 0);
+
+        // Merge checklist from first repo that has one
+        if (mergedChecklist.length === 0 && repo.checklist && repo.checklist.length) {
+          mergedChecklist = repo.checklist;
+        }
+
+        // Merge trend from first repo that has one
+        if (mergedTrend.length === 0 && repo.trend && repo.trend.length) {
+          mergedTrend = repo.trend;
+        }
+
+        // Track latest timestamp
+        var repoTime = repo.scanned_at || (s && s.scanned_at);
+        if (repoTime && (!latestTimestamp || new Date(repoTime) > new Date(latestTimestamp))) {
+          latestTimestamp = repoTime;
+        }
+      });
+
+      // Finalize categories: compute average score from accumulated scores
+      Object.keys(mergedCategories).forEach(function(key) {
+        var cat = mergedCategories[key];
+        cat.score = cat.scores.length > 0
+          ? Math.round(cat.scores.reduce(function(a, b) { return a + b; }, 0) / cat.scores.length)
+          : 0;
+        delete cat.scores;
+      });
+
+      var avgScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
+      var estRevenue = totalRevenueHigh > 0
+        ? '$' + totalRevenueLow.toLocaleString() + '-' + totalRevenueHigh.toLocaleString() + '/mo'
+        : (totalRevenueLow > 0 ? '$' + totalRevenueLow.toLocaleString() + '/mo' : '$0');
+
+      return {
+        scan_time: latestTimestamp,
+        overall_score: avgScore,
+        stats: {
+          total_opportunities: totalOpportunities,
+          high_value: totalHighValue,
+          quick_wins: totalQuickWins,
+          est_monthly_revenue: estRevenue
+        },
+        categories: mergedCategories,
+        checklist: mergedChecklist,
+        trend: mergedTrend,
+        findings: mergedFindings
+      };
+    } else {
+      // Flat format: pass through as-is
+      return raw;
+    }
   }
 
   function applyData(data) {

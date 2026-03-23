@@ -165,7 +165,7 @@ def save_payload(
     dashboard_path = dashboard_dir / "task-queue.json"
     for out_path in (results_path, dashboard_path):
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(dashboard_payload, indent=2) + "\n")
+        out_path.write_text(json.dumps(dashboard_payload, indent=2, default=str) + "\n")
     return dashboard_payload
 
 

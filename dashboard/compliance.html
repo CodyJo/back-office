@@ -1035,6 +1035,35 @@ function getDemoData() {
 
 /* ── Data Loading ──────────────────────────────────────────────── */
 
+function normalizeMultiRepoData(raw) {
+  // Multi-repo aggregate format: { repos: [{name, summary, findings, ...}, ...], totals, generated_at }
+  var allFindings = [];
+  var latestTimestamp = raw.generated_at || null;
+
+  raw.repos.forEach(function(repo) {
+    var repoFindings = (repo.findings || []).map(function(f) {
+      return Object.assign({}, f, { repo_name: repo.name });
+    });
+    allFindings = allFindings.concat(repoFindings);
+
+    // Track the latest scan timestamp across all repos
+    var repoTime = (repo.summary && repo.summary.scanned_at) || repo.scanned_at;
+    if (repoTime && (!latestTimestamp || new Date(repoTime) > new Date(latestTimestamp))) {
+      latestTimestamp = repoTime;
+    }
+  });
+
+  return {
+    findings: allFindings,
+    meta: {
+      lastScan: latestTimestamp,
+      repository: raw.repos.map(function(r) { return r.name; }).join(', '),
+      repoCount: raw.repos.length
+    },
+    totals: raw.totals || null
+  };
+}
+
 async function loadData() {
   let data;
   try {
@@ -1044,8 +1073,17 @@ async function loadData() {
   } catch (e) {
     data = { findings: [], meta: {}, summary: {}, scan_timestamp: null };
   }
-  STATE.findings = normalizeComplianceFindings(data.findings || []);
-  renderAll(data.meta || {});
+
+  // Handle multi-repo aggregate format
+  if (data.repos && Array.isArray(data.repos)) {
+    var normalized = normalizeMultiRepoData(data);
+    STATE.findings = normalizeComplianceFindings(normalized.findings);
+    renderAll(normalized.meta);
+  } else {
+    // Flat format fallback
+    STATE.findings = normalizeComplianceFindings(data.findings || []);
+    renderAll(data.meta || {});
+  }
 }
 
 /* ── Normalize agent data ──────────────────────────────────────── */

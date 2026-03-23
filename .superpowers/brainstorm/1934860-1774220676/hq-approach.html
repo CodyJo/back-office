@@ -1,0 +1,46 @@
+<h2>HQ Dashboard — Which approach feels right?</h2>
+<p class="subtitle">Three different philosophies for the main landing page. Click the one that resonates.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Executive Summary</h3>
+      <p>One glanceable screen. Product selector at top, then a single row of 6 department score cards. Below that, a "Needs Attention" feed showing only critical/high findings sorted by urgency. No org chart, no manual log, no delivery section. Click any department card to drill into its full page.</p>
+      <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; font-size:0.82rem; color:#8888a0;">
+        <strong style="color:#c4944a;">Best practice:</strong> Operations dashboards should answer "what needs my attention right now?" in under 5 seconds. Everything else is a click away.<br><br>
+        <strong>Keeps:</strong> Product filter, department scores, urgent findings<br>
+        <strong>Removes:</strong> HR roster, delivery acceptance, manual log, employee scores<br>
+        <strong>Adds:</strong> Trend sparklines on each card (score over last 5 scans)
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Product-First Hub</h3>
+      <p>Landing page shows product cards (Selah, Analogify, Cordivent, TNBM, codyjo.com, Back Office). Each card shows a mini health bar across all 6 departments. Click a product to see its dedicated view with all department scores and findings for just that product. Departments become a secondary navigation within each product.</p>
+      <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; font-size:0.82rem; color:#8888a0;">
+        <strong style="color:#c4944a;">Best practice:</strong> When managing multiple products, the first question is usually "which product needs work?" not "which department?"<br><br>
+        <strong>Keeps:</strong> Department scores (nested under products)<br>
+        <strong>Removes:</strong> HR roster, delivery acceptance, manual log<br>
+        <strong>Adds:</strong> Per-product landing pages, cross-product comparison view
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid: Summary + Pivot</h3>
+      <p>Top section: product selector + 6 department score cards (like A). Middle section: a smart grid that shows the intersection — products as rows, departments as columns, with color-coded score cells. Click any cell to jump directly to that product+department view. Bottom: "Needs Attention" feed. This gives you both the department view AND product view on one page.</p>
+      <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; font-size:0.82rem; color:#8888a0;">
+        <strong style="color:#c4944a;">Best practice:</strong> Matrix views let operators spot patterns (e.g., "ADA is red across 3 products" or "Selah is red across 4 departments") that single-axis views miss.<br><br>
+        <strong>Keeps:</strong> Product filter, department scores<br>
+        <strong>Removes:</strong> HR roster, delivery acceptance, manual log<br>
+        <strong>Adds:</strong> Product × Department matrix, cell-level drill-through
+      </div>
+    </div>
+  </div>
+</div>

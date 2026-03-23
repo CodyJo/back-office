@@ -16,6 +16,7 @@ from backoffice.aggregate import (
     count_severities,
     is_privacy_finding,
     load_json,
+    load_valid_repos,
     normalize_precalculated_summary,
     privacy_score,
     write_json,
@@ -731,7 +732,7 @@ class TestAggregate:
         dashboard.mkdir()
         output_path = str(dashboard / "data.json")
 
-        aggregate(str(results), output_path)
+        aggregate(str(results), output_path, valid_repos=None)
 
         expected_files = [
             "data.json",
@@ -751,7 +752,7 @@ class TestAggregate:
         results = self._setup_results(tmp_path)
         dashboard = tmp_path / "dashboard"
         dashboard.mkdir()
-        aggregate(str(results), str(dashboard / "data.json"))
+        aggregate(str(results), str(dashboard / "data.json"), valid_repos=None)
 
         data = json.loads((dashboard / "data.json").read_text())
         qa = json.loads((dashboard / "qa-data.json").read_text())
@@ -761,7 +762,7 @@ class TestAggregate:
         results = self._setup_results(tmp_path)
         dashboard = tmp_path / "dashboard"
         dashboard.mkdir()
-        aggregate(str(results), str(dashboard / "data.json"))
+        aggregate(str(results), str(dashboard / "data.json"), valid_repos=None)
 
         for fname, expected_dept in [
             ("qa-data.json", "qa"),
@@ -779,7 +780,7 @@ class TestAggregate:
         results = self._setup_results(tmp_path)
         dashboard = tmp_path / "dashboard"
         dashboard.mkdir()
-        aggregate(str(results), str(dashboard / "data.json"))
+        aggregate(str(results), str(dashboard / "data.json"), valid_repos=None)
 
         for fname in ["qa-data.json", "seo-data.json", "privacy-data.json"]:
             data = json.loads((dashboard / fname).read_text())
@@ -791,7 +792,7 @@ class TestAggregate:
         dashboard.mkdir()
 
         with caplog.at_level(logging.INFO, logger="backoffice.aggregate"):
-            aggregate(str(results), str(dashboard / "data.json"))
+            aggregate(str(results), str(dashboard / "data.json"), valid_repos=None)
 
         messages = " ".join(r.message for r in caplog.records)
         for dept in ("QA", "SEO", "ADA", "Compliance", "Privacy", "Monetization", "Product"):
@@ -803,8 +804,57 @@ class TestAggregate:
         results = self._setup_results(tmp_path)
         dashboard = tmp_path / "dashboard"
         dashboard.mkdir()
-        aggregate(str(results), str(dashboard / "data.json"))
+        aggregate(str(results), str(dashboard / "data.json"), valid_repos=None)
 
         privacy = json.loads((dashboard / "privacy-data.json").read_text())
         # The compliance finding has "privacy" in its title -> should appear
         assert privacy["totals"]["total_findings"] >= 1
+
+    def test_valid_repos_filters_stale_repos(self, tmp_path):
+        """Repos not in valid_repos are excluded from all departments."""
+        results = self._setup_results(tmp_path)
+        dashboard = tmp_path / "dashboard"
+        dashboard.mkdir()
+
+        # Pass a valid_repos set that does NOT include "test-repo"
+        aggregate(str(results), str(dashboard / "data.json"), valid_repos={"other-repo"})
+
+        qa = json.loads((dashboard / "qa-data.json").read_text())
+        assert qa["repos"] == []
+        assert qa["totals"]["total_findings"] == 0
+
+        seo = json.loads((dashboard / "seo-data.json").read_text())
+        assert seo["repos"] == []
+
+    def test_valid_repos_includes_matching_repos(self, tmp_path):
+        """Repos present in valid_repos are included normally."""
+        results = self._setup_results(tmp_path)
+        dashboard = tmp_path / "dashboard"
+        dashboard.mkdir()
+
+        aggregate(str(results), str(dashboard / "data.json"), valid_repos={"test-repo"})
+
+        qa = json.loads((dashboard / "qa-data.json").read_text())
+        assert len(qa["repos"]) == 1
+        assert qa["repos"][0]["name"] == "test-repo"
+
+
+# ---------------------------------------------------------------------------
+# load_valid_repos
+# ---------------------------------------------------------------------------
+
+class TestLoadValidRepos:
+    def test_skips_targets_with_missing_paths(self, monkeypatch):
+        """Targets whose paths don't exist on disk are excluded."""
+        fake_config = {
+            "targets": [
+                {"name": "exists", "path": "/tmp"},
+                {"name": "gone", "path": "/nonexistent/path/that/does/not/exist"},
+            ]
+        }
+        import backoffice.delivery
+        monkeypatch.setattr(backoffice.delivery, "load_targets_config", lambda: fake_config)
+
+        result = load_valid_repos()
+        assert "exists" in result
+        assert "gone" not in result

@@ -1,0 +1,43 @@
+<h2>Department Pages — How should they connect?</h2>
+<p class="subtitle">The department pages (QA, SEO, ADA, etc.) are currently isolated islands with no nav, no product filter, and no way to move between them. How should they work?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Shared Shell</h3>
+      <p>Every department page gets the same persistent top bar: product selector + department tabs (QA | SEO | ADA | Compliance | Monetization | Product) + link back to HQ. Switching departments is a tab click. Switching products re-filters findings instantly. The URL carries both: <code>/ada?product=selah</code>. Each department keeps its own specialized layout below the shell.</p>
+      <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; font-size:0.82rem; color:#8888a0;">
+        <strong style="color:#c4944a;">Best practice:</strong> Persistent navigation + persistent context (product filter) = users always know where they are and never lose their place.<br><br>
+        <strong>Pros:</strong> Consistent UX, product context preserved, easy cross-department navigation<br>
+        <strong>Cons:</strong> Need to add product filtering to all 6 department pages (we just built multi-repo support, so this is feasible)
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Single Page App</h3>
+      <p>Kill the separate department pages. Everything lives inside the HQ page as expandable sections. Click a department score card or matrix cell and it expands inline to show the full department detail (findings table, score breakdown, charts). No page navigation at all — just expand/collapse sections on one page.</p>
+      <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; font-size:0.82rem; color:#8888a0;">
+        <strong style="color:#c4944a;">Best practice:</strong> Fewer pages = less context switching. But only works if the data volume stays manageable per section.<br><br>
+        <strong>Pros:</strong> Zero navigation needed, everything in one place, instant context<br>
+        <strong>Cons:</strong> Page gets very long, harder to bookmark a specific view, large DOM with 600+ findings
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Slide-Over Panels</h3>
+      <p>HQ stays as the main page. Clicking a department card or matrix cell opens a slide-over panel (right side, 60-70% width) showing the department detail. The HQ stays visible underneath. Close the panel to go back. Product context is inherited from HQ's selector automatically. Multiple panels can stack.</p>
+      <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; font-size:0.82rem; color:#8888a0;">
+        <strong style="color:#c4944a;">Best practice:</strong> Used by Linear, Notion, and other modern tools. Great for "peek and go back" workflows.<br><br>
+        <strong>Pros:</strong> Never lose HQ context, quick drill-in/out, product filter automatic<br>
+        <strong>Cons:</strong> Complex to build well, slide-over can feel cramped for data-heavy views like QA (60+ findings)
+      </div>
+    </div>
+  </div>
+</div>

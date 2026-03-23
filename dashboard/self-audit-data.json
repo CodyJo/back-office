@@ -1,120 +1,184 @@
 {
-  "scan_id": "3524f730-0722-4fef-9aea-53978f91bedf",
+  "scan_id": "qa-scan-20260322-v2",
   "repo_name": "back-office",
   "repo_path": "/home/merm/projects/back-office",
-  "scanned_at": "2026-03-12T02:45:29.556187+00:00",
-  "scan_duration_seconds": 360,
+  "scanned_at": "2026-03-22T15:30:00Z",
+  "scan_duration_seconds": 90,
   "summary": {
-    "total": 5,
+    "total": 9,
     "critical": 0,
     "high": 2,
-    "medium": 3,
-    "low": 0,
-    "info": 0,
-    "scanned_at": "2026-03-12T02:45:29.556187+00:00"
+    "medium": 4,
+    "low": 3,
+    "info": 0
   },
   "lint_results": {
-    "passed": true,
-    "errors": 0,
+    "passed": false,
+    "errors": 40,
     "warnings": 0,
-    "output": "python3 scripts/test-scoring.py\n\nQA Department\nADA Compliance\nRegulatory Compliance\nHQ Dashboard\nField Normalization\nPre-calculated Departments (SEO/Monetization/Product)\nReal Data Validation\n77 passed, 0 failed"
+    "output": "40 linter errors found by ruff: 35 fixable with --fix. Errors include 28 unused imports (F401), 1 unused variable (F841), 3 ambiguous variable names (E741), and 8 other issues."
   },
   "test_results": {
     "passed": true,
-    "total": 77,
+    "total": 616,
     "failed": 0,
     "errors": 0,
-    "output": "make test\n- scripts/test-scoring.py: 77 passed, 0 failed\n- scripts/test-local-audit-workflow.py: passed\n- scripts/test-cli-and-scaffolding.py: passed\n- scripts/test-servers-and-setup.py: passed"
+    "output": "pytest tests/ -v: 616 passed in 25.87s"
   },
   "findings": [
     {
       "id": "FIND-001",
       "severity": "high",
-      "category": "security",
-      "title": "HQ dashboard injects unescaped product names into `innerHTML`",
-      "description": "The HQ dashboard defines an `esc()` helper but bypasses it when rendering product options. `product.key` and `product.name` are inserted directly into `select.innerHTML`, so a malicious value in `org-data.json` can inject markup or script-bearing attributes into the page.",
-      "file": "dashboard/index.html",
-      "line": 360,
-      "evidence": "function esc(value) { ... }\nselect.innerHTML = orgData.products.map(product => `<option value=\"${product.key}\">${product.name}</option>`).join('');",
-      "impact": "A poisoned dashboard data file can execute JavaScript in the admin dashboard origin, exposing dashboard data and any browser-stored credentials or session state.",
-      "fix_suggestion": "Build the `<option>` nodes with `document.createElement('option')`, assign `.value` and `.textContent`, or escape both fields before writing HTML.",
+      "category": "code-quality",
+      "title": "40 linter errors - unused imports and variables",
+      "description": "Ruff linter detected 40 errors across the codebase. Most are unused imports (F401) and unused variables (F841). 35 errors are automatically fixable with ruff --fix.",
+      "file": "multiple files",
+      "line": 0,
+      "evidence": "Key issues:\n- backoffice/config.py:12 - unused 'sys' import\n- backoffice/regression.py:24 - unused 'sys' import\n- backoffice/server.py:18 - unused 'os' import\n- tests/test_aggregate.py:6 - unused 'pytest' import\n- tests/test_delivery.py:782,798,804 - ambiguous variable name 'l'",
+      "impact": "Code cleanliness, potential hidden bugs, reduced maintainability. Unused imports consume memory.",
+      "fix_suggestion": "Run 'python3 -m ruff check . --fix' to automatically remove unused imports and variables. Manually rename ambiguous variable names like 'l' to clearer names like 'lane'.",
       "effort": "tiny",
       "fixable_by_agent": true,
       "references": [
-        "CWE-79",
-        "OWASP A03:2021"
+        "F401",
+        "F841",
+        "E741"
       ]
     },
     {
       "id": "FIND-002",
-      "severity": "medium",
-      "category": "input-validation",
-      "title": "API server accepts arbitrary request bodies with no size limit",
-      "description": "The API handler trusts `Content-Length` and reads the entire body into memory before parsing JSON. There is no upper bound or early rejection for oversized requests.",
-      "file": "scripts/api-server.py",
-      "line": 155,
-      "evidence": "length = int(self.headers.get(\"Content-Length\", 0))\n...\nreturn json.loads(self.rfile.read(length))",
-      "impact": "A large POST to `/api/run-scan` or `/api/run-all` can force the process to allocate attacker-controlled memory and degrade or crash the scan worker.",
-      "fix_suggestion": "Reject bodies above a small fixed limit such as 8-16 KB with HTTP 413 before calling `read()`, and handle invalid `Content-Length` values defensively.",
-      "effort": "tiny",
+      "severity": "high",
+      "category": "code-quality",
+      "title": "Broad exception handling masks real errors",
+      "description": "6 files use broad 'except Exception:' or bare 'except:' clauses that catch all exceptions including SystemExit and KeyboardInterrupt, making debugging difficult.",
+      "file": "backoffice/regression.py, backoffice/server.py, backoffice/sync/engine.py, backoffice/sync/providers/aws.py, backoffice/setup.py, tests/test_servers.py",
+      "line": 191,
+      "evidence": "backoffice/regression.py:191,205,206 - bare 'except Exception:' in LCOV parsing\nbackoffice/server.py:75 - broad exception in _load_manual_items()\nMultiple sync provider files with unspecific exception handling",
+      "impact": "Masks errors during development, makes debugging harder, can hide real bugs in error handling paths.",
+      "fix_suggestion": "Replace broad except clauses with specific exception types:\n- Instead of 'except Exception:', use 'except (json.JSONDecodeError, OSError)'\n- Use 'except FileNotFoundError:' instead of bare except\n- Add explicit re-raise for unexpected exceptions",
+      "effort": "small",
       "fixable_by_agent": true,
       "references": [
-        "CWE-400",
-        "OWASP A04:2021"
+        "PEP 8"
       ]
     },
     {
       "id": "FIND-003",
       "severity": "medium",
       "category": "security",
-      "title": "Production scan API has no rate limiting on expensive POST endpoints",
-      "description": "Authenticated POST requests go straight from `do_POST()` to scan-launch handlers. There is no per-IP, per-key, or per-department throttling around `/api/run-scan`, `/api/run-all`, or `/api/stop`.",
-      "file": "scripts/api-server.py",
-      "line": 189,
-      "evidence": "def do_POST(self):\n    path = urlparse(self.path).path\n    if not self._check_auth():\n        ...\n    if path == \"/api/run-scan\":\n        self._handle_run_scan()\n    elif path == \"/api/run-all\":\n        self._handle_run_all()",
-      "impact": "A leaked API key or abusive client can repeatedly trigger costly scans and starve the worker machine, even if only one job per department runs at a time.",
-      "fix_suggestion": "Add request throttling keyed by client IP and API key, with stricter limits for scan-trigger endpoints and clear 429 responses.",
+      "title": "Use of shell=True in subprocess.run()",
+      "description": "backoffice/regression.py line 96 uses subprocess.run() with shell=True. While commands come from config file, this is a security anti-pattern vulnerable to injection if config format changes.",
+      "file": "backoffice/regression.py",
+      "line": 96,
+      "evidence": "proc = subprocess.run(\n    cmd,\n    cwd=cwd,\n    shell=True,  # SECURITY ISSUE\n    capture_output=True,\n    text=True,\n    timeout=timeout_s,\n    env={**os.environ},\n)",
+      "impact": "If configuration handling changes to accept user input, this becomes a shell injection vulnerability. Commands with dynamic interpolation could be exploited.",
+      "fix_suggestion": "Use list-based command passing instead of shell=True. Replace:\nsubprocess.run('python3 -m pytest --cov=.', shell=True)\nWith:\nsubprocess.run(['python3', '-m', 'pytest', '--cov', '.'], shell=False)\nFor dynamic commands, use shlex.split() to safely tokenize.",
       "effort": "medium",
       "fixable_by_agent": true,
       "references": [
-        "CWE-770",
-        "OWASP A04:2021"
+        "CWE-78",
+        "OWASP A03:2021 - Injection"
       ]
     },
     {
       "id": "FIND-004",
-      "severity": "high",
+      "severity": "medium",
       "category": "security",
-      "title": "API target resolution bypasses configured repository allowlist",
-      "description": "The production API is documented as config-driven, but `resolve_target()` accepts any existing directory path from the request body before consulting configured targets. That means the caller is not restricted to the repositories listed in `api-config.yaml`.",
-      "file": "scripts/api-server.py",
-      "line": 75,
-      "evidence": "def resolve_target(site_hint):\n    if site_hint and os.path.isdir(site_hint):\n        return site_hint",
-      "impact": "Any caller with the API key can direct agents at arbitrary directories on the worker host, widening the blast radius from approved repos to local source trees or sensitive filesystem locations.",
-      "fix_suggestion": "Only resolve targets from the configured `targets` map, or canonicalize and verify requested paths against an explicit allowlist of approved repo roots.",
+      "title": "Potential CORS logic issue in api_server.py",
+      "description": "The CORS header logic has a subtle issue: if '*' is in allowed_origins, the code echoes back the origin without validating it, defeating CORS protection.",
+      "file": "backoffice/api_server.py",
+      "line": 184,
+      "evidence": "if \"*\" in allowed or origin in allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", origin or \"*\")\nelif allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", allowed[0])",
+      "impact": "If '*' is ever added to allowed_origins, the server echoes any origin sent by browser. This defeats CORS protection by allowing any site to read responses.",
+      "fix_suggestion": "Rewrite CORS logic to be explicit about allowing all vs. whitelisting:\nif \"*\" in allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", \"*\")\nelif origin and origin in allowed:\n    self.send_header(\"Access-Control-Allow-Origin\", origin)",
       "effort": "small",
       "fixable_by_agent": true,
       "references": [
-        "CWE-284",
-        "OWASP A01:2021"
+        "OWASP: CORS",
+        "CWE-942"
       ]
     },
     {
       "id": "FIND-005",
       "severity": "medium",
       "category": "code-quality",
-      "title": "Background scan failures are silently discarded by the API server",
-      "description": "The worker thread runs the department script without `check=True` and does not record the exit status. Regardless of success or failure, the job is removed from `running_jobs`, so callers only see that the scan stopped, not that it failed.",
-      "file": "scripts/api-server.py",
-      "line": 99,
-      "evidence": "def _run():\n    try:\n        subprocess.run(args, cwd=QA_ROOT)\n    finally:\n        with running_lock:\n            running_jobs.pop(dept, None)",
-      "impact": "Failed scans can be misreported as completed, which hides regressions from operators and breaks any monitoring that depends on API status alone.",
-      "fix_suggestion": "Run subprocesses with `check=False`, capture the return code explicitly, and persist a failed job state or error message in the jobs metadata before removing the job from the active set.",
+      "title": "Missing error handling for subprocess calls",
+      "description": "Multiple subprocess.run() calls in api_server.py and server.py do not check return codes. Agent script failures are silently ignored.",
+      "file": "backoffice/api_server.py, backoffice/server.py",
+      "line": 102,
+      "evidence": "api_server.py run_agent() at line 102:\nsubprocess.run(args, cwd=str(r))\nNo check of returncode - failures are silent",
+      "impact": "If agent scripts fail to start or crash, user gets 200 OK saying scan started, but scan never runs. Silent failures lead to missed findings.",
+      "fix_suggestion": "Check return codes and log failures:\nresult = subprocess.run(args, cwd=str(r), capture_output=True)\nif result.returncode != 0:\n    logger.error(f\"Agent {dept} failed: {result.stderr}\")",
       "effort": "small",
       "fixable_by_agent": true,
       "references": [
-        "CWE-391",
-        "OWASP A09:2021"
+        "PEP 3134"
+      ]
+    },
+    {
+      "id": "FIND-006",
+      "severity": "medium",
+      "category": "code-quality",
+      "title": "Race condition in running_jobs tracking",
+      "description": "The running_jobs dict is checked under lock, but the thread starts after lock is released, creating a window for duplicate job starts.",
+      "file": "backoffice/api_server.py, backoffice/server.py",
+      "line": 107,
+      "evidence": "with running_lock:\n    if dept in running_jobs:\n        return False\n    t = threading.Thread(...)\n    running_jobs[dept] = t\n\nt.start()  # <-- Lock released, thread not yet started",
+      "impact": "If two requests come in for same department simultaneously, both could pass lock check and start duplicate jobs, wasting resources.",
+      "fix_suggestion": "Start the thread inside the lock:\nwith running_lock:\n    if dept in running_jobs:\n        return False\n    t = threading.Thread(...)\n    running_jobs[dept] = t\n    t.start()  # <-- Inside lock",
+      "effort": "tiny",
+      "fixable_by_agent": true,
+      "references": [
+        "CWE-366"
+      ]
+    },
+    {
+      "id": "FIND-007",
+      "severity": "low",
+      "category": "code-quality",
+      "title": "Ambiguous variable names in tests",
+      "description": "tests/test_delivery.py uses 'l' (lowercase letter L) as loop variable in list comprehensions. This is ambiguous with '1' and violates PEP 8.",
+      "file": "tests/test_delivery.py",
+      "line": 782,
+      "evidence": "Line 782: sprint_now = next(l for l in result['sprint_lanes'] if l['lane'] == 'Sprint Now')\nLine 798: sprint_now = next(l for l in ...\nLine 804: lanes = {l['lane'] for l in ...}",
+      "impact": "Reduced code readability, increased typo risk during maintenance.",
+      "fix_suggestion": "Rename 'l' to 'lane':\nsprint_now = next(lane for lane in result['sprint_lanes'] if lane['lane'] == 'Sprint Now')",
+      "effort": "tiny",
+      "fixable_by_agent": true,
+      "references": [
+        "PEP 8 - E741"
+      ]
+    },
+    {
+      "id": "FIND-008",
+      "severity": "low",
+      "category": "performance",
+      "title": "Unnecessary environment dict copy in subprocess",
+      "description": "backoffice/regression.py line 100 uses {**os.environ} creating an unnecessary dict copy. subprocess.run() uses os.environ by default.",
+      "file": "backoffice/regression.py",
+      "line": 100,
+      "evidence": "env={**os.environ},  # Unnecessary copy",
+      "impact": "Creates dict copy on each subprocess call, wasting memory and CPU for large environments.",
+      "fix_suggestion": "Remove the env parameter or pass None:\nBefore: subprocess.run(..., env={**os.environ})\nAfter: subprocess.run(...)\nOr: subprocess.run(..., env=None)",
+      "effort": "tiny",
+      "fixable_by_agent": true,
+      "references": []
+    },
+    {
+      "id": "FIND-009",
+      "severity": "low",
+      "category": "code-quality",
+      "title": "Some functions lack comprehensive docstrings",
+      "description": "Some public functions in aggregate.py and sync/engine.py have minimal docstrings without parameter or return documentation.",
+      "file": "backoffice/aggregate.py, backoffice/sync/engine.py",
+      "line": 0,
+      "evidence": "Functions like load_json(), count_severities() have minimal docs.\nNo parameter types or return types documented for many utilities.",
+      "impact": "Reduced API clarity, harder developer onboarding, less IDE autocomplete support.",
+      "fix_suggestion": "Add comprehensive docstrings with parameter and return type documentation following Google or NumPy format.",
+      "effort": "small",
+      "fixable_by_agent": false,
+      "references": [
+        "PEP 257"
       ]
     }
   ]

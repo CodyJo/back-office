@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HQ Dashboard — Mockup v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface-2: #1a1a26; --surface-3: #22222e;
+    --border: #2a2a3a; --text: #e4e4ef; --text-dim: #8888a0; --accent: #c4944a;
+    --critical: #ff4757; --high: #ff8c42; --medium: #ffd166; --low: #4ecdc4;
+    --success: #2ed573; --info: #74b9ff; --radius: 12px;
+    --sans: 'Inter', -apple-system, sans-serif; --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  .logo { font-size: 0.85rem; font-weight: 600; color: var(--accent); letter-spacing: 0.04em; }
+  .product-select { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.7rem; font-family: var(--sans); font-size: 0.8rem; }
+  .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+  .topbar-btn { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.72rem; cursor: pointer; font-family: var(--sans); }
+  .topbar-btn:hover { border-color: var(--accent); color: var(--text); }
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+
+  .score-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .score-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; cursor: pointer; transition: all 0.15s; }
+  .score-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .score-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .score-card-name { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+  .score-card-value { font-size: 1.6rem; font-weight: 700; }
+  .score-card-trend { font-size: 0.68rem; color: var(--text-dim); }
+  .trend-up { color: var(--success); }
+  .sparkline { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+  .sparkline span { width: 4px; border-radius: 1px; background: var(--accent); opacity: 0.4; }
+  .sparkline span:last-child { opacity: 1; }
+
+  .section-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.75rem; }
+  .matrix { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
+  .matrix th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding: 0.7rem 0.5rem; text-align: center; background: var(--surface-2); font-weight: 500; }
+  .matrix th:first-child { text-align: left; padding-left: 1rem; min-width: 140px; }
+  .matrix td { padding: 0.5rem; text-align: center; border-top: 1px solid var(--border); }
+  .matrix td:first-child { text-align: left; padding-left: 1rem; font-size: 0.82rem; font-weight: 500; }
+  .matrix tr:hover td { background: rgba(255,255,255,0.02); }
+  .cell { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 30px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .cell:hover { transform: scale(1.1); box-shadow: 0 0 12px rgba(0,0,0,0.3); }
+  .cell.green { background: rgba(46,213,115,0.15); color: #2ed573; }
+  .cell.yellow { background: rgba(255,209,102,0.15); color: #ffd166; }
+  .cell.orange { background: rgba(255,140,66,0.15); color: #ff8c42; }
+  .cell.red { background: rgba(255,71,87,0.15); color: #ff4757; }
+  .cell.gray { background: rgba(136,136,160,0.1); color: #5a5a70; }
+
+  .finding-row { display: grid; grid-template-columns: 70px 1fr 80px; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s; margin-bottom: 0.5rem; }
+  .finding-row:hover { border-color: rgba(196,148,74,0.3); }
+  .finding-row.hq-row { grid-template-columns: 60px 70px 1fr 120px 80px; }
+  .finding-dept { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); background: var(--surface-2); padding: 0.25rem 0.5rem; border-radius: 4px; text-align: center; }
+  .sev { font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; text-align: center; }
+  .sev.critical { background: rgba(255,71,87,0.15); color: var(--critical); }
+  .sev.high { background: rgba(255,140,66,0.15); color: var(--high); }
+  .sev.medium { background: rgba(255,209,102,0.12); color: var(--medium); }
+  .sev.low { background: rgba(78,205,196,0.12); color: var(--low); }
+  .finding-title { font-size: 0.85rem; }
+  .finding-repo { font-size: 0.72rem; color: var(--text-dim); font-family: var(--mono); }
+  .finding-effort { font-size: 0.68rem; color: var(--text-dim); text-align: right; }
+  .ai-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6rem; background: rgba(108,92,231,0.15); color: #6c5ce7; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600; letter-spacing: 0.03em; margin-left: 0.5rem; }
+
+  /* Overlay + slideover */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .slideover { position: fixed; top: 0; right: -65%; width: 65%; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 101; transition: right 0.3s ease; overflow-y: auto; display: flex; flex-direction: column; }
+  .slideover.open { right: 0; }
+  .slideover-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .slideover-title { font-size: 1.1rem; font-weight: 600; }
+  .slideover-subtitle { font-size: 0.78rem; color: var(--text-dim); }
+  .slideover-close { background: none; border: 1px solid var(--border); color: var(--text-dim); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+  .slideover-close:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Filters bar */
+  .filters-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; flex-wrap: wrap; }
+  .filter-select { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.72rem; font-family: var(--sans); }
+  .filter-search { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.72rem; font-family: var(--sans); flex: 1; min-width: 140px; }
+  .filter-search::placeholder { color: var(--text-dim); }
+  .filter-toggle { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-dim); cursor: pointer; padding: 0.35rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); }
+  .filter-toggle.active { border-color: #6c5ce7; color: #6c5ce7; background: rgba(108,92,231,0.08); }
+  .filter-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  .slideover-body { padding: 1.5rem; flex: 1; overflow-y: auto; }
+  .slideover-score-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .slideover-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; text-align: center; }
+  .slideover-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.35rem; }
+  .slideover-stat-value { font-size: 1.3rem; font-weight: 700; }
+
+  /* Finding detail (nested slide-over) */
+  .detail-panel { position: fixed; top: 0; right: -45%; width: 45%; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 102; transition: right 0.3s ease; overflow-y: auto; }
+  .detail-panel.open { right: 0; }
+  .detail-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .detail-header-left { flex: 1; }
+  .detail-id { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); margin-bottom: 0.35rem; }
+  .detail-title { font-size: 1rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.5rem; }
+  .detail-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .detail-tag { font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+  .detail-body { padding: 1.5rem; }
+  .detail-section { margin-bottom: 1.25rem; }
+  .detail-section-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .detail-text { font-size: 0.88rem; line-height: 1.65; color: var(--text); }
+  .detail-code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-family: var(--mono); font-size: 0.78rem; color: var(--medium); line-height: 1.5; overflow-x: auto; margin-top: 0.4rem; }
+  .detail-fix { background: rgba(46,213,115,0.06); border: 1px solid rgba(46,213,115,0.15); border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.85rem; line-height: 1.6; color: var(--text); }
+  .detail-fix-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--success); margin-bottom: 0.4rem; }
+  .detail-file { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.85rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); margin-top: 0.4rem; }
+  .detail-file-icon { color: var(--accent); }
+  .ai-fix-banner { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1rem; background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); border-radius: 8px; margin-bottom: 1.25rem; }
+  .ai-fix-banner-icon { font-size: 1rem; }
+  .ai-fix-banner-text { font-size: 0.82rem; color: #b8a9f0; }
+  .ai-fix-banner-text strong { color: #6c5ce7; }
+  .ai-fix-cmd { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); background: var(--surface-2); padding: 0.3rem 0.6rem; border-radius: 4px; margin-left: 0.5rem; cursor: pointer; border: 1px solid var(--border); }
+  .ai-fix-cmd:hover { border-color: #6c5ce7; color: #6c5ce7; }
+
+  .demo-label { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 0.5rem 1.25rem; font-size: 0.75rem; color: var(--text-dim); z-index: 200; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="logo">Back Office</span>
+    <select class="product-select">
+      <option>All Products</option>
+      <option>Selah</option>
+      <option selected>Analogify Studio</option>
+      <option>Cordivent</option>
+      <option>TNBM Tarot</option>
+      <option>codyjo.com</option>
+      <option>Back Office</option>
+    </select>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn">Jobs</button>
+    <button class="topbar-btn">Docs</button>
+    <button class="topbar-btn">FAQ</button>
+    <span style="font-size:0.72rem;color:var(--text-dim);">Last scan: 12 min ago</span>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Score Cards -->
+  <div class="score-row">
+    <div class="score-card" onclick="openDeptPanel('QA','analogify',82)">
+      <div class="score-card-header"><span class="score-card-name">QA</span><div class="sparkline"><span style="height:8px"></span><span style="height:12px"></span><span style="height:10px"></span><span style="height:14px"></span><span style="height:16px"></span></div></div>
+      <div class="score-card-value" style="color:#2ed573">82</div>
+      <div class="score-card-trend trend-up">+6 from last scan</div>
+    </div>
+    <div class="score-card" onclick="openDeptPanel('SEO','analogify',87)">
+      <div class="score-card-header"><span class="score-card-name">SEO</span><div class="sparkline"><span style="height:14px"></span><span style="height:14px"></span><span style="height:15px"></span><span style="height:16px"></span><span style="height:18px"></span></div></div>
+      <div class="score-card-value" style="color:#2ed573">87</div>
+      <div class="score-card-trend trend-up">+3 from last scan</div>
+    </div>
+    <div class="score-card" onclick="openDeptPanel('ADA','analogify',77)">
+      <div class="score-card-header"><span class="score-card-name">ADA</span><div class="sparkline"><span style="height:10px"></span><span style="height:10px"></span><span style="height:12px"></span><span style="height:11px"></span><span style="height:14px"></span></div></div>
+      <div class="score-card-value" style="color:#ff8c42">68</div>
+      <div class="score-card-trend trend-up">+2 from last scan</div>
+    </div>
+    <div class="score-card" onclick="openDeptPanel('Compliance','analogify',72)">
+      <div class="score-card-header"><span class="score-card-name">Compliance</span><div class="sparkline"><span style="height:12px"></span><span style="height:14px"></span><span style="height:13px"></span><span style="height:14px"></span><span style="height:15px"></span></div></div>
+      <div class="score-card-value" style="color:#c4944a">72</div>
+      <div class="score-card-trend trend-up">+1 from last scan</div>
+    </div>
+    <div class="score-card" onclick="openDeptPanel('Monetization','analogify',62)">
+      <div class="score-card-header"><span class="score-card-name">Monetization</span><div class="sparkline"><span style="height:6px"></span><span style="height:8px"></span><span style="height:8px"></span><span style="height:10px"></span><span style="height:10px"></span></div></div>
+      <div class="score-card-value" style="color:#ff8c42">62</div>
+      <div class="score-card-trend">no change</div>
+    </div>
+    <div class="score-card" onclick="openDeptPanel('Product','analogify',74)">
+      <div class="score-card-header"><span class="score-card-name">Product</span><div class="sparkline"><span style="height:12px"></span><span style="height:13px"></span><span style="height:14px"></span><span style="height:14px"></span><span style="height:16px"></span></div></div>
+      <div class="score-card-value" style="color:#c4944a">74</div>
+      <div class="score-card-trend trend-up">+4 from last scan</div>
+    </div>
+  </div>
+
+  <!-- Matrix -->
+  <div class="section-label">Product x Department</div>
+  <table class="matrix">
+    <thead><tr><th>Product</th><th>QA</th><th>SEO</th><th>ADA</th><th>Compliance</th><th>Monetization</th><th>Product</th></tr></thead>
+    <tbody>
+      <tr><td>codyjo.com</td><td><span class="cell green" onclick="openDeptPanel('QA','codyjo.com',88)">88</span></td><td><span class="cell green" onclick="openDeptPanel('SEO','codyjo.com',90)">90</span></td><td><span class="cell yellow" onclick="openDeptPanel('ADA','codyjo.com',79)">79</span></td><td><span class="cell yellow" onclick="openDeptPanel('Compliance','codyjo.com',70)">70</span></td><td><span class="cell orange" onclick="openDeptPanel('Monetization','codyjo.com',62)">62</span></td><td><span class="cell yellow" onclick="openDeptPanel('Product','codyjo.com',74)">74</span></td></tr>
+      <tr><td>thenewbeautifulme</td><td><span class="cell green" onclick="openDeptPanel('QA','tnbm',85)">85</span></td><td><span class="cell green" onclick="openDeptPanel('SEO','tnbm',87)">87</span></td><td><span class="cell yellow" onclick="openDeptPanel('ADA','tnbm',74)">74</span></td><td><span class="cell yellow" onclick="openDeptPanel('Compliance','tnbm',72)">72</span></td><td><span class="cell yellow" onclick="openDeptPanel('Monetization','tnbm',72)">72</span></td><td><span class="cell yellow" onclick="openDeptPanel('Product','tnbm',78)">78</span></td></tr>
+      <tr><td>analogify</td><td><span class="cell yellow" onclick="openDeptPanel('QA','analogify',76)">76</span></td><td><span class="cell green" onclick="openDeptPanel('SEO','analogify',87)">87</span></td><td><span class="cell yellow" onclick="openDeptPanel('ADA','analogify',77)">77</span></td><td><span class="cell yellow" onclick="openDeptPanel('Compliance','analogify',72)">72</span></td><td><span class="cell red" onclick="openDeptPanel('Monetization','analogify',48)">48</span></td><td><span class="cell orange" onclick="openDeptPanel('Product','analogify',67)">67</span></td></tr>
+      <tr><td>portis-app</td><td><span class="cell green" onclick="openDeptPanel('QA','portis',82)">82</span></td><td><span class="cell red" onclick="openDeptPanel('SEO','portis',1)">1</span></td><td><span class="cell green" onclick="openDeptPanel('ADA','portis',81)">81</span></td><td><span class="cell orange" onclick="openDeptPanel('Compliance','portis',68)">68</span></td><td><span class="cell gray">—</span></td><td><span class="cell orange" onclick="openDeptPanel('Product','portis',58)">58</span></td></tr>
+      <tr><td>pe-bootstrap</td><td><span class="cell yellow" onclick="openDeptPanel('QA','pe',73)">73</span></td><td><span class="cell red" onclick="openDeptPanel('SEO','pe',0)">0</span></td><td><span class="cell orange" onclick="openDeptPanel('ADA','pe',69)">69</span></td><td><span class="cell red" onclick="openDeptPanel('Compliance','pe',48)">48</span></td><td><span class="cell red" onclick="openDeptPanel('Monetization','pe',42)">42</span></td><td><span class="cell yellow" onclick="openDeptPanel('Product','pe',72)">72</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- Needs Attention -->
+  <div class="section-label">Needs Attention</div>
+  <div class="finding-row hq-row" onclick="openDeptPanel('SEO','portis-app',1)"><span class="finding-dept">SEO</span><span class="sev critical">critical</span><span class="finding-title">No meta description or OG tags on any page <span class="ai-badge">AI fixable</span></span><span class="finding-repo">portis-app</span><span class="finding-effort">easy</span></div>
+  <div class="finding-row hq-row" onclick="openDeptPanel('Compliance','pe-bootstrap',48)"><span class="finding-dept">Compliance</span><span class="sev critical">critical</span><span class="finding-title">No cookie consent mechanism for EU visitors</span><span class="finding-repo">pe-bootstrap</span><span class="finding-effort">moderate</span></div>
+  <div class="finding-row hq-row" onclick="openFindingDetail()"><span class="finding-dept">ADA</span><span class="sev high">high</span><span class="finding-title">Form inputs missing associated labels <span class="ai-badge">AI fixable</span></span><span class="finding-repo">analogify</span><span class="finding-effort">easy</span></div>
+  <div class="finding-row hq-row" onclick="openDeptPanel('QA','tnbm',85)"><span class="finding-dept">QA</span><span class="sev high">high</span><span class="finding-title">Unhandled exception in Lambda cold start path</span><span class="finding-repo">thenewbeautifulme</span><span class="finding-effort">moderate</span></div>
+  <div class="finding-row hq-row" onclick="openDeptPanel('Product','portis',58)"><span class="finding-dept">Product</span><span class="sev medium">medium</span><span class="finding-title">No onboarding flow for new users</span><span class="finding-repo">portis-app</span><span class="finding-effort">hard</span></div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- Department Slide-Over -->
+<div class="slideover" id="slideover">
+  <div class="slideover-header">
+    <div>
+      <div class="slideover-title" id="deptTitle">ADA Compliance</div>
+      <div class="slideover-subtitle" id="deptSubtitle">analogify — 12 findings</div>
+    </div>
+    <button class="slideover-close" onclick="closeAll()">&times;</button>
+  </div>
+
+  <!-- Consistent Filters -->
+  <div class="filters-bar">
+    <select class="filter-select">
+      <option>All Severities</option>
+      <option>Critical</option>
+      <option>High</option>
+      <option>Medium</option>
+      <option>Low</option>
+      <option>Info</option>
+    </select>
+    <select class="filter-select">
+      <option>All Status</option>
+      <option>Open</option>
+      <option>Fixed</option>
+      <option>Won't Fix</option>
+    </select>
+    <select class="filter-select">
+      <option>All Effort</option>
+      <option>Easy</option>
+      <option>Moderate</option>
+      <option>Hard</option>
+    </select>
+    <div class="filter-toggle active" onclick="this.classList.toggle('active')">
+      <span class="dot"></span> AI Fixable
+    </div>
+    <input class="filter-search" placeholder="Search findings..." type="text">
+  </div>
+
+  <div class="slideover-body">
+    <div class="slideover-score-row">
+      <div class="slideover-stat"><div class="slideover-stat-label">Score</div><div class="slideover-stat-value" style="color:#ff8c42">77</div></div>
+      <div class="slideover-stat"><div class="slideover-stat-label">Findings</div><div class="slideover-stat-value">12</div></div>
+      <div class="slideover-stat"><div class="slideover-stat-label">AI Fixable</div><div class="slideover-stat-value" style="color:#6c5ce7">4</div></div>
+      <div class="slideover-stat"><div class="slideover-stat-label">Easy Wins</div><div class="slideover-stat-value" style="color:#2ed573">6</div></div>
+    </div>
+
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev critical">critical</span><span class="finding-title">Images missing alt text on gallery upload pages <span class="ai-badge">AI fixable</span></span><span class="finding-effort">easy</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev critical">critical</span><span class="finding-title">Color contrast ratio below 4.5:1 on muted text <span class="ai-badge">AI fixable</span></span><span class="finding-effort">easy</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev high">high</span><span class="finding-title">No skip navigation link <span class="ai-badge">AI fixable</span></span><span class="finding-effort">easy</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev high">high</span><span class="finding-title">Focus indicators removed by CSS reset</span><span class="finding-effort">moderate</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev high">high</span><span class="finding-title">Form inputs missing associated labels <span class="ai-badge">AI fixable</span></span><span class="finding-effort">easy</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev medium">medium</span><span class="finding-title">ARIA roles missing on custom dropdown</span><span class="finding-effort">moderate</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev medium">medium</span><span class="finding-title">Error messages not linked via aria-describedby</span><span class="finding-effort">easy</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev medium">medium</span><span class="finding-title">Navigation inconsistent across pages</span><span class="finding-effort">moderate</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev low">low</span><span class="finding-title">Touch targets smaller than 44px</span><span class="finding-effort">easy</span></div>
+    <div class="finding-row" onclick="openFindingDetail()"><span class="sev low">low</span><span class="finding-title">Decorative SVGs not hidden from screen readers</span><span class="finding-effort">easy</span></div>
+  </div>
+</div>
+
+<!-- Finding Detail Panel (nested) -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <div class="detail-header-left">
+      <div class="detail-id">ADA-005</div>
+      <div class="detail-title">Form inputs missing associated labels</div>
+      <div class="detail-meta">
+        <span class="sev high">high</span>
+        <span class="detail-tag">Understandable</span>
+        <span class="detail-tag">WCAG 1.3.1</span>
+        <span class="detail-tag">Level A</span>
+        <span class="detail-tag" style="background:rgba(108,92,231,0.1);color:#6c5ce7;border-color:rgba(108,92,231,0.2);">AI Fixable</span>
+      </div>
+    </div>
+    <button class="slideover-close" onclick="closeFindingDetail()">&times;</button>
+  </div>
+  <div class="detail-body">
+
+    <div class="ai-fix-banner">
+      <span class="ai-fix-banner-icon">&#9889;</span>
+      <div class="ai-fix-banner-text">
+        <strong>AI can fix this.</strong> The Back Office fix agent can add labels to these inputs automatically.
+        <span class="ai-fix-cmd" title="Click to copy">make fix TARGET=analogify</span>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Description</div>
+      <div class="detail-text">6 form inputs use placeholder text only with no <code>&lt;label&gt;</code> or <code>aria-label</code>. Screen readers announce these inputs as "edit text" with no context about what data is expected.</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Evidence</div>
+      <div class="detail-code">&lt;input placeholder="Your email"&gt;  &lt;!-- no associated label --&gt;
+&lt;input placeholder="Gallery name"&gt;  &lt;!-- no associated label --&gt;
+&lt;input placeholder="Client name"&gt;  &lt;!-- no associated label --&gt;</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Impact</div>
+      <div class="detail-text">Screen reader users cannot understand what data each field expects. This affects an estimated 2-4% of web users who rely on assistive technology, and also breaks voice control software that uses label text for targeting.</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">File</div>
+      <div class="detail-file">
+        <span class="detail-file-icon">&#128196;</span>
+        src/components/ContactForm.tsx:18
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-fix-title">Recommended Fix</div>
+      <div class="detail-fix">Add <code>&lt;label&gt;</code> elements with <code>for</code>/<code>id</code> association for each input. For inputs where a visible label isn't desired, use <code>aria-label</code> instead. Example:<br><br><code>&lt;label for="email"&gt;Email&lt;/label&gt;<br>&lt;input id="email" placeholder="Your email"&gt;</code></div>
+    </div>
+  </div>
+</div>
+
+<div class="demo-label">Click findings to see the detail panel. Click "ADA" finding in Needs Attention or any finding in the slide-over.</div>
+
+<script>
+function openDeptPanel(dept, repo, score) {
+  document.getElementById('deptTitle').textContent = dept;
+  document.getElementById('deptSubtitle').textContent = repo + ' — findings';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('slideover').classList.add('open');
+  closeFindingDetail();
+}
+function openFindingDetail() {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('slideover').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+}
+function closeFindingDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+}
+function closeAll() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('slideover').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('detailPanel').classList.contains('open')) { closeFindingDetail(); }
+    else { closeAll(); }
+  }
+});
+</script>
+</body>
+</html>

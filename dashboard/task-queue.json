@@ -1,0 +1,141 @@
+{
+  "generated_at": "2026-03-22T22:36:18.567925+00:00",
+  "summary": {
+    "total": 3,
+    "open": 3,
+    "done": 0,
+    "blocked": 0,
+    "in_progress": 0,
+    "ready_for_review": 0,
+    "by_status": {
+      "ready": 2,
+      "proposed": 1
+    },
+    "by_repo": {
+      "etheos-app": {
+        "total": 3,
+        "open": 3,
+        "done": 0
+      }
+    }
+  },
+  "tasks": [
+    {
+      "id": "etheos:factory-builder",
+      "repo": "etheos-app",
+      "product_key": "etheos",
+      "title": "Build AI-agnostic event-config generation pipeline",
+      "category": "feature",
+      "priority": "high",
+      "status": "proposed",
+      "created_by": "product-owner",
+      "owner": "implementation-agent",
+      "created_at": "2026-03-13 00:00:00+00:00",
+      "updated_at": "2026-03-13 00:00:00+00:00",
+      "notes": "Normalize uploaded docs into event config with organizer-entered facts staying authoritative and provider adapters remaining swappable.",
+      "acceptance_criteria": [
+        "S3 object completion can trigger a builder job",
+        "builder creates normalized sessions speakers resources and FAQs",
+        "AI adapter boundary supports provider swap or no-AI mode",
+        "organizer can review generated result before publish",
+        "handoff documents open issues and validation path"
+      ],
+      "audits_required": [
+        "qa",
+        "ada",
+        "compliance",
+        "product"
+      ],
+      "verification_command": "npm run verify:release",
+      "repo_handoff_path": "/home/merm/projects/etheos-app/docs/HANDOFF.md",
+      "handoff_required": true,
+      "history": [
+        {
+          "status": "proposed",
+          "at": "2026-03-13 00:00:00+00:00",
+          "by": "product-owner",
+          "note": "Seeded pilot task"
+        }
+      ],
+      "target_path": "/home/merm/projects/etheos-app"
+    },
+    {
+      "id": "etheos:frontend-stabilization",
+      "repo": "etheos-app",
+      "product_key": "etheos",
+      "title": "Stabilize current event-factory frontend and restore passing gates",
+      "category": "bugfix",
+      "priority": "high",
+      "status": "ready",
+      "created_by": "product-owner",
+      "owner": "implementation-agent",
+      "created_at": "2026-03-13 00:00:00+00:00",
+      "updated_at": "2026-03-13 00:00:00+00:00",
+      "notes": "Resolve current lint and test regressions on the Etheos event-factory branch before deeper backend automation work.",
+      "acceptance_criteria": [
+        "lint passes",
+        "typecheck passes",
+        "tests pass",
+        "coverage check passes",
+        "handoff updated with current clean baseline"
+      ],
+      "audits_required": [
+        "qa",
+        "ada",
+        "compliance",
+        "product"
+      ],
+      "verification_command": "npm run factory:check",
+      "repo_handoff_path": "/home/merm/projects/etheos-app/docs/HANDOFF.md",
+      "handoff_required": true,
+      "history": [
+        {
+          "status": "ready",
+          "at": "2026-03-13 00:00:00+00:00",
+          "by": "product-owner",
+          "note": "Seeded pilot task"
+        }
+      ],
+      "target_path": "/home/merm/projects/etheos-app"
+    },
+    {
+      "id": "etheos:intake-pipeline",
+      "repo": "etheos-app",
+      "product_key": "etheos",
+      "title": "Implement organizer intake upload pipeline for event docs",
+      "category": "feature",
+      "priority": "high",
+      "status": "ready",
+      "created_by": "product-owner",
+      "owner": "implementation-agent",
+      "created_at": "2026-03-13 00:00:00+00:00",
+      "updated_at": "2026-03-13 00:00:00+00:00",
+      "notes": "Add authenticated intake records, presigned upload URLs, and S3-backed organizer document uploads.",
+      "acceptance_criteria": [
+        "organizer can create or update an intake record",
+        "organizer can request presigned upload URLs",
+        "uploaded document metadata is persisted",
+        "privacy copy remains explicit about AI and document use",
+        "tests cover intake API behavior"
+      ],
+      "audits_required": [
+        "qa",
+        "ada",
+        "compliance",
+        "product"
+      ],
+      "verification_command": "npm run verify:release",
+      "repo_handoff_path": "/home/merm/projects/etheos-app/docs/HANDOFF.md",
+      "handoff_required": true,
+      "history": [
+        {
+          "status": "ready",
+          "at": "2026-03-13 00:00:00+00:00",
+          "by": "product-owner",
+          "note": "Seeded pilot task"
+        }
+      ],
+      "target_path": "/home/merm/projects/etheos-app"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+<h2>Page Consolidation — What stays, what goes?</h2>
+<p class="subtitle">You currently have 24 HTML files. With the new HQ + slide-over model, many become unnecessary. Here's my recommended cut list. Select any you disagree with.</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="keep-privacy" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(46,213,115,0.15);color:#2ed573;">&#10003;</div>
+    <div class="content">
+      <h3>Keep: Privacy as its own panel</h3>
+      <p>Privacy is currently derived from Compliance findings, but it matters enough to stay visible as its own slide-over panel. It's not a separate scan — just a focused lens on compliance data filtered to privacy topics.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cut-product-pages" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(255,71,87,0.15);color:#ff4757;">&#10005;</div>
+    <div class="content">
+      <h3>Cut: Product-specific pages (selah.html, analogify.html, chromahaus.html, tnbm-tarot.html)</h3>
+      <p>These are thin iframe wrappers around index.html with a product pre-selected. The new matrix view + product selector makes them redundant. Selecting a product on HQ gives you the same view.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cut-backoffice-hq" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(255,71,87,0.15);color:#ff4757;">&#10005;</div>
+    <div class="content">
+      <h3>Cut: back-office-hq.html</h3>
+      <p>Alternative HQ layout that's just an iframe of index.html. Fully redundant with the new design.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cut-selfaudit" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(255,71,87,0.15);color:#ff4757;">&#10005;</div>
+    <div class="content">
+      <h3>Cut: self-audit.html</h3>
+      <p>This is just QA filtered to the back-office repo. With product filtering on the QA panel, selecting "Back Office" as the product gives you the same view.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cut-backoffice-form" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(255,71,87,0.15);color:#ff4757;">&#10005;</div>
+    <div class="content">
+      <h3>Cut: backoffice.html (legacy bug report form)</h3>
+      <p>88KB legacy page. Findings come from agents now, not manual bug reports.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="keep-jobs" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(46,213,115,0.15);color:#2ed573;">&#10003;</div>
+    <div class="content">
+      <h3>Keep: jobs.html as a slide-over panel</h3>
+      <p>Real-time job progress tracker. Useful when running audits — becomes a panel accessible from HQ's top bar.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="keep-faq" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(46,213,115,0.15);color:#2ed573;">&#10003;</div>
+    <div class="content">
+      <h3>Keep: faq.html as a slide-over panel</h3>
+      <p>Scoring documentation. "How is this score calculated?" links should open FAQ in a panel.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="fold-docs" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(255,140,66,0.15);color:#ff8c42;">~</div>
+    <div class="content">
+      <h3>Fold: Documentation pages into one</h3>
+      <p>Currently 4 separate doc pages (documentation.html, documentation-cli.html, documentation-cicd.html, documentation-github.html). Combine into a single tabbed documentation panel.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="fold-support" onclick="toggleSelect(this)">
+    <div class="letter" style="background:rgba(255,140,66,0.15);color:#ff8c42;">~</div>
+    <div class="content">
+      <h3>Fold: regression.html + metrics.html into HQ</h3>
+      <p>Regression test results and system metrics become small summary cards on HQ, with detail in slide-over panels. Not separate pages.</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:2rem; padding:1rem; background:rgba(196,148,74,0.08); border:1px solid rgba(196,148,74,0.2); border-radius:10px;">
+  <h3 style="color:#c4944a; margin-bottom:0.5rem;">Result: 24 pages → 1 page + panels</h3>
+  <p style="color:#8888a0; font-size:0.88rem; line-height:1.6;">
+    <strong>index.html</strong> — The single HQ page with matrix view<br>
+    <strong>Slide-over panels:</strong> QA, SEO, ADA, Compliance, Privacy, Monetization, Product, Jobs, FAQ, Docs<br>
+    <strong>Cut:</strong> selah.html, analogify.html, chromahaus.html, tnbm-tarot.html, back-office-hq.html, self-audit.html, backoffice.html<br>
+    <strong>Support files:</strong> site-branding.js, department-context.js, favicon.svg (unchanged)
+  </p>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem;">Click any item you <strong>disagree</strong> with. If this all looks right, just tell me in the terminal.</p>

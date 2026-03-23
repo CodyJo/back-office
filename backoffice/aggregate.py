@@ -90,6 +90,31 @@ def load_json(path):
         return None
 
 
+def load_valid_repos():
+    """Return the set of repo names whose configured target paths exist on disk.
+
+    Reads ``config/targets.yaml`` (via :func:`backoffice.delivery.load_targets_config`)
+    and checks each target's ``path`` field. Repos whose directories no longer
+    exist are excluded so that stale results don't drag down dashboard scores.
+    """
+    from backoffice.delivery import load_targets_config
+
+    config = load_targets_config()
+    valid = set()
+    for target in config.get("targets", []):
+        name = target.get("name", "")
+        target_path = target.get("path", "")
+        if not target_path:
+            continue
+        if os.path.isdir(target_path):
+            valid.add(name)
+        else:
+            logger.warning(
+                "Skipping target %r: path does not exist: %s", name, target_path
+            )
+    return valid
+
+
 def count_severities(findings):
     """Count findings by severity level."""
     counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
@@ -151,7 +176,7 @@ def normalize_precalculated_summary(data, findings, department_name):
     return summary
 
 
-def aggregate_qa(results_dir, dashboard_dir):
+def aggregate_qa(results_dir, dashboard_dir, valid_repos=None):
     """Aggregate QA findings into qa-data.json (original behavior)."""
     repos = []
     totals = {
@@ -170,6 +195,9 @@ def aggregate_qa(results_dir, dashboard_dir):
     for repo_name in sorted(os.listdir(results_dir)):
         repo_dir = os.path.join(results_dir, repo_name)
         if not os.path.isdir(repo_dir):
+            continue
+        if valid_repos is not None and repo_name not in valid_repos:
+            logger.info("QA: skipping %s (target path no longer exists)", repo_name)
             continue
 
         findings_data = load_json(os.path.join(repo_dir, "findings.json"))
@@ -246,7 +274,7 @@ def aggregate_qa(results_dir, dashboard_dir):
     }
 
 
-def aggregate_department(results_dir, findings_filename, department_name):
+def aggregate_department(results_dir, findings_filename, department_name, valid_repos=None):
     """Aggregate department-specific findings across all repos."""
     repos = []
     totals = {
@@ -261,6 +289,13 @@ def aggregate_department(results_dir, findings_filename, department_name):
     for repo_name in sorted(os.listdir(results_dir)):
         repo_dir = os.path.join(results_dir, repo_name)
         if not os.path.isdir(repo_dir):
+            continue
+        if valid_repos is not None and repo_name not in valid_repos:
+            logger.info(
+                "%s: skipping %s (target path no longer exists)",
+                department_name.upper(),
+                repo_name,
+            )
             continue
 
         data = load_json(os.path.join(repo_dir, findings_filename))
@@ -288,7 +323,7 @@ def aggregate_department(results_dir, findings_filename, department_name):
                     "id": f["id"],
                     "severity": f.get("severity", f.get("value", "medium")),
                     "category": f["category"],
-                    "title": f["title"],
+                    "title": f.get("title", f.get("description", "Untitled")),
                     "file": f.get("file") or f.get("location", ""),
                     "line": f.get("line"),
                     "effort": f.get("effort", f.get("implementation_effort", "unknown")),
@@ -364,7 +399,7 @@ def privacy_score(findings):
     )
 
 
-def aggregate_privacy(results_dir):
+def aggregate_privacy(results_dir, valid_repos=None):
     """Aggregate privacy-related findings filtered from compliance findings."""
     repos = []
     totals = {
@@ -379,6 +414,9 @@ def aggregate_privacy(results_dir):
     for repo_name in sorted(os.listdir(results_dir)):
         repo_dir = os.path.join(results_dir, repo_name)
         if not os.path.isdir(repo_dir):
+            continue
+        if valid_repos is not None and repo_name not in valid_repos:
+            logger.info("Privacy: skipping %s (target path no longer exists)", repo_name)
             continue
 
         compliance = load_json(os.path.join(repo_dir, "compliance-findings.json"))
@@ -471,12 +509,37 @@ def aggregate_self_audit(results_dir, dashboard_dir):
     return payload
 
 
-def aggregate(results_dir, output_path):
-    """Orchestrate aggregation of all departments and write dashboard JSON files."""
+_SENTINEL = object()
+
+
+def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
+    """Orchestrate aggregation of all departments and write dashboard JSON files.
+
+    Args:
+        results_dir: Path to the results directory.
+        output_path: Destination for the backward-compatible ``data.json``.
+        valid_repos: Optional set of repo names to include. Defaults to
+            loading ``config/targets.yaml`` and checking which target paths
+            exist on disk. Pass ``None`` to include all repos without
+            filtering.
+    """
     dashboard_dir = os.path.dirname(output_path) or "."
 
+    # Load the set of repo names whose target paths still exist on disk.
+    # Stale results for deleted repos are excluded from all department totals.
+    if valid_repos is _SENTINEL:
+        try:
+            valid_repos = load_valid_repos()
+            logger.info("Valid target repos: %s", sorted(valid_repos))
+        except Exception:
+            logger.warning(
+                "Could not load targets config; including all repos in results/",
+                exc_info=True,
+            )
+            valid_repos = None
+
     # QA department (backward-compatible — also writes data.json)
-    qa_data = aggregate_qa(results_dir, dashboard_dir)
+    qa_data = aggregate_qa(results_dir, dashboard_dir, valid_repos)
     write_json(qa_data, output_path)  # data.json (backward compat)
     write_json(qa_data, os.path.join(dashboard_dir, "qa-data.json"))
     logger.info(
@@ -487,7 +550,7 @@ def aggregate(results_dir, output_path):
     )
 
     # SEO department
-    seo_data = aggregate_department(results_dir, "seo-findings.json", "seo")
+    seo_data = aggregate_department(results_dir, "seo-findings.json", "seo", valid_repos)
     write_json(seo_data, os.path.join(dashboard_dir, "seo-data.json"))
     logger.info(
         "SEO: %d findings across %d repos",
@@ -496,7 +559,7 @@ def aggregate(results_dir, output_path):
     )
 
     # ADA department
-    ada_data = aggregate_department(results_dir, "ada-findings.json", "ada")
+    ada_data = aggregate_department(results_dir, "ada-findings.json", "ada", valid_repos)
     write_json(ada_data, os.path.join(dashboard_dir, "ada-data.json"))
     logger.info(
         "ADA: %d findings across %d repos",
@@ -506,7 +569,7 @@ def aggregate(results_dir, output_path):
 
     # Compliance department
     comp_data = aggregate_department(
-        results_dir, "compliance-findings.json", "compliance"
+        results_dir, "compliance-findings.json", "compliance", valid_repos
     )
     write_json(comp_data, os.path.join(dashboard_dir, "compliance-data.json"))
     logger.info(
@@ -516,7 +579,7 @@ def aggregate(results_dir, output_path):
     )
 
     # Privacy department (derived from compliance findings)
-    privacy_data = aggregate_privacy(results_dir)
+    privacy_data = aggregate_privacy(results_dir, valid_repos)
     write_json(privacy_data, os.path.join(dashboard_dir, "privacy-data.json"))
     logger.info(
         "Privacy: %d findings across %d repos",
@@ -526,7 +589,7 @@ def aggregate(results_dir, output_path):
 
     # Monetization department
     mon_data = aggregate_department(
-        results_dir, "monetization-findings.json", "monetization"
+        results_dir, "monetization-findings.json", "monetization", valid_repos
     )
     write_json(mon_data, os.path.join(dashboard_dir, "monetization-data.json"))
     logger.info(
@@ -537,7 +600,7 @@ def aggregate(results_dir, output_path):
 
     # Product department
     prod_data = aggregate_department(
-        results_dir, "product-findings.json", "product"
+        results_dir, "product-findings.json", "product", valid_repos
     )
     write_json(prod_data, os.path.join(dashboard_dir, "product-data.json"))
     logger.info(

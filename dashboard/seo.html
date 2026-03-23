@@ -666,6 +666,95 @@
     ]
   };
 
+  // -- Normalize data from either flat or multi-repo aggregate format --
+  function normalizeData(raw) {
+    if (raw.repos && Array.isArray(raw.repos)) {
+      // Multi-repo aggregate format: {repos: [{name, summary, findings, ...}, ...]}
+      var mergedFindings = [];
+      var mergedCategories = {};
+      var mergedChecklist = [];
+      var mergedTrend = [];
+      var scoreSum = 0;
+      var scoreCount = 0;
+      var latestTimestamp = raw.generated_at || null;
+
+      raw.repos.forEach(function(repo) {
+        // Merge findings, tagging each with repo_name
+        var repoFindings = (repo.findings || []).map(function(f) {
+          return Object.assign({}, f, { repo_name: repo.name });
+        });
+        mergedFindings = mergedFindings.concat(repoFindings);
+
+        // Accumulate overall scores for averaging
+        var repoScore = repo.overall_score != null ? repo.overall_score
+          : (repo.summary && repo.summary.overall_score != null ? repo.summary.overall_score : null);
+        if (repoScore != null) {
+          scoreSum += repoScore;
+          scoreCount++;
+        }
+
+        // Merge categories: average scores, sum issues
+        var repoCats = repo.categories || (repo.summary && repo.summary.categories) || {};
+        Object.keys(repoCats).forEach(function(key) {
+          var rc = repoCats[key];
+          if (!mergedCategories[key]) {
+            mergedCategories[key] = { name: rc.name || key, score: 0, issues: 0, _count: 0 };
+          }
+          mergedCategories[key].score += (rc.score || 0);
+          mergedCategories[key].issues += (rc.issues || 0);
+          mergedCategories[key]._count++;
+        });
+
+        // Merge checklists (take the worst status per label)
+        var repoChecklist = repo.checklist || [];
+        repoChecklist.forEach(function(item) {
+          var existing = mergedChecklist.find(function(c) { return c.label === item.label; });
+          if (!existing) {
+            mergedChecklist.push({ label: item.label, status: item.status });
+          } else {
+            // Worst-wins: fail > warn > pass
+            var rank = { fail: 0, warn: 1, pass: 2 };
+            if ((rank[item.status] || 0) < (rank[existing.status] || 0)) {
+              existing.status = item.status;
+            }
+          }
+        });
+
+        // Use trend data from first repo that has it
+        if (!mergedTrend.length && repo.trend && repo.trend.length) {
+          mergedTrend = repo.trend;
+        }
+
+        // Track latest timestamp
+        var repoTime = repo.scanned_at || repo.scan_time;
+        if (repoTime && (!latestTimestamp || new Date(repoTime) > new Date(latestTimestamp))) {
+          latestTimestamp = repoTime;
+        }
+      });
+
+      // Average category scores
+      Object.keys(mergedCategories).forEach(function(key) {
+        var cat = mergedCategories[key];
+        if (cat._count > 0) cat.score = Math.round(cat.score / cat._count);
+        delete cat._count;
+      });
+
+      var avgScore = scoreCount > 0 ? Math.round(scoreSum / scoreCount) : 0;
+
+      return {
+        findings: mergedFindings,
+        categories: mergedCategories,
+        checklist: mergedChecklist,
+        trend: mergedTrend,
+        overall_score: raw.totals && raw.totals.overall_score != null ? raw.totals.overall_score : avgScore,
+        scan_time: latestTimestamp
+      };
+    }
+
+    // Flat format — return as-is
+    return raw;
+  }
+
   // -- Init --
   function init() {
     loadData();
@@ -674,7 +763,7 @@
   function loadData() {
     fetch('seo-data.json')
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => applyData(data))
+      .then(data => applyData(normalizeData(data)))
       .catch(() => applyData({ findings: [], categories: {}, checklist: [], trend: [], overall_score: 0, scan_time: null }));
   }
 

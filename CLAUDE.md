@@ -84,6 +84,20 @@ The `backoffice` package is the primary interface:
 4. `backoffice.aggregate` aggregates results; `backoffice.sync` pushes to S3
 5. CloudFront serves the dashboards
 
+## CI/CD — AWS CodeBuild
+
+CI and CD run on AWS CodeBuild (not GitHub Actions).
+
+- **CI** (`back-office-ci`): Triggers on pull requests. Runs shell syntax validation, Python linting (ruff), and regression suite (pytest).
+  - Config: `buildspec-ci.yml`
+- **CD** (`back-office-cd`): Triggers on push to main. Validates, runs tests, then deploys dashboards via `scripts/sync-dashboard.sh`.
+  - Config: `buildspec-cd.yml`
+- **IAM role**: `back-office-codebuild-cd` — scoped to S3 (admin-thenewbeautifulme-site) and CloudFront (E372ZR95FXKVT5).
+- **Infrastructure**: CodeBuild projects defined in `terraform/codebuild.tf` using shared module from `codyjo.com/terraform/modules/codebuild/`.
+- **Logs**: CloudWatch `/codebuild/back-office`
+
+To check build status: `aws codebuild list-builds-for-project --project-name back-office-cd --sort-order DESCENDING`
+
 ## Adding a New Department
 
 1. Create agent prompt: `agents/prompts/<name>-audit.md`

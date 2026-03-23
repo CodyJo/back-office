@@ -700,6 +700,52 @@
     };
   }
 
+  // -- Normalize multi-repo aggregate format to flat format ---
+  function normalizeMultiRepo(raw) {
+    if (!raw || !raw.repos || !Array.isArray(raw.repos)) return raw;
+    // Merge all repo findings into a single flat array
+    var allFindings = [];
+    var mergedChecklist = {};
+    var scoreSum = 0;
+    var scoreCount = 0;
+    var latestTimestamp = raw.generated_at || null;
+
+    raw.repos.forEach(function(repo) {
+      var repoFindings = (repo.findings || []).map(function(f) {
+        return Object.assign({}, f, { repo_name: repo.name });
+      });
+      allFindings = allFindings.concat(repoFindings);
+
+      // Merge checklists — fail beats warn beats pass
+      var cl = repo.checklist || {};
+      Object.keys(cl).forEach(function(key) {
+        var existing = mergedChecklist[key];
+        var incoming = cl[key];
+        if (!existing || incoming === 'fail' || (incoming === 'warn' && existing === 'pass')) {
+          mergedChecklist[key] = incoming;
+        }
+      });
+
+      // Accumulate compliance scores
+      var score = repo.compliance_score != null ? repo.compliance_score
+        : (repo.summary && repo.summary.compliance_score != null ? repo.summary.compliance_score : null);
+      if (score != null) { scoreSum += score; scoreCount++; }
+
+      // Track latest timestamp
+      var ts = repo.scanned_at || (repo.summary && repo.summary.scanned_at);
+      if (ts && (!latestTimestamp || new Date(ts) > new Date(latestTimestamp))) {
+        latestTimestamp = ts;
+      }
+    });
+
+    return {
+      findings: allFindings,
+      checklist: mergedChecklist,
+      overall_score: scoreCount > 0 ? Math.round(scoreSum / scoreCount) : null,
+      scan_timestamp: latestTimestamp
+    };
+  }
+
   // -- Normalize raw agent data to dashboard field names ---
   function normalizeFindings(data) {
     if (!data || !data.findings) return data;
@@ -726,7 +772,7 @@
     try {
       const resp = await fetch(DATA_URL);
       if (!resp.ok) throw new Error('No data file');
-      dashData = normalizeFindings(await resp.json());
+      dashData = normalizeFindings(normalizeMultiRepo(await resp.json()));
     } catch (e) {
       dashData = getDemoData();
     }
@@ -738,7 +784,7 @@
     try {
       const resp = await fetch(DATA_URL + '?t=' + Date.now());
       if (!resp.ok) return;
-      dashData = normalizeFindings(await resp.json());
+      dashData = normalizeFindings(normalizeMultiRepo(await resp.json()));
       render();
     } catch (e) { /* silent */ }
   }
