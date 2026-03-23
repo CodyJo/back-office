@@ -1,50 +1,212 @@
 # Back Office
 
-**A multi-department operating system of AI agents that audit, scan, and fix codebases.**
+**Autonomous multi-repo engineering operations. Audit, prioritize, fix, build, verify, deploy — on repeat.**
 
-Back Office by the Cody Jo Method gives you six specialized departments -- QA, SEO, ADA Compliance, Regulatory Compliance, Monetization Strategy, and Product Roadmap -- each staffed by AI agents that produce structured findings, severity-scored and tracked through a task queue. Results feed into per-department dashboards deployed to S3/CloudFront, giving you a single pane of glass across your entire portfolio.
+Back Office is an AI-powered operating system that runs six specialized departments against your entire portfolio of codebases. It finds bugs, checks accessibility, audits compliance, evaluates SEO, identifies revenue opportunities, and builds product roadmaps — then fixes what it can, deploys what passes, and tracks what remains across cycles.
 
-## How It Works
+---
 
-Each department runs an AI agent with a domain-specific system prompt against a target repository. Agents write structured JSON findings to `results/<repo>/`. Those findings are aggregated into dashboard data payloads, synced to S3, and served through CloudFront.
+## Why Back Office
 
-| Department | Agent | What It Audits |
-|---|---|---|
-| **QA** | QA Agent + Fix Agent | Bugs, security issues, performance problems. Fix Agent auto-remediates. |
-| **SEO** | SEO Agent | Technical SEO, AI search optimization, content SEO, social meta |
-| **ADA** | ADA Agent | WCAG 2.1 AA/AAA accessibility (Perceivable, Operable, Understandable, Robust) |
-| **Compliance** | Compliance Agent | GDPR, ISO 27001, age verification laws (US state + UK Online Safety Act) |
-| **Monetization** | Monetization Agent | Revenue opportunities: ads, affiliate, premium, print, digital, services, sponsorships |
-| **Product** | Product Agent | Feature gaps, UX improvements, technical debt, growth opportunities, prioritized roadmap |
+### Speed with safety
+
+Software teams face a constant tension: move fast or move carefully. Back Office eliminates this tradeoff by making every autonomous change a **two-way door**:
+
+- Every cycle starts with a **git tag snapshot** — rollback is one command
+- Every fix runs in an **isolated git worktree** — main branch stays clean until tests pass
+- Every feature builds on a **separate branch** — merged only after verification
+- Every deploy is **gated by tests and coverage** — if quality drops, the change is discarded
+- The system **gets better over time** — each cycle adds to the test suite, expanding the safety net for future changes
 
 ```mermaid
 flowchart LR
-    subgraph Targets
-        R1[Repo A]
-        R2[Repo B]
-        R3[Repo N]
+    A[Audit] --> B[Prioritize]
+    B --> C[Fix / Build]
+    C --> D{Tests Pass?}
+    D -->|Yes| E{Coverage OK?}
+    D -->|No| F[Rollback]
+    E -->|Yes| G[Deploy]
+    E -->|No| F
+    G --> H[Report]
+    H --> A
+    F --> H
+```
+
+### ROI per cycle
+
+Each overnight cycle produces measurable improvements:
+
+| What happens | Business impact |
+|---|---|
+| Critical bugs fixed automatically | Fewer production incidents, less firefighting |
+| Accessibility gaps closed | Reduced legal risk, broader user base |
+| SEO issues resolved | Better search rankings, more organic traffic |
+| Compliance gaps identified | Audit readiness, reduced regulatory exposure |
+| Features implemented and tested | Faster time-to-market without developer burnout |
+| Findings tracked across scans | Chronic issues surface and get prioritized — nothing falls through the cracks |
+
+The compounding effect: as Back Office adds tests with every fix and feature, the safety net grows. Cycle 10 is safer than cycle 1 because the test coverage is higher and the backlog has more history.
+
+### The backlog never lies
+
+Traditional project management relies on humans remembering what was flagged. Back Office uses **content-hash deduplication** to track every finding across audits:
+
+- First seen date, last seen date, and how many audits it appeared in
+- Chronic issues (appearing in 3+ audits) get automatically prioritized
+- Fixed issues stop appearing; stale issues get marked as presumed fixed
+- The Product Owner agent uses this history to make smarter decisions each cycle
+
+---
+
+## How It Works
+
+### Six departments, one command
+
+```mermaid
+flowchart TB
+    subgraph Departments
+        QA[QA<br/>Bugs, security, performance]
+        SEO[SEO<br/>Technical SEO, AI search, meta]
+        ADA[ADA<br/>WCAG 2.1 AA/AAA]
+        COMP[Compliance<br/>GDPR, ISO 27001, age laws]
+        MON[Monetization<br/>Revenue opportunities]
+        PROD[Product<br/>Feature gaps, UX, roadmap]
     end
 
-    subgraph Agents
-        QA[QA Agent]
-        SEO[SEO Agent]
-        ADA[ADA Agent]
-        COMP[Compliance Agent]
-        MON[Monetization Agent]
-        PROD[Product Agent]
+    subgraph Targets
+        R1[codyjo.com]
+        R2[analogify]
+        R3[portis-app]
+        R4[selah]
+        R5[thenewbeautifulme]
     end
 
     subgraph Output
-        F[results/ findings JSON]
-        D[dashboard/*-data.json]
-        S3[S3 + CloudFront]
+        F[Structured JSON findings]
+        BL[Backlog with recurrence tracking]
+        D[HQ Dashboard]
+        SC[Score history + trends]
     end
 
-    R1 & R2 & R3 --> QA & SEO & ADA & COMP & MON & PROD
+    R1 & R2 & R3 & R4 & R5 --> QA & SEO & ADA & COMP & MON & PROD
     QA & SEO & ADA & COMP & MON & PROD --> F
+    F --> BL
     F -->|aggregate| D
-    D -->|sync| S3
+    BL --> SC
 ```
+
+Each department runs an AI agent with a domain-specific system prompt against a target repository. Agents write structured JSON findings to `results/<repo>/`. Those findings are aggregated, deduplicated into a persistent backlog, and served through a consolidated dashboard.
+
+| Department | What It Audits | Trust Level |
+|---|---|---|
+| **QA** | Bugs, security issues, performance problems. Fix Agent auto-remediates. | Objective |
+| **SEO** | Technical SEO, AI search optimization, content SEO, social meta | Objective |
+| **ADA** | WCAG 2.1 AA/AAA accessibility (Perceivable, Operable, Understandable, Robust) | Objective |
+| **Compliance** | GDPR, ISO 27001, age verification laws (US state + UK Online Safety Act) | Objective |
+| **Monetization** | Revenue opportunities: ads, affiliate, premium, print, digital, services | Advisory |
+| **Product** | Feature gaps, UX improvements, technical debt, growth opportunities | Advisory |
+
+> **Objective** findings are verifiable against standards and testable. **Advisory** findings are recommendations based on heuristics — useful but not authoritative.
+
+---
+
+## The Overnight Loop
+
+The overnight autonomous loop is Back Office's most powerful feature. Start it before bed, wake up to a better codebase.
+
+```mermaid
+flowchart TB
+    S[SNAPSHOT<br/>Git tag each repo] --> AU[AUDIT<br/>6 depts x all repos]
+    AU --> DE[DECIDE<br/>Product Owner reviews<br/>backlog + scores + roadmap]
+    DE --> FX[FIX<br/>Critical/high bugs<br/>AI-fixable only]
+    FX --> BU[BUILD<br/>Small/medium features<br/>TDD on feature branch]
+    BU --> VE[VERIFY<br/>Tests + coverage<br/>on all changed repos]
+    VE --> DP{DEPLOY<br/>Policy allows?}
+    DP -->|Yes + tests pass| OK[Deploy to production]
+    DP -->|No or tests fail| RB[Rollback to snapshot]
+    OK --> RE[REPORT<br/>Refresh dashboards<br/>Sync to S3]
+    RB --> RE
+    RE --> SL[SLEEP 2 hours]
+    SL --> S
+
+    style S fill:#1a1a26,stroke:#c4944a,color:#e4e4ef
+    style AU fill:#1a1a26,stroke:#6c5ce7,color:#e4e4ef
+    style DE fill:#1a1a26,stroke:#c4944a,color:#e4e4ef
+    style FX fill:#1a1a26,stroke:#ff4757,color:#e4e4ef
+    style BU fill:#1a1a26,stroke:#2ed573,color:#e4e4ef
+    style VE fill:#1a1a26,stroke:#74b9ff,color:#e4e4ef
+    style DP fill:#1a1a26,stroke:#ffd166,color:#e4e4ef
+    style OK fill:#1a1a26,stroke:#2ed573,color:#e4e4ef
+    style RB fill:#1a1a26,stroke:#ff4757,color:#e4e4ef
+    style RE fill:#1a1a26,stroke:#6c5ce7,color:#e4e4ef
+    style SL fill:#1a1a26,stroke:#8888a0,color:#e4e4ef
+```
+
+### How the Product Owner decides
+
+The Product Owner is an AI agent that reads the full state of your portfolio and outputs a structured work plan:
+
+1. **Critical/high severity fixes** with `fixable_by_agent: true` — always first
+2. **Chronic issues** — findings appearing in 3+ consecutive audits
+3. **Low-hanging features** — easy/moderate effort from the product roadmap
+4. **Lowest-scoring repos** — target where improvement is most needed
+5. **Never re-attempts** items that failed in the last 2 cycles
+
+Maximum per cycle: **5 fixes + 2 features** (keeps cycles under 2 hours).
+
+### Safety gates
+
+| Gate | When | On failure |
+|---|---|---|
+| Git tag snapshot | Before any changes | Creates rollback point |
+| Dirty worktree check | Before mutating a repo | Skips repo with warning |
+| Autonomy policy | Before each fix/feature | Skips if policy disallows |
+| Worktree isolation | During fixes | Discard worktree, main untouched |
+| Feature branch | During builds | Branch deleted on failure |
+| Test suite | After each change | Change discarded |
+| Coverage check | After each change | Change discarded if coverage drops |
+| Deploy policy gate | Before deploy | Skips deploy if `deploy_mode != production-allowed` |
+| Failure memory | Next cycle | Doesn't re-attempt recent failures |
+
+### Start the loop
+
+```bash
+# In tmux (recommended)
+tmux new-session -d -s overnight \
+  'cd /path/to/back-office && make overnight'
+
+# With options
+make overnight INTERVAL=120 TARGETS=analogify,portis-app
+
+# Dry-run (audit + decide only, no changes)
+make overnight-dry
+```
+
+### Monitor
+
+```bash
+# Watch the log
+tail -f results/overnight.log
+
+# Check current plan and history
+make overnight-status
+
+# Stop gracefully (finishes current phase)
+make overnight-stop
+```
+
+### Morning review
+
+```bash
+# What happened?
+make overnight-status
+cat results/overnight.log | grep "CYCLE END"
+
+# Roll back everything if needed
+make overnight-rollback
+```
+
+---
 
 ## Quick Start
 
@@ -53,415 +215,335 @@ flowchart LR
 ```bash
 git clone <repo-url> back-office
 cd back-office
-python -m backoffice setup          # interactive wizard -- checks prerequisites, configures runner
+make setup        # checks prerequisites, creates config
 ```
 
 ### 2. Configure targets
 
 ```bash
 cp config/backoffice.example.yaml config/backoffice.yaml
-# Edit config/backoffice.yaml -- add your repos under the targets: section
+```
+
+Edit `config/backoffice.yaml` and add your repos:
+
+```yaml
+targets:
+  my-app:
+    path: /path/to/my-app
+    language: typescript
+    default_departments: [qa, seo, ada, compliance, monetization, product]
+    lint_command: "npm run lint"
+    test_command: "npm test"
+    coverage_command: "npm run test:coverage"
+    deploy_command: "npm run build"
+    context: |
+      Brief description of this project for the AI agents.
+    autonomy:                          # optional — controls overnight loop behavior
+      allow_fix: true                  # allow auto-fixing bugs
+      allow_feature_dev: false         # allow implementing features
+      allow_auto_merge: false          # allow merging feature branches
+      allow_auto_deploy: false         # allow deploying to production
+      deploy_mode: disabled            # disabled | manual | staging-only | production-allowed
+      require_clean_worktree: true     # skip if uncommitted changes
+      require_tests: true              # skip if no test suite
+      max_changes_per_cycle: 3         # max fixes+features per cycle
 ```
 
 ### 3. Run an audit
 
 ```bash
-# Single department against a configured target
-python -m backoffice audit my-project --departments qa
+# Single department
+make qa TARGET=/path/to/my-app
+
+# All departments (parallel)
+make audit-all-parallel TARGET=/path/to/my-app
 
 # All departments, all targets
-python -m backoffice audit-all
+make local-audit-all
 ```
 
-### 4. View the dashboard locally
+### 4. View the dashboard
 
 ```bash
 python -m backoffice serve --port 8070
 # Open http://localhost:8070
 ```
 
-### 5. Deploy dashboards to S3/CloudFront
+The HQ dashboard shows:
+- **Score cards** for each department with sparkline trends
+- **Product x Department matrix** — click any cell to drill in
+- **Needs Attention feed** — top findings sorted by severity and recurrence
+- **Slide-over panels** — department detail, finding detail with evidence + fix suggestions
+
+### 5. Deploy dashboards
 
 ```bash
 python -m backoffice sync
 ```
 
-## Command Reference
-
-All commands are invoked via `python -m backoffice <command>`. Global flags:
-
-| Flag | Description |
-|---|---|
-| `--verbose`, `-v` | Enable debug logging |
-| `--json-log` | JSON-structured log output (for machine consumption) |
-
-### Audit Workflow
-
-| Command | Description |
-|---|---|
-| `audit <target> [-d dept1,dept2] [--deploy]` | Run audit on a single configured target. `--deploy` syncs dashboards after. |
-| `audit-all [--departments dept1,dept2] [--targets t1,t2]` | Run audits across all (or specified) targets and departments. |
-| `list-targets` | List all configured targets from `config/backoffice.yaml`. |
-| `refresh` | Regenerate dashboard JSON payloads from existing `results/` data without re-running agents. |
-
-### Dashboard and Deployment
-
-| Command | Description |
-|---|---|
-| `sync [--dept <name>] [--dry-run]` | Upload dashboard HTML + data JSON to all configured S3 buckets. `--dept` limits to one department. |
-| `serve [--port 8070]` | Local dev server for dashboards with scan-trigger API. |
-| `api-server [--port <n>] [--bind 0.0.0.0]` | Production API server for remote scan triggers from dashboards. |
-
-### Task Queue
-
-| Command | Description |
-|---|---|
-| `tasks list [--repo <name>] [--status <s>]` | List tasks, optionally filtered by repo or status. |
-| `tasks show --id <id>` | Show details for a single task. |
-| `tasks create --title "..." --repo <name>` | Create a new task. |
-| `tasks start --id <id>` | Mark a task as in-progress. |
-| `tasks block --id <id> [--note "..."]` | Mark a task as blocked with an optional note. |
-| `tasks review --id <id>` | Move a task to review status. |
-| `tasks complete --id <id>` | Mark a task as complete. |
-| `tasks cancel --id <id>` | Cancel a task. |
-| `tasks sync` | Sync task queue data to dashboard JSON. |
-| `tasks seed-etheos` | Seed the task queue from Etheos-format findings. |
-
-### Testing and CI
-
-| Command | Description |
-|---|---|
-| `regression` | Run portfolio regression tests + coverage for all configured targets. |
-
-### Setup and Scaffolding
-
-| Command | Description |
-|---|---|
-| `setup [--check-only]` | Interactive setup wizard. `--check-only` validates prerequisites without modifying anything. |
-| `config show` | Dump the resolved configuration. |
-| `config shell-export [--target <name>] [--fields f1 f2]` | Export config values as shell variables for use in agent scripts. |
-| `scaffold --target <name> [--workflows ci,preview,cd,nightly] [--force]` | Generate GitHub Actions workflow files into a target repo. |
-
-### Make Target Equivalents
-
-For workflows that combine shell agent scripts with the Python CLI, `make` targets remain the primary interface:
-
-| Make Target | Equivalent / What It Does |
-|---|---|
-| `make setup` | `bash scripts/setup.sh` |
-| `make qa TARGET=/path` | Run QA agent scan via shell |
-| `make seo TARGET=/path` | Run SEO agent audit via shell |
-| `make ada TARGET=/path` | Run ADA agent audit via shell |
-| `make compliance TARGET=/path` | Run Compliance agent audit via shell |
-| `make monetization TARGET=/path` | Run Monetization agent audit via shell |
-| `make product TARGET=/path` | Run Product agent audit via shell |
-| `make fix TARGET=/path` | Run Fix agent on QA findings |
-| `make watch TARGET=/path` | Continuous watch + auto-fix loop |
-| `make scan-and-fix TARGET=/path` | QA scan then auto-fix |
-| `make audit-all TARGET=/path` | All 6 department audits, sequential |
-| `make audit-all-parallel TARGET=/path` | All 6 audits in 2 parallel waves of 3 |
-| `make audit-live TARGET=/path` | All audits with live dashboard sync after each department completes |
-| `make full-scan TARGET=/path` | All audits + auto-fix |
-| `make local-audit TARGET_NAME=x DEPTS=qa,seo` | `python -m backoffice audit <target> -d <depts>` |
-| `make local-audit-all` | `python -m backoffice audit-all` |
-| `make local-targets` | `python -m backoffice list-targets` |
-| `make local-refresh` | `python -m backoffice refresh` |
-| `make dashboard` | `python -m backoffice sync` |
-| `make quick-sync DEPT=qa` | `python -m backoffice sync --dept qa` |
-| `make jobs` | `python -m backoffice serve --port 8070` |
-| `make regression` | `python -m backoffice regression` |
-| `make test` | `python3 -m pytest tests/ -v` |
-| `make test-coverage` | `python3 -m pytest tests/ --cov=backoffice` |
-| `make scaffold-workflows TARGET_NAME=x` | `python -m backoffice scaffold --target x` |
-| `make cli CMD="..."` | `python -m backoffice ...` |
-| `make clean` | Remove all `results/` and dashboard data JSON files |
-
-## Dashboards
-
-Each department has a static HTML dashboard that reads from a `<department>-data.json` file. The full set:
-
-| File | Purpose |
-|---|---|
-| `dashboard/index.html` | Company HQ -- portfolio overview, links to all departments |
-| `dashboard/qa.html` | QA findings, severity breakdown, fix status |
-| `dashboard/seo.html` | SEO audit results and scores |
-| `dashboard/ada.html` | ADA/WCAG compliance findings |
-| `dashboard/compliance.html` | Regulatory compliance status |
-| `dashboard/monetization.html` | Revenue opportunity analysis |
-| `dashboard/product.html` | Product roadmap and backlog |
-| `dashboard/jobs.html` | Real-time job progress during scans |
-| `dashboard/backoffice.html` | Public-facing bug report form |
-
-### Deployment pattern
-
-1. Agents write findings to `results/<repo>/<department>-findings.json`
-2. `python -m backoffice refresh` aggregates results into `dashboard/*-data.json`
-3. `python -m backoffice sync` uploads HTML + JSON to S3 buckets configured in `config/backoffice.yaml`
-4. CloudFront serves them at `backoffice.yourdomain.com`
-
-You can configure multiple `dashboard_targets` in the config to deploy filtered views to different subdomains (e.g., one dashboard per client site).
-
-## Configuration
-
-All configuration lives in a single file: `config/backoffice.yaml` (gitignored -- never commit this file, it contains paths and secrets). Copy the example to get started:
+### 6. Start the overnight loop
 
 ```bash
-cp config/backoffice.example.yaml config/backoffice.yaml
+make overnight          # full autonomous cycle
+make overnight-dry      # audit + decide only (safe preview)
 ```
 
-### runner
+---
 
-Defines which AI coding agent to invoke and how to parse its output.
+## Adding a New Project
 
-```yaml
-runner:
-  command: "claude --model haiku"
-  mode: "claude-print"           # claude-print | claude-json | custom
+To onboard a repository into Back Office:
+
+```mermaid
+flowchart LR
+    A[Add to targets.yaml] --> B[Verify: list-targets]
+    B --> C[Test audit: qa dept]
+    C --> D[Full audit: all depts]
+    D --> E[Refresh + deploy dashboards]
+    E --> F[Optional: set autonomy policy]
 ```
 
-### api
+1. **Add target entry** to `config/backoffice.yaml` (see format above)
+2. **Verify**: `python -m backoffice list-targets`
+3. **Test audit**: `python -m backoffice audit my-app --departments qa`
+4. **Full audit**: `python -m backoffice audit my-app`
+5. **Refresh dashboards**: `python -m backoffice refresh && python -m backoffice sync`
+6. **Set autonomy policy** (optional): add `autonomy:` block to enable overnight fixes/features/deploys
 
-Configuration for the local and production API servers.
+---
 
-```yaml
-api:
-  port: 8070
-  api_key: ""                    # leave empty to disable auth
-  allowed_origins:
-    - "https://backoffice.yourdomain.com"
-    - "http://localhost:8070"
-```
+## Command Reference
 
-### deploy
+### Python CLI
 
-Where dashboards are published. Supports multiple S3 buckets with per-target repo filtering.
+All commands: `python -m backoffice <command>`
 
-```yaml
-deploy:
-  provider: aws
-  aws:
-    region: us-east-1
-    dashboard_targets:
-      - bucket: "admin-yoursite-bucket"
-        distribution_id: "XXXXXXXXXXXXXXX"
-        subdomain: "backoffice.yourdomain.com"
-        filter_repo: "yoursite"       # null = show all repos
-        allow_public_read: false
-```
+| Command | Description |
+|---|---|
+| `audit <target> [-d dept1,dept2]` | Run audit on a configured target |
+| `audit-all [--targets t1,t2] [--departments d1,d2]` | Run audits across all targets |
+| `list-targets` | List configured targets |
+| `refresh` | Regenerate dashboard data from existing results |
+| `sync [--dept name] [--dry-run]` | Upload dashboards to S3 |
+| `serve [--port 8070]` | Local dashboard server |
+| `config show` | Dump resolved configuration |
+| `tasks list [--repo name] [--status s]` | List tasks |
+| `regression` | Run portfolio regression tests |
 
-### scan
+### Make Targets
 
-Controls what the agents check and how many findings to collect.
+| Target | Description |
+|---|---|
+| **Auditing** | |
+| `make qa TARGET=/path` | QA scan |
+| `make seo TARGET=/path` | SEO audit |
+| `make ada TARGET=/path` | ADA compliance |
+| `make compliance TARGET=/path` | Regulatory compliance |
+| `make monetization TARGET=/path` | Monetization strategy |
+| `make product TARGET=/path` | Product roadmap |
+| `make audit-all-parallel TARGET=/path` | All 6 departments (2 parallel waves) |
+| `make full-scan TARGET=/path` | All audits + auto-fix |
+| **Overnight Loop** | |
+| `make overnight` | Start autonomous loop |
+| `make overnight-dry` | Dry-run (audit + decide only) |
+| `make overnight-stop` | Graceful stop |
+| `make overnight-status` | Show plan + cycle history |
+| `make overnight-rollback` | Roll back all repos to last snapshot |
+| **Dashboard** | |
+| `make dashboard` | Deploy dashboards to S3 |
+| `make jobs` | Start local dashboard server |
+| **Testing** | |
+| `make test` | Run pytest suite |
+| `make test-coverage` | Run with coverage |
+| `make regression` | Portfolio regression tests |
 
-```yaml
-scan:
-  run_linter: true
-  run_tests: true
-  security_audit: true
-  performance_review: true
-  code_quality: true
-  min_severity: low
-  max_findings: 200
-  exclude_patterns:
-    - "node_modules/**"
-    - "venv/**"
-```
+---
 
-### fix
+## Dashboard
 
-Auto-fix behavior for the Fix Agent.
-
-```yaml
-fix:
-  auto_fix_severity: high
-  run_tests_after_fix: true
-  max_parallel_fixes: 4
-  auto_commit: true
-  auto_push: false
-```
-
-### targets
-
-Each key is a repo name used in CLI commands, dashboard filters, and results paths.
-
-```yaml
-targets:
-  my-project:
-    path: /path/to/my-project
-    language: python
-    default_departments: [qa, seo, ada, compliance, monetization, product]
-    lint_command: "ruff check ."
-    test_command: "python3 -m pytest"
-    coverage_command: "python3 -m pytest --cov=. --cov-report=json:coverage.json"
-    deploy_command: "bash scripts/deploy.sh"
-    context: |
-      Brief description of this project for the AI agent.
-```
-
-## CI/CD
-
-Fully automated via **AWS CodeBuild**. No GitHub Actions.
-
-| Pipeline | Trigger | What it does |
-|----------|---------|-------------|
-| `back-office-ci` | Pull request | Shell syntax check, Python linting (ruff), regression suite (pytest with coverage) |
-| `back-office-cd` | Push to `main` | Validates, tests, then deploys dashboards to S3/CloudFront |
-
-- **Build configs:** `buildspec-ci.yml` (CI), `buildspec-cd.yml` (CD)
-- **Infrastructure:** `terraform/codebuild.tf` (shared module from `codyjo.com`)
-- **IAM role:** `back-office-codebuild-cd` — scoped to S3 + CloudFront only
-- **Logs:** CloudWatch `/codebuild/back-office`
-
-## Architecture
-
-### Package structure
-
-```
-backoffice/               Python package -- all CLI commands
-  __main__.py             CLI entry point, argparse dispatcher
-  __init__.py             Package version (1.0.0)
-  config.py               Loads config/backoffice.yaml into frozen dataclasses
-  log_config.py           Structured logging (stderr for logs, stdout for data)
-  workflow.py             Local audit orchestration (audit, audit-all, refresh, list-targets)
-  aggregate.py            Aggregates results/ into dashboard *-data.json payloads
-  delivery.py             Generates delivery automation metadata for dashboards
-  tasks.py                Version-controlled task queue (config/task-queue.yaml)
-  regression.py           Portfolio regression runner with coverage collection
-  scaffolding.py          Generates GitHub Actions workflows into target repos
-  setup.py                Interactive setup wizard and prerequisite checker
-  server.py               Local dev server with scan-trigger API
-  api_server.py           Production API server for remote scan triggers
-  sync/
-    engine.py             Orchestrates uploads to storage targets + CDN invalidation
-    manifest.py           Tracks file hashes to skip unchanged uploads
-    providers/
-      base.py             Abstract storage provider interface
-      aws.py              S3 + CloudFront implementation
-
-agents/                   Shell scripts that launch AI agents with department prompts
-  prompts/                System prompts for each agent type
-config/                   Target configuration (gitignored)
-dashboard/                Static HTML dashboards + JSON data payloads
-results/                  Agent findings output (gitignored, synced to S3)
-scripts/                  Legacy shell scripts (setup, sync, job-status)
-terraform/                AWS infrastructure (S3 + CloudFront)
-lib/                      Standards references and severity definitions
-tests/                    Pytest suite
-monitoring/               Grafana + Docker Compose for observability
-```
-
-### Data flow
+The dashboard is a single HQ page with slide-over panels for each department.
 
 ```mermaid
 flowchart TB
-    subgraph Config
-        YAML[config/backoffice.yaml]
-    end
+    HQ[HQ Dashboard<br/>Score cards + Matrix + Needs Attention]
 
-    subgraph Agent Layer
-        SH[agents/*.sh scripts]
-        PROMPT[agents/prompts/*.md]
-        RUNNER[AI Coding Agent]
-    end
+    HQ -->|click score card| SP[Department Slide-Over<br/>65% width, filters, findings list]
+    HQ -->|click matrix cell| SP
+    HQ -->|click finding| FD[Finding Detail Panel<br/>45% width, evidence, fix, backlog info]
+    SP -->|click finding| FD
 
-    subgraph Results Layer
-        RAW[results/repo/dept-findings.json]
-        AGG[backoffice.aggregate]
-        DATA[dashboard/*-data.json]
-    end
-
-    subgraph Dashboard Layer
-        HTML[dashboard/*.html]
-        SYNC[backoffice.sync]
-        S3[S3 Bucket]
-        CF[CloudFront CDN]
-    end
-
-    YAML --> SH
-    PROMPT --> RUNNER
-    SH --> RUNNER
-    RUNNER --> RAW
-    RAW --> AGG
-    AGG --> DATA
-    DATA --> SYNC
-    HTML --> SYNC
-    SYNC --> S3
-    S3 --> CF
+    HQ -->|top bar| JOBS[Jobs Panel]
+    HQ -->|top bar| FAQ[FAQ Panel]
+    HQ -->|top bar| DOCS[Docs Panel]
 ```
 
-## Adding a New Site
+### What you see
 
-To onboard a new repository into the Back Office audit pipeline:
+- **Top bar**: Product selector, Jobs/Docs/FAQ buttons, last scan timestamp
+- **Score cards**: 6 department scores with sparkline trends (last 5 scans)
+- **Product x Department matrix**: Color-coded cells, click to drill in
+- **Needs Attention**: Top 15 findings by severity x recurrence x effort
+- **Slide-over panels**: Consistent filter bar (severity, status, effort, AI fixable, search)
+- **Finding detail**: Full description, evidence code block, impact, file path, recommended fix, AI fix command, backlog recurrence info
 
-1. **Add a target entry** in `config/backoffice.yaml`:
+### Data flow
 
-    ```yaml
-    targets:
-      new-site:
-        path: /path/to/new-site
-        language: typescript
-        default_departments: [qa, seo, ada, compliance, monetization, product]
-        lint_command: "npm run lint"
-        test_command: "npm test"
-        coverage_command: "npm run test:coverage"
-        deploy_command: "npm run build"
-        context: |
-          Description of the site for agents.
-    ```
+```
+agents write findings → results/<repo>/<dept>-findings.json
+                      ↓
+python -m backoffice refresh
+                      ↓
+aggregator normalizes + deduplicates
+                      ↓
+dashboard/*-data.json  (department data)
+backlog.json           (persistent finding registry)
+score-history.json     (sparkline trends)
+                      ↓
+python -m backoffice sync → S3 → CloudFront
+```
 
-2. **Verify the target is visible**:
+---
 
-    ```bash
-    python -m backoffice list-targets
-    ```
+## Architecture
 
-3. **Run a single-department test audit**:
+```
+backoffice/               Python package
+  __main__.py             CLI entry point
+  config.py               Unified config (config/backoffice.yaml)
+  workflow.py             Audit orchestration
+  aggregate.py            Results aggregation + backlog merge
+  backlog.py              Finding hash, normalize, merge, score history
+  delivery.py             Delivery automation metadata
+  tasks.py                Task queue
+  sync/engine.py          S3 upload + CDN invalidation
+  server.py               Local dashboard server
 
-    ```bash
-    python -m backoffice audit new-site --departments qa
-    ```
+agents/                   Agent launchers (shell)
+  qa-scan.sh              QA department
+  seo-audit.sh            SEO department
+  ada-audit.sh            ADA department
+  compliance-audit.sh     Compliance department
+  monetization-audit.sh   Monetization department
+  product-audit.sh        Product department
+  fix-bugs.sh             Fix agent (worktree isolation)
+  product-owner.sh        Product Owner (overnight loop)
+  feature-dev.sh          Feature dev (overnight loop)
+  prompts/                System prompts for each agent
 
-4. **Run the full audit**:
+scripts/
+  overnight.sh            Overnight autonomous loop orchestrator
+  run-agent.sh            AI agent invocation adapter
+  setup.sh                Initial setup wizard
 
-    ```bash
-    python -m backoffice audit new-site
-    ```
+config/                   Configuration (gitignored)
+  backoffice.yaml         Unified config
+  targets.yaml            Target repos + autonomy policy
 
-5. **Refresh and deploy dashboards**:
+dashboard/                Consolidated HQ dashboard
+  index.html              Single page with slide-over panels
+  backlog.json            Persistent finding registry
+  score-history.json      Score trend snapshots
 
-    ```bash
-    python -m backoffice refresh
-    python -m backoffice sync
-    ```
+results/                  Agent output (gitignored)
+  <repo>/                 Per-repo findings
+  overnight.log           Overnight loop log
+  overnight-plan.json     Latest Product Owner plan
+  overnight-history.json  Cycle history (last 50)
 
-6. **(Optional) Scaffold CI workflows** into the target repo:
+terraform/                AWS infrastructure
+tests/                    Pytest suite
+```
 
-    ```bash
-    python -m backoffice scaffold --target new-site --workflows ci,preview,cd,nightly
-    ```
+---
+
+## Per-Target Autonomy Policy
+
+Control what the overnight loop can do to each repo:
+
+```yaml
+# In config/targets.yaml or config/backoffice.yaml
+targets:
+  production-app:
+    path: /path/to/app
+    autonomy:
+      allow_fix: true              # auto-fix bugs (default: true)
+      allow_feature_dev: true      # implement features (default: false)
+      allow_auto_commit: true      # commit changes (default: true)
+      allow_auto_merge: true       # merge feature branches (default: false)
+      allow_auto_deploy: true      # deploy to production (default: false)
+      deploy_mode: production-allowed  # disabled|manual|staging-only|production-allowed
+      require_clean_worktree: true # skip if dirty (default: true)
+      require_tests: true          # skip if no tests (default: true)
+      max_changes_per_cycle: 5     # max fixes+features (default: 3)
+```
+
+When not specified, defaults are **conservative**: fixes allowed, everything else disabled. You opt in to autonomy per-repo as trust builds.
+
+---
+
+## Rollback
+
+Every overnight cycle creates a git tag on each repo before making changes:
+
+```bash
+# See available snapshots
+git tag | grep overnight-before
+
+# Roll back one repo
+cd /path/to/repo
+git reset --hard overnight-before-20260322-230000
+
+# Roll back all repos at once
+make overnight-rollback
+
+# Tags auto-prune after 7 days
+```
+
+---
+
+## CI/CD
+
+Fully automated via **AWS CodeBuild**.
+
+| Pipeline | Trigger | What it does |
+|---|---|---|
+| `back-office-ci` | Pull request | Shell syntax, Python linting (ruff), pytest regression suite |
+| `back-office-cd` | Push to `main` | Validate, test, deploy dashboards to S3/CloudFront |
+
+Build configs: `buildspec-ci.yml` / `buildspec-cd.yml`
+Infrastructure: `terraform/codebuild.tf`
+Logs: CloudWatch `/codebuild/back-office`
+
+---
 
 ## Adding a New Department
 
-To add a new audit department to the Back Office:
+```mermaid
+flowchart LR
+    A[Create prompt] --> B[Create agent script]
+    B --> C[Add make target]
+    C --> D[Register in audit-all]
+    D --> E[Update aggregator]
+    E --> F[Add to HQ dashboard panels]
+```
 
-1. **Create the agent prompt** at `agents/prompts/<name>-audit.md`. Define the audit scope, output format, and severity rubric. Follow the pattern of existing prompts.
+1. Create prompt: `agents/prompts/<name>-audit.md`
+2. Create script: `agents/<name>-audit.sh` (follow existing pattern)
+3. Add make target to `Makefile`
+4. Register in `audit-all` / `audit-all-parallel` sequences
+5. Add to `backoffice/aggregate.py` department list
+6. Add panel template to `dashboard/index.html`
+7. Add standards reference: `lib/<name>-standards.md`
 
-2. **Create the agent script** at `agents/<name>-audit.sh`. Copy an existing audit script (e.g., `agents/seo-audit.sh`) and update the prompt path and department name.
+---
 
-3. **Create the dashboard** at `dashboard/<name>.html`. Build from an existing department dashboard template. The page should read from `<name>-data.json`.
+## Governance
 
-4. **Add standards references** at `lib/<name>-standards.md` with the domain knowledge the agent needs.
+See `MASTER-PROMPT.md` for the full autonomy safety framework, engineering standards, and operating priorities that govern all Back Office development and autonomous operations.
 
-5. **Add a make target** to the `Makefile`:
-
-    ```makefile
-    <name>: ## Run <name> audit on TARGET repo
-    	@test -n "$(TARGET)" || (echo "Usage: make <name> TARGET=/path/to/repo" && exit 1)
-    	bash agents/<name>-audit.sh "$(TARGET)"
-    ```
-
-6. **Register the department** in the audit-all sequences in the `Makefile` (both sequential and parallel variants).
-
-7. **Update the HQ dashboard** in `dashboard/index.html` to include a card for the new department.
-
-8. **Update aggregation** so that `backoffice/aggregate.py` picks up the new department's findings pattern.
+Key principles:
+- Autonomy is only good when observable, constrained, reversible, testable, and explainable
+- Protect production first — a skipped deploy is better than a bad deploy
+- Distinguish objective findings (verifiable) from advisory recommendations (heuristic)
+- Fail closed on invalid data — never trust agent output without validation
+- Every autonomous write preserves rollback capability
