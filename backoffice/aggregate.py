@@ -630,7 +630,7 @@ def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
     logger.info("Total across all departments: %d findings", total)
 
     # Backlog merge and score history
-    from backoffice.backlog import merge_backlog, normalize_finding, update_score_history
+    from backoffice.backlog import merge_backlog, update_score_history
 
     # Collect all normalized findings across all departments for the backlog
     all_findings = []
