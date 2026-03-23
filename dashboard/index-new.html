@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Office — HQ Dashboard</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --surface-3: #22222e;
+    --border: #2a2a3a;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --accent: #c4944a;
+    --accent-2: #6c5ce7;
+    --critical: #ff4757;
+    --high: #ff8c42;
+    --medium: #ffd166;
+    --low: #4ecdc4;
+    --info: #74b9ff;
+    --success: #2ed573;
+    --radius: 12px;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-top: 49px;
+  }
+
+  /* Top Bar */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  .logo {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+  .product-select {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    cursor: pointer;
+    outline: none;
+  }
+  .product-select:focus { border-color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+  .topbar-btn {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    font-family: var(--sans);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .topbar-btn:hover { border-color: var(--accent); color: var(--text); }
+  .timestamp { font-size: 0.72rem; color: var(--text-dim); }
+  .stale-warning { font-size: 0.68rem; color: var(--high); margin-left: 0.25rem; }
+
+  /* Container */
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Section Label */
+  .section-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Score Cards */
+  .score-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 100px;
+  }
+  .score-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .score-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  .score-card-name {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .score-card-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+  .score-card-trend { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.15rem; }
+  .trend-up { color: var(--success); }
+  .trend-down { color: var(--critical); }
+  .score-card-error { font-size: 0.78rem; color: var(--high); margin-top: 0.5rem; }
+  .sparkline { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+  .sparkline span {
+    width: 4px;
+    border-radius: 1px;
+    background: var(--accent);
+    opacity: 0.4;
+    transition: height 0.3s;
+  }
+  .sparkline span:last-child { opacity: 1; }
+
+  /* Skeleton Loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 6px;
+  }
+  .skeleton-score { width: 48px; height: 28px; margin-bottom: 4px; }
+  .skeleton-trend { width: 72px; height: 12px; }
+  .skeleton-row { height: 52px; margin-bottom: 0.5rem; border-radius: 10px; }
+  .skeleton-cell { display: inline-block; width: 44px; height: 30px; border-radius: 6px; }
+
+  /* Matrix Table */
+  .matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .matrix th {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    background: var(--surface-2);
+    font-weight: 500;
+  }
+  .matrix th:first-child { text-align: left; padding-left: 1rem; min-width: 140px; }
+  .matrix td { padding: 0.5rem; text-align: center; border-top: 1px solid var(--border); }
+  .matrix td:first-child { text-align: left; padding-left: 1rem; font-size: 0.82rem; font-weight: 500; }
+  .matrix tr:hover td { background: rgba(255,255,255,0.02); }
+  .cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 30px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cell:hover { transform: scale(1.1); box-shadow: 0 0 12px rgba(0,0,0,0.3); }
+  .cell.green { background: rgba(46,213,115,0.15); color: #2ed573; }
+  .cell.yellow { background: rgba(255,209,102,0.15); color: #ffd166; }
+  .cell.orange { background: rgba(255,140,66,0.15); color: #ff8c42; }
+  .cell.red { background: rgba(255,71,87,0.15); color: #ff4757; }
+  .cell.gray { background: rgba(136,136,160,0.1); color: #5a5a70; cursor: default; }
+  .cell.gray:hover { transform: none; box-shadow: none; }
+
+  /* Needs Attention Feed */
+  .finding-row {
+    display: grid;
+    grid-template-columns: 60px 70px 1fr 120px 80px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    margin-bottom: 0.5rem;
+  }
+  .finding-row:hover { border-color: rgba(196,148,74,0.3); }
+  .finding-dept {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sev {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .sev.critical { background: rgba(255,71,87,0.15); color: var(--critical); }
+  .sev.high { background: rgba(255,140,66,0.15); color: var(--high); }
+  .sev.medium { background: rgba(255,209,102,0.12); color: var(--medium); }
+  .sev.low { background: rgba(78,205,196,0.12); color: var(--low); }
+  .sev.info { background: rgba(116,185,255,0.12); color: var(--info); }
+  .finding-title {
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .finding-repo {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .finding-effort { font-size: 0.68rem; color: var(--text-dim); text-align: right; }
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6rem;
+    background: rgba(108,92,231,0.15);
+    color: #6c5ce7;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Empty / Error States */
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .score-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .score-row { grid-template-columns: repeat(2, 1fr); }
+    .finding-row { grid-template-columns: 50px 60px 1fr 80px; }
+    .finding-effort { display: none; }
+    .matrix { font-size: 0.75rem; }
+    .topbar { padding: 0.5rem 1rem; }
+    .container { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar (fixed) -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="index-new.html">Back Office</a>
+    <select class="product-select" id="productSelect" aria-label="Select product">
+    </select>
+  </div>
+  <div class="topbar-right">
+    <a class="topbar-btn" href="jobs.html">Jobs</a>
+    <a class="topbar-btn" href="documentation.html">Docs</a>
+    <a class="topbar-btn" href="faq.html">FAQ</a>
+    <span class="timestamp" id="lastScan">Last scan: --</span>
+    <span class="stale-warning" id="staleWarning" hidden>Data may be stale</span>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Score Cards -->
+  <div class="score-row" id="scoreRow"></div>
+
+  <!-- Product x Department Matrix -->
+  <div class="section-label">Product x Department</div>
+  <table class="matrix" id="matrixTable">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>QA</th>
+        <th>SEO</th>
+        <th>ADA</th>
+        <th>Compliance</th>
+        <th>Monetization</th>
+        <th>Product</th>
+      </tr>
+    </thead>
+    <tbody id="matrixBody"></tbody>
+  </table>
+
+  <!-- Needs Attention -->
+  <div class="section-label">Needs Attention</div>
+  <div id="needsAttention"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── Constants ── */
+  var DEPT_KEYS = ['qa', 'seo', 'ada', 'compliance', 'monetization', 'product'];
+  var DEPT_LABELS = {
+    qa: 'QA', seo: 'SEO', ada: 'ADA',
+    compliance: 'Compliance', monetization: 'Monetization', product: 'Product'
+  };
+  var DEPT_SOURCES = {
+    qa:           {url: 'qa-data.json',           scoreField: null},
+    seo:          {url: 'seo-data.json',          scoreField: 'seo_score'},
+    ada:          {url: 'ada-data.json',           scoreField: 'compliance_score'},
+    compliance:   {url: 'compliance-data.json',    scoreField: 'compliance_score'},
+    monetization: {url: 'monetization-data.json',  scoreField: 'monetization_readiness_score'},
+    product:      {url: 'product-data.json',       scoreField: 'product_readiness_score'}
+  };
+  var SEV_ORDER  = {critical: 0, high: 1, medium: 2, low: 3, info: 4};
+  var EFFORT_ORDER = {easy: 0, moderate: 1, hard: 2};
+  var STALE_MS = 24 * 60 * 60 * 1000;
+
+  /* ── State ── */
+  var orgData = null;
+  var deptData = {};
+  var deptErrors = {};
+  var backlogData = null;
+  var historyData = null;
+  var selectedProduct = 'all';
+
+  /* ── Helpers ── */
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+
+  function scoreColor(s) {
+    if (s == null) return 'gray';
+    if (s >= 85) return 'green';
+    if (s >= 65) return 'yellow';
+    if (s >= 50) return 'orange';
+    return 'red';
+  }
+
+  function scoreColorVar(s) {
+    if (s == null) return 'var(--text-dim)';
+    if (s >= 85) return 'var(--success)';
+    if (s >= 65) return 'var(--medium)';
+    if (s >= 50) return 'var(--high)';
+    return 'var(--critical)';
+  }
+
+  function deriveQaScore(summary) {
+    if (!summary) return null;
+    var c = summary.critical || 0;
+    var h = summary.high || 0;
+    var m = summary.medium || 0;
+    var l = summary.low || 0;
+    return Math.max(0, Math.min(100, 100 - c * 15 - h * 8 - m * 3 - l));
+  }
+
+  function getRepoScore(dept, repoObj) {
+    if (!repoObj || !repoObj.summary) return null;
+    if (dept === 'qa') return deriveQaScore(repoObj.summary);
+    var field = DEPT_SOURCES[dept].scoreField;
+    if (!field) return null;
+    var val = repoObj.summary[field];
+    return val != null ? val : null;
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '--';
+    var ms = Date.now() - new Date(dateStr).getTime();
+    if (ms < 0) ms = 0;
+    var min = Math.floor(ms / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return min + ' min ago';
+    var hrs = Math.floor(min / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+  }
+
+  function isStale(dateStr) {
+    if (!dateStr) return true;
+    return (Date.now() - new Date(dateStr).getTime()) > STALE_MS;
+  }
+
+  function getProductRepos(productKey) {
+    if (!orgData || !orgData.products) return [];
+    if (productKey === 'all') {
+      var allRepos = {};
+      DEPT_KEYS.forEach(function(dept) {
+        if (deptData[dept] && deptData[dept].repos) {
+          deptData[dept].repos.forEach(function(r) { allRepos[r.name] = true; });
+        }
+      });
+      return Object.keys(allRepos).sort();
+    }
+    var prod = orgData.products.find(function(p) { return p.key === productKey; });
+    return prod ? (prod.repos || []) : [];
+  }
+
+  function findRepo(dept, repoName) {
+    if (!deptData[dept] || !deptData[dept].repos) return null;
+    return deptData[dept].repos.find(function(r) { return r.name === repoName; }) || null;
+  }
+
+  function getAvgScore(dept) {
+    var repos = getProductRepos(selectedProduct);
+    if (repos.length === 0 && selectedProduct === 'all') {
+      if (!deptData[dept] || !deptData[dept].repos) return null;
+      repos = deptData[dept].repos.map(function(r) { return r.name; });
+    }
+    var scores = [];
+    repos.forEach(function(repoName) {
+      var s = getRepoScore(dept, findRepo(dept, repoName));
+      if (s != null) scores.push(s);
+    });
+    if (scores.length === 0) return null;
+    return Math.round(scores.reduce(function(a, b) { return a + b; }, 0) / scores.length);
+  }
+
+  function getSparkline(dept) {
+    if (!historyData || !historyData.snapshots) return [];
+    var repos = getProductRepos(selectedProduct);
+    return historyData.snapshots.slice(-5).map(function(snap) {
+      if (!snap.scores) return null;
+      var vals = [];
+      if (repos.length === 0 && selectedProduct === 'all') {
+        Object.keys(snap.scores).forEach(function(rk) {
+          var v = snap.scores[rk][dept];
+          if (v != null) vals.push(v);
+        });
+      } else {
+        repos.forEach(function(repoName) {
+          var sk = Object.keys(snap.scores).find(function(k) {
+            return k === repoName || k.replace(/-/g, '') === repoName.replace(/-/g, '');
+          });
+          if (sk && snap.scores[sk][dept] != null) vals.push(snap.scores[sk][dept]);
+        });
+      }
+      if (vals.length === 0) return null;
+      return Math.round(vals.reduce(function(a, b) { return a + b; }, 0) / vals.length);
+    });
+  }
+
+  function computeTrend(sparkVals, currentScore) {
+    if (!sparkVals || sparkVals.length < 2 || currentScore == null) return {label: '', cls: ''};
+    var prev = null;
+    for (var i = sparkVals.length - 2; i >= 0; i--) {
+      if (sparkVals[i] != null) { prev = sparkVals[i]; break; }
+    }
+    if (prev == null) return {label: '', cls: ''};
+    var delta = currentScore - prev;
+    if (delta > 0) return {label: '+' + delta + ' from last scan', cls: 'trend-up'};
+    if (delta < 0) return {label: delta + ' from last scan', cls: 'trend-down'};
+    return {label: 'no change', cls: ''};
+  }
+
+  function getLatestTimestamp() {
+    var latest = null;
+    DEPT_KEYS.forEach(function(dept) {
+      if (deptData[dept] && deptData[dept].generated_at) {
+        var t = new Date(deptData[dept].generated_at).getTime();
+        if (!latest || t > latest) latest = t;
+      }
+    });
+    return latest ? new Date(latest).toISOString() : null;
+  }
+
+  /* ── DOM builders (safe — no innerHTML with user data) ── */
+
+  function clearChildren(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function(k) {
+        if (k === 'className') node.className = attrs[k];
+        else if (k === 'textContent') node.textContent = attrs[k];
+        else if (k === 'style') node.setAttribute('style', attrs[k]);
+        else if (k === 'hidden') { if (attrs[k]) node.hidden = true; }
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    if (children) {
+      children.forEach(function(c) {
+        if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+        else if (c) node.appendChild(c);
+      });
+    }
+    return node;
+  }
+
+  function buildSparkline(sparkVals) {
+    var wrap = el('div', {className: 'sparkline'});
+    if (!sparkVals || sparkVals.length === 0) return wrap;
+    sparkVals.forEach(function(v) {
+      var bar = document.createElement('span');
+      if (v == null) {
+        bar.setAttribute('style', 'height:2px;opacity:0.15;');
+      } else {
+        var h = Math.max(3, Math.round((v / 100) * 20));
+        bar.setAttribute('style', 'height:' + h + 'px;');
+      }
+      wrap.appendChild(bar);
+    });
+    return wrap;
+  }
+
+  /* ── Render functions ── */
+
+  function renderSkeletons() {
+    var row = document.getElementById('scoreRow');
+    clearChildren(row);
+    DEPT_KEYS.forEach(function(dept) {
+      var card = el('div', {className: 'score-card', 'data-dept': dept}, [
+        el('div', {className: 'score-card-header'}, [
+          el('span', {className: 'score-card-name', textContent: DEPT_LABELS[dept]})
+        ]),
+        el('div', {className: 'skeleton skeleton-score'}),
+        el('div', {className: 'skeleton skeleton-trend'})
+      ]);
+      row.appendChild(card);
+    });
+
+    var mb = document.getElementById('matrixBody');
+    clearChildren(mb);
+    for (var i = 0; i < 4; i++) {
+      var tr = el('tr', null, [
+        el('td', null, [el('div', {className: 'skeleton', style: 'width:80px;height:14px;'})])
+      ]);
+      DEPT_KEYS.forEach(function() {
+        tr.appendChild(el('td', null, [el('div', {className: 'skeleton skeleton-cell'})]));
+      });
+      mb.appendChild(tr);
+    }
+
+    var na = document.getElementById('needsAttention');
+    clearChildren(na);
+    for (var j = 0; j < 5; j++) {
+      na.appendChild(el('div', {className: 'skeleton skeleton-row'}));
+    }
+  }
+
+  function renderScoreCards() {
+    var row = document.getElementById('scoreRow');
+    clearChildren(row);
+
+    DEPT_KEYS.forEach(function(dept) {
+      var card = el('div', {className: 'score-card', 'data-dept': dept});
+
+      if (deptErrors[dept]) {
+        card.appendChild(
+          el('div', {className: 'score-card-header'}, [
+            el('span', {className: 'score-card-name', textContent: DEPT_LABELS[dept]})
+          ])
+        );
+        card.appendChild(
+          el('div', {className: 'score-card-error', textContent: 'Failed to load ' + DEPT_LABELS[dept] + ' data'})
+        );
+        row.appendChild(card);
+        return;
+      }
+
+      var score = getAvgScore(dept);
+      var sparkVals = getSparkline(dept);
+      var trend = computeTrend(sparkVals, score);
+      var colorStyle = score != null ? 'color:' + scoreColorVar(score) : 'color:var(--text-dim)';
+
+      card.appendChild(
+        el('div', {className: 'score-card-header'}, [
+          el('span', {className: 'score-card-name', textContent: DEPT_LABELS[dept]}),
+          buildSparkline(sparkVals)
+        ])
+      );
+      card.appendChild(
+        el('div', {className: 'score-card-value', style: colorStyle, textContent: score != null ? String(score) : '--'})
+      );
+      if (trend.label) {
+        card.appendChild(
+          el('div', {className: 'score-card-trend' + (trend.cls ? ' ' + trend.cls : ''), textContent: trend.label})
+        );
+      }
+      row.appendChild(card);
+    });
+  }
+
+  function renderMatrix() {
+    var mb = document.getElementById('matrixBody');
+    clearChildren(mb);
+
+    var repoNames;
+    if (selectedProduct === 'all') {
+      // Gather all unique repo names across all dept data
+      var allRepos = {};
+      DEPT_KEYS.forEach(function(dept) {
+        if (deptData[dept] && deptData[dept].repos) {
+          deptData[dept].repos.forEach(function(r) { allRepos[r.name] = true; });
+        }
+      });
+      repoNames = Object.keys(allRepos).sort();
+    } else {
+      repoNames = getProductRepos(selectedProduct);
+    }
+
+    if (repoNames.length === 0) {
+      var tr = el('tr', null, [
+        el('td', {colspan: '7', style: 'text-align:center;color:var(--text-dim);padding:1.5rem;', textContent: 'No repos found for this product'})
+      ]);
+      mb.appendChild(tr);
+      return;
+    }
+
+    repoNames.forEach(function(repoName) {
+      var tr = el('tr');
+      tr.appendChild(el('td', {textContent: repoName}));
+
+      DEPT_KEYS.forEach(function(dept) {
+        var td = el('td');
+        var repoObj = findRepo(dept, repoName);
+        var score = getRepoScore(dept, repoObj);
+
+        if (score == null) {
+          var gray = el('span', {className: 'cell gray'});
+          gray.appendChild(document.createTextNode('\u2014'));
+          td.appendChild(gray);
+        } else {
+          var cls = 'cell ' + scoreColor(score);
+          var cell = el('span', {className: cls, textContent: String(score), 'data-dept': dept, 'data-repo': repoName});
+          td.appendChild(cell);
+        }
+        tr.appendChild(td);
+      });
+
+      mb.appendChild(tr);
+    });
+  }
+
+  function renderNeedsAttention() {
+    var container = document.getElementById('needsAttention');
+    clearChildren(container);
+
+    var productRepos = getProductRepos(selectedProduct);
+
+    // Collect findings across all depts
+    var allFindings = [];
+    DEPT_KEYS.forEach(function(dept) {
+      if (!deptData[dept] || !deptData[dept].repos) return;
+      deptData[dept].repos.forEach(function(repo) {
+        if (selectedProduct !== 'all' && productRepos.indexOf(repo.name) === -1) return;
+        if (!repo.findings) return;
+        repo.findings.forEach(function(f) {
+          // Lookup backlog audit_count
+          var auditCount = 0;
+          if (backlogData && backlogData.findings) {
+            var keys = Object.keys(backlogData.findings);
+            for (var bi = 0; bi < keys.length; bi++) {
+              var bf = backlogData.findings[keys[bi]];
+              if (bf.current_finding &&
+                  bf.current_finding.department === (f.department || dept) &&
+                  bf.current_finding.repo === (f.repo || repo.name) &&
+                  bf.current_finding.title === f.title) {
+                auditCount = bf.audit_count || 0;
+                break;
+              }
+            }
+          }
+
+          allFindings.push({
+            department: f.department || dept,
+            severity: f.severity || 'info',
+            title: f.title || '',
+            repo: f.repo || repo.name,
+            effort: f.effort || 'moderate',
+            fixable_by_agent: f.fixable_by_agent || false,
+            audit_count: auditCount,
+            id: f.id || '',
+            file: f.file || ''
+          });
+        });
+      });
+    });
+
+    // Sort: severity asc, audit_count desc, effort asc
+    allFindings.sort(function(a, b) {
+      var sa = SEV_ORDER[a.severity] != null ? SEV_ORDER[a.severity] : 99;
+      var sb = SEV_ORDER[b.severity] != null ? SEV_ORDER[b.severity] : 99;
+      if (sa !== sb) return sa - sb;
+      if (b.audit_count !== a.audit_count) return b.audit_count - a.audit_count;
+      var ea = EFFORT_ORDER[a.effort] != null ? EFFORT_ORDER[a.effort] : 99;
+      var eb = EFFORT_ORDER[b.effort] != null ? EFFORT_ORDER[b.effort] : 99;
+      return ea - eb;
+    });
+
+    var top = allFindings.slice(0, 15);
+
+    if (top.length === 0) {
+      container.appendChild(el('div', {className: 'empty-state', textContent: 'No findings match current filters'}));
+      return;
+    }
+
+    top.forEach(function(f) {
+      var titleSpan = el('span', {className: 'finding-title'});
+      titleSpan.appendChild(document.createTextNode(f.title));
+      if (f.fixable_by_agent) {
+        titleSpan.appendChild(el('span', {className: 'ai-badge', textContent: 'AI fixable'}));
+      }
+
+      var row = el('div', {
+        className: 'finding-row',
+        'data-finding': f.id,
+        'data-dept': f.department,
+        'data-repo': f.repo
+      }, [
+        el('span', {className: 'finding-dept', textContent: DEPT_LABELS[f.department] || f.department}),
+        el('span', {className: 'sev ' + f.severity, textContent: f.severity}),
+        titleSpan,
+        el('span', {className: 'finding-repo', textContent: f.repo}),
+        el('span', {className: 'finding-effort', textContent: f.effort})
+      ]);
+
+      container.appendChild(row);
+    });
+  }
+
+  function updateTimestamp() {
+    var ts = getLatestTimestamp();
+    var scanEl = document.getElementById('lastScan');
+    var staleEl = document.getElementById('staleWarning');
+    if (ts) {
+      scanEl.textContent = 'Last scan: ' + timeAgo(ts);
+      staleEl.hidden = !isStale(ts);
+    } else {
+      scanEl.textContent = 'Last scan: --';
+      staleEl.hidden = true;
+    }
+  }
+
+  /* ── URL Deep Linking ── */
+
+  function readProductFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get('product') || 'all';
+  }
+
+  function updateUrl() {
+    var params = new URLSearchParams(window.location.search);
+    if (selectedProduct === 'all') {
+      params.delete('product');
+    } else {
+      params.set('product', selectedProduct);
+    }
+    var qs = params.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function populateProductSelector() {
+    var sel = document.getElementById('productSelect');
+    clearChildren(sel);
+
+    if (!orgData || !orgData.products) {
+      sel.appendChild(el('option', {value: 'all', textContent: 'All Products'}));
+      return;
+    }
+
+    orgData.products.forEach(function(p) {
+      var opt = el('option', {value: p.key, textContent: p.name});
+      if (p.key === selectedProduct) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    sel.addEventListener('change', function() {
+      selectedProduct = sel.value;
+      updateUrl();
+      renderAll();
+    });
+  }
+
+  function renderAll() {
+    renderScoreCards();
+    renderMatrix();
+    renderNeedsAttention();
+    updateTimestamp();
+  }
+
+  /* ── Data Loading ── */
+
+  function fetchJson(url) {
+    return fetch(url + '?t=' + Date.now()).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  function loadAll() {
+    renderSkeletons();
+
+    var promises = [];
+
+    promises.push(
+      fetchJson('org-data.json').then(function(d) { orgData = d; }).catch(function() { orgData = null; })
+    );
+    promises.push(
+      fetchJson('score-history.json').then(function(d) { historyData = d; }).catch(function() { historyData = null; })
+    );
+    promises.push(
+      fetchJson('backlog.json').then(function(d) { backlogData = d; }).catch(function() { backlogData = null; })
+    );
+
+    DEPT_KEYS.forEach(function(dept) {
+      promises.push(
+        fetchJson(DEPT_SOURCES[dept].url)
+          .then(function(d) { deptData[dept] = d; deptErrors[dept] = false; })
+          .catch(function() { deptData[dept] = null; deptErrors[dept] = true; })
+      );
+    });
+
+    Promise.all(promises).then(function() {
+      selectedProduct = readProductFromUrl();
+      populateProductSelector();
+      renderAll();
+    });
+  }
+
+  /* ── Init ── */
+  loadAll();
+})();
+</script>
+</body>
+</html>
