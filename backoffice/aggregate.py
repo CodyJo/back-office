@@ -159,6 +159,10 @@ def normalize_precalculated_summary(data, findings, department_name):
                 (data.get("scores") or {}).get("product_readiness"),
             ],
         ),
+        "cloud-ops": (
+            "cloud_ops_score",
+            [data.get("cloud_ops_score")],
+        ),
     }
     score_key, candidates = score_map.get(department_name, (None, []))
     if score_key:
@@ -337,6 +341,8 @@ def aggregate_department(results_dir, findings_filename, department_name, valid_
             repo_entry["scores"] = data["scores"]
         if isinstance(data.get("scoring_breakdown"), dict):
             repo_entry["scoring_breakdown"] = data["scoring_breakdown"]
+        if isinstance(data.get("pillar_scores"), dict):
+            repo_entry["pillar_scores"] = data["pillar_scores"]
 
         repos.append(repo_entry)
 
@@ -589,6 +595,17 @@ def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
         len(prod_data["repos"]),
     )
 
+    # Cloud Ops department
+    cloud_ops_data = aggregate_department(
+        results_dir, "cloud-ops-findings.json", "cloud-ops", valid_repos
+    )
+    write_json(cloud_ops_data, os.path.join(dashboard_dir, "cloud-ops-data.json"))
+    logger.info(
+        "Cloud Ops: %d findings across %d repos",
+        cloud_ops_data["totals"]["total_findings"],
+        len(cloud_ops_data["repos"]),
+    )
+
     # Self-audit (back-office repo)
     self_audit_data = aggregate_self_audit(results_dir, dashboard_dir)
     if self_audit_data:
@@ -608,11 +625,12 @@ def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
         + privacy_data["totals"]["total_findings"]
         + mon_data["totals"]["total_findings"]
         + prod_data["totals"]["total_findings"]
+        + cloud_ops_data["totals"]["total_findings"]
     )
     logger.info("Total across all departments: %d findings", total)
 
     # Backlog merge and score history
-    from backoffice.backlog import merge_backlog, normalize_finding, update_score_history
+    from backoffice.backlog import merge_backlog, update_score_history
 
     # Collect all normalized findings across all departments for the backlog
     all_findings = []
@@ -623,6 +641,7 @@ def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
         "compliance": comp_data,
         "monetization": mon_data,
         "product": prod_data,
+        "cloud-ops": cloud_ops_data,
     }
     for dept_name, dept_data in dept_data_map.items():
         for repo in dept_data.get("repos", []):
@@ -664,6 +683,7 @@ def aggregate(results_dir, output_path, valid_repos=_SENTINEL):
                     or summary.get("compliance_score")
                     or summary.get("monetization_readiness_score")
                     or summary.get("product_readiness_score")
+                    or summary.get("cloud_ops_score")
                     or summary.get("score")
                 )
 

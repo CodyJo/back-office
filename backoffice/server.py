@@ -15,7 +15,6 @@ from __future__ import annotations
 import http.server
 import json
 import logging
-import os
 import subprocess
 import threading
 import time
@@ -37,6 +36,7 @@ DEPT_SCRIPTS: dict[str, str] = {
     "compliance": "agents/compliance-audit.sh",
     "monetization": "agents/monetization-audit.sh",
     "product": "agents/product-audit.sh",
+    "cloud-ops": "agents/cloud-ops-audit.sh",
 }
 
 ALL_DEPTS: list[str] = list(DEPT_SCRIPTS.keys())

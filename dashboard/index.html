@@ -107,7 +107,7 @@
   /* Score Cards */
   .score-row {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 0.75rem;
     margin-bottom: 1.25rem;
   }
@@ -293,7 +293,7 @@
 
   /* Responsive */
   @media (max-width: 1100px) {
-    .score-row { grid-template-columns: repeat(3, 1fr); }
+    .score-row { grid-template-columns: repeat(4, 1fr); }
   }
   @media (max-width: 700px) {
     .score-row { grid-template-columns: repeat(2, 1fr); }
@@ -606,10 +606,11 @@
   'use strict';
 
   /* ── Constants ── */
-  var DEPT_KEYS = ['qa', 'seo', 'ada', 'compliance', 'monetization', 'product'];
+  var DEPT_KEYS = ['qa', 'seo', 'ada', 'compliance', 'monetization', 'product', 'cloud-ops'];
   var DEPT_LABELS = {
     qa: 'QA', seo: 'SEO', ada: 'ADA',
-    compliance: 'Compliance', monetization: 'Monetization', product: 'Product'
+    compliance: 'Compliance', monetization: 'Monetization', product: 'Product',
+    'cloud-ops': 'Cloud Ops'
   };
   var DEPT_SOURCES = {
     qa:           {url: 'qa-data.json',           scoreField: null},
@@ -617,7 +618,8 @@
     ada:          {url: 'ada-data.json',           scoreField: 'compliance_score'},
     compliance:   {url: 'compliance-data.json',    scoreField: 'compliance_score'},
     monetization: {url: 'monetization-data.json',  scoreField: 'monetization_readiness_score'},
-    product:      {url: 'product-data.json',       scoreField: 'product_readiness_score'}
+    product:      {url: 'product-data.json',       scoreField: 'product_readiness_score'},
+    'cloud-ops':  {url: 'cloud-ops-data.json',     scoreField: 'cloud_ops_score'}
   };
   var SEV_ORDER  = {critical: 0, high: 1, medium: 2, low: 3, info: 4};
   var EFFORT_ORDER = {easy: 0, moderate: 1, hard: 2};
@@ -1150,6 +1152,7 @@
   var filterEffort   = 'all';
   var filterAiFixable = false;
   var filterSearch   = '';
+  var filterPillar   = 'all';
 
   /* ── SHA-256 hash (matches Python: sha256 of dept:repo:title:file lowercase trimmed, first 16 hex) ── */
   function findingHash(dept, repo, title, filePath) {
@@ -1342,6 +1345,7 @@
       if (filterStatus !== 'all' && f.status !== filterStatus.toLowerCase().replace(/ /g, '_')) return false;
       if (filterEffort !== 'all' && f.effort !== filterEffort.toLowerCase()) return false;
       if (filterAiFixable && !f.fixable_by_agent) return false;
+      if (filterPillar !== 'all' && f.pillar !== filterPillar) return false;
       if (q) {
         var haystack = [f.title, f.description, f.file, f.id, f.repo].join(' ').toLowerCase();
         if (haystack.indexOf(q) === -1) return false;
@@ -1438,6 +1442,41 @@
       ])
     ]);
     body.appendChild(statsRow);
+
+    // Pillar breakdown (Cloud Ops only)
+    if (dept === 'cloud-ops' && repos.length > 0) {
+      var pillars = [
+        {key: 'cost_optimization', label: 'Cost', weight: '30%'},
+        {key: 'security', label: 'Security', weight: '25%'},
+        {key: 'reliability', label: 'Reliability', weight: '20%'},
+        {key: 'performance_efficiency', label: 'Performance', weight: '10%'},
+        {key: 'operational_excellence', label: 'Ops Excellence', weight: '10%'},
+        {key: 'sustainability', label: 'Sustainability', weight: '5%'}
+      ];
+      var pillarContainer = el('div', {style: 'margin-bottom:1.25rem'});
+      var pillarAvgs = {};
+      pillars.forEach(function(p) {
+        var vals = [];
+        repos.forEach(function(r) {
+          var ps = r.pillar_scores || (r.summary || {}).pillar_scores;
+          if (ps && ps[p.key] != null) vals.push(ps[p.key]);
+        });
+        pillarAvgs[p.key] = vals.length > 0 ? Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length) : null;
+      });
+      pillars.forEach(function(p) {
+        var score = pillarAvgs[p.key];
+        var color = score != null ? scoreColorVar(score) : 'var(--text-dim)';
+        var bar = el('div', {style: 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;font-size:0.8rem'}, [
+          el('span', {style: 'width:100px;color:var(--text-dim)', textContent: p.label + ' (' + p.weight + ')'}),
+          el('div', {style: 'flex:1;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden'}, [
+            el('div', {style: 'height:100%;width:' + (score || 0) + '%;background:' + color + ';border-radius:4px;transition:width 0.3s'})
+          ]),
+          el('span', {style: 'width:32px;text-align:right;font-weight:600;color:' + color, textContent: score != null ? String(score) : '--'})
+        ]);
+        pillarContainer.appendChild(bar);
+      });
+      body.appendChild(pillarContainer);
+    }
 
     // Findings list container
     var listContainer = el('div', {id: 'slideoverFindings'});
@@ -1563,6 +1602,38 @@
     if (effortSel) effortSel.value = 'all';
     if (aiToggle) aiToggle.classList.remove('active');
     if (searchInput) searchInput.value = '';
+
+    // Manage pillar filter dropdown (Cloud Ops only)
+    filterPillar = 'all';
+    var existingPillar = document.getElementById('filterPillar');
+    if (existingPillar) existingPillar.remove();
+
+    if (department === 'cloud-ops') {
+      var pillarSelect = document.createElement('select');
+      pillarSelect.className = 'filter-select';
+      pillarSelect.id = 'filterPillar';
+      pillarSelect.setAttribute('aria-label', 'Filter by pillar');
+      [
+        {value: 'all', label: 'All Pillars'},
+        {value: 'cost_optimization', label: 'Cost'},
+        {value: 'security', label: 'Security'},
+        {value: 'reliability', label: 'Reliability'},
+        {value: 'performance_efficiency', label: 'Performance'},
+        {value: 'operational_excellence', label: 'Ops Excellence'},
+        {value: 'sustainability', label: 'Sustainability'}
+      ].forEach(function(opt) {
+        var option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        pillarSelect.appendChild(option);
+      });
+      pillarSelect.addEventListener('change', function() { filterPillar = this.value; applyFilters(); });
+      var filterBar = document.querySelector('.filters-bar');
+      var searchInput = document.getElementById('filterSearch');
+      if (filterBar && searchInput) {
+        filterBar.insertBefore(pillarSelect, searchInput);
+      }
+    }
 
     // Header
     var deptLabel = DEPT_LABELS[department] || department;

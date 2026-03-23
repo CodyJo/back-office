@@ -151,6 +151,18 @@ class TestNormalizePrecalculatedSummary:
         result = normalize_precalculated_summary(data, findings, "product")
         assert result["product_readiness_score"] == 70
 
+    def test_cloud_ops_score_from_data(self):
+        data = {"summary": {}, "cloud_ops_score": 79}
+        findings = []
+        result = normalize_precalculated_summary(data, findings, "cloud-ops")
+        assert result["cloud_ops_score"] == 79
+
+    def test_cloud_ops_score_prefers_summary_value(self):
+        data = {"summary": {"cloud_ops_score": 85}, "cloud_ops_score": 70}
+        findings = []
+        result = normalize_precalculated_summary(data, findings, "cloud-ops")
+        assert result["cloud_ops_score"] == 85
+
     def test_scanned_at_promoted_from_data(self):
         data = {"summary": {}, "scanned_at": "2026-01-01T00:00:00Z"}
         findings = []
@@ -447,6 +459,37 @@ class TestAggregateDepartment:
         assert "scores" in repo
         assert "scoring_breakdown" in repo
 
+    def test_cloud_ops_pillar_scores_included(self, tmp_path):
+        data = {
+            "summary": {"cloud_ops_score": 82},
+            "cloud_ops_score": 82,
+            "pillar_scores": {
+                "cost_optimization": 70,
+                "security": 90,
+                "reliability": 80,
+                "performance_efficiency": 95,
+                "operational_excellence": 85,
+                "sustainability": 100,
+            },
+            "findings": [
+                {
+                    "id": "COPS-1",
+                    "severity": "high",
+                    "category": "over-provisioned",
+                    "title": "Lambda memory too high",
+                    "pillar": "cost_optimization",
+                }
+            ],
+        }
+        self._make_dept_repo(tmp_path, "infra-repo", "cloud-ops-findings.json", data)
+        result = aggregate_department(
+            str(tmp_path / "results"), "cloud-ops-findings.json", "cloud-ops"
+        )
+        repo = result["repos"][0]
+        assert "pillar_scores" in repo
+        assert repo["pillar_scores"]["cost_optimization"] == 70
+        assert repo["pillar_scores"]["security"] == 90
+
 
 # ---------------------------------------------------------------------------
 # aggregate_privacy
@@ -724,6 +767,32 @@ class TestAggregate:
                 ],
             },
         )
+
+        # Cloud Ops
+        _write(
+            str(repo / "cloud-ops-findings.json"),
+            {
+                "summary": {"total": 1, "high": 1},
+                "cloud_ops_score": 85,
+                "pillar_scores": {
+                    "cost_optimization": 80,
+                    "security": 90,
+                    "reliability": 85,
+                    "performance_efficiency": 95,
+                    "operational_excellence": 80,
+                    "sustainability": 100,
+                },
+                "findings": [
+                    {
+                        "id": "COPS-1",
+                        "severity": "high",
+                        "category": "over-provisioned",
+                        "title": "Lambda over-provisioned",
+                        "pillar": "cost_optimization",
+                    }
+                ],
+            },
+        )
         return results
 
     def test_produces_all_department_files(self, tmp_path):
@@ -743,6 +812,7 @@ class TestAggregate:
             "privacy-data.json",
             "monetization-data.json",
             "product-data.json",
+            "cloud-ops-data.json",
         ]
         for fname in expected_files:
             assert (dashboard / fname).exists(), f"Missing: {fname}"
@@ -772,6 +842,7 @@ class TestAggregate:
             ("privacy-data.json", "privacy"),
             ("monetization-data.json", "monetization"),
             ("product-data.json", "product"),
+            ("cloud-ops-data.json", "cloud-ops"),
         ]:
             data = json.loads((dashboard / fname).read_text())
             assert data["department"] == expected_dept, f"Wrong dept in {fname}"
@@ -795,7 +866,7 @@ class TestAggregate:
             aggregate(str(results), str(dashboard / "data.json"), valid_repos=None)
 
         messages = " ".join(r.message for r in caplog.records)
-        for dept in ("QA", "SEO", "ADA", "Compliance", "Privacy", "Monetization", "Product"):
+        for dept in ("QA", "SEO", "ADA", "Compliance", "Privacy", "Monetization", "Product", "Cloud Ops"):
             assert dept in messages, f"No log for {dept}"
         assert "Total across all departments" in messages
 

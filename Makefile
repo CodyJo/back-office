@@ -1,5 +1,5 @@
 .PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression
-.PHONY: seo ada compliance monetization product audit-all audit-all-parallel audit-live full-scan quick-sync
+.PHONY: seo ada compliance monetization product cloud-ops audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
 .PHONY: overnight overnight-dry overnight-stop overnight-status overnight-rollback
@@ -64,6 +64,12 @@ product: ## Run product roadmap audit on TARGET (make product TARGET=/path/to/re
 	@test -n "$(TARGET)" || (echo "Usage: make product TARGET=/path/to/repo" && exit 1)
 	bash agents/product-audit.sh "$(TARGET)"
 
+# ── Cloud Ops Department ─────────────────────────────────────────────────────
+
+cloud-ops: ## Run Cloud Ops (Well-Architected Review) on TARGET (make cloud-ops TARGET=/path/to/repo)
+	@test -n "$(TARGET)" || (echo "Usage: make cloud-ops TARGET=/path/to/repo" && exit 1)
+	bash agents/cloud-ops-audit.sh "$(TARGET)"
+
 # ── Company-Wide ──────────────────────────────────────────────────────────────
 
 audit-all: ## Run ALL audits sequentially on TARGET repo
@@ -75,13 +81,14 @@ audit-all: ## Run ALL audits sequentially on TARGET repo
 	@echo "Running all department audits on: $(TARGET)"
 	@echo "Progress: http://localhost:8070/jobs.html"
 	@echo ""
-	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product"
+	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product cloud-ops"
 	bash agents/qa-scan.sh "$(TARGET)" --sync
 	bash agents/seo-audit.sh "$(TARGET)" --sync
 	bash agents/ada-audit.sh "$(TARGET)" --sync
 	bash agents/compliance-audit.sh "$(TARGET)" --sync
 	bash agents/monetization-audit.sh "$(TARGET)" --sync
 	bash agents/product-audit.sh "$(TARGET)" --sync
+	bash agents/cloud-ops-audit.sh "$(TARGET)" --sync
 	bash scripts/job-status.sh finalize
 	bash scripts/sync-dashboard.sh 2>/dev/null || true
 	@echo ""
@@ -96,10 +103,11 @@ audit-all-parallel: ## Run ALL audits in parallel (2 waves of 3)
 	@echo "Running all department audits in parallel on: $(TARGET)"
 	@echo "Progress: http://localhost:8070/jobs.html"
 	@echo ""
-	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product"
+	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product cloud-ops"
 	bash agents/qa-scan.sh "$(TARGET)" --sync & \
 	bash agents/seo-audit.sh "$(TARGET)" --sync & \
 	bash agents/ada-audit.sh "$(TARGET)" --sync & \
+	bash agents/cloud-ops-audit.sh "$(TARGET)" --sync & \
 	wait
 	bash agents/compliance-audit.sh "$(TARGET)" --sync & \
 	bash agents/monetization-audit.sh "$(TARGET)" --sync & \
@@ -129,10 +137,11 @@ audit-live: ## Run ALL audits with live dashboard refresh after each (make audit
 	echo "── Deploying HTML dashboards ──" && \
 	bash scripts/quick-sync.sh all "$$REPO_NAME" 2>/dev/null; \
 	echo "" && \
-	echo "── Wave 1: QA + SEO + ADA (parallel) ──" && \
+	echo "── Wave 1: QA + SEO + ADA + Cloud Ops (parallel) ──" && \
 	( bash agents/qa-scan.sh "$(TARGET)" && echo "  QA done — syncing..." && bash scripts/quick-sync.sh qa "$$REPO_NAME" ) & \
 	( bash agents/seo-audit.sh "$(TARGET)" && echo "  SEO done — syncing..." && bash scripts/quick-sync.sh seo "$$REPO_NAME" ) & \
 	( bash agents/ada-audit.sh "$(TARGET)" && echo "  ADA done — syncing..." && bash scripts/quick-sync.sh ada "$$REPO_NAME" ) & \
+	( bash agents/cloud-ops-audit.sh "$(TARGET)" && echo "  Cloud Ops done — syncing..." && bash scripts/quick-sync.sh cloud-ops "$$REPO_NAME" ) & \
 	wait && \
 	echo "" && \
 	echo "── Wave 2: Compliance + Monetization + Product (parallel) ──" && \
@@ -228,5 +237,5 @@ overnight-rollback: ## Roll back all repos to last overnight snapshot
 
 clean: ## Remove all results
 	rm -rf results/*/
-	rm -f dashboard/data.json dashboard/qa-data.json dashboard/seo-data.json dashboard/ada-data.json dashboard/compliance-data.json dashboard/monetization-data.json dashboard/product-data.json
+	rm -f dashboard/data.json dashboard/qa-data.json dashboard/seo-data.json dashboard/ada-data.json dashboard/compliance-data.json dashboard/monetization-data.json dashboard/product-data.json dashboard/cloud-ops-data.json
 	@echo "Results cleaned."

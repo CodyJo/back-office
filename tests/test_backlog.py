@@ -129,6 +129,27 @@ class TestNormalizeFinding:
         assert result["wcag_criterion"] == "1.4.3"
         assert result["wcag_level"] == "AA"
 
+    def test_cloud_ops_preserves_pillar(self):
+        raw = {
+            "id": "COPS-1",
+            "severity": "high",
+            "category": "over-provisioned",
+            "title": "Lambda memory too high",
+            "pillar": "cost_optimization",
+        }
+        result = normalize_finding(raw, "cloud-ops", "my-repo")
+        assert result["pillar"] == "cost_optimization"
+
+    def test_cloud_ops_pillar_absent_when_not_in_raw(self):
+        raw = {
+            "id": "COPS-2",
+            "severity": "medium",
+            "category": "missing-tags",
+            "title": "No resource tags",
+        }
+        result = normalize_finding(raw, "cloud-ops", "my-repo")
+        assert "pillar" not in result
+
     def test_effort_normalization_tiny(self):
         raw = {"id": "X-1", "severity": "low", "category": "test", "title": "T",
                "effort": "tiny"}
