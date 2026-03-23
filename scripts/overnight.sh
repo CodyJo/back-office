@@ -40,7 +40,7 @@ CONFIG_FILE="$ROOT_DIR/config/targets.yaml"
 
 # ── Args ─────────────────────────────────────────────────────────────────────
 
-INTERVAL=120        # minutes between cycles
+INTERVAL=45         # minutes between cycles
 DRY_RUN=false
 TARGET_FILTER=""
 
@@ -414,15 +414,26 @@ while true; do
   check_stop "SNAPSHOT"
   log_phase "PHASE 2: AUDIT"
 
+  # Launch ALL target audits in parallel (biggest speed win)
+  declare -a AUDIT_PIDS=()
+  declare -a AUDIT_NAMES=()
   while IFS='|' read -r name path test_cmd deploy_cmd cov_cmd lang; do
     [ -z "$name" ] && continue
-    log "  Auditing $name..."
-    if make -C "$ROOT_DIR" audit-all-parallel TARGET="$path" >/dev/null 2>&1; then
-      log "  $name: audit complete"
-    else
-      log "  $name: audit had errors (continuing)"
-    fi
+    log "  Auditing $name (parallel)..."
+    (make -C "$ROOT_DIR" audit-all-parallel TARGET="$path" >/dev/null 2>&1) &
+    AUDIT_PIDS+=($!)
+    AUDIT_NAMES+=("$name")
   done < <(get_valid_targets)
+
+  log "  Waiting for ${#AUDIT_PIDS[@]} parallel audits..."
+  for i in "${!AUDIT_PIDS[@]}"; do
+    if wait "${AUDIT_PIDS[$i]}" 2>/dev/null; then
+      log "  ${AUDIT_NAMES[$i]}: audit complete"
+    else
+      log "  ${AUDIT_NAMES[$i]}: audit had errors (continuing)"
+    fi
+  done
+  unset AUDIT_PIDS AUDIT_NAMES
 
   log "  Refreshing dashboard data..."
   (cd "$ROOT_DIR" && python3 -m backoffice refresh) >/dev/null 2>&1 || \
@@ -471,14 +482,34 @@ while true; do
     check_stop "DECIDE"
     log_phase "PHASE 4: FIX"
 
-    # Read fixes from plan and iterate
+    # Read fixes from plan
     FIX_COUNT=$(python3 -c "import json; print(len(json.load(open('$PLAN_FILE')).get('fixes',[])))" 2>/dev/null || echo 0)
 
-    for fix_idx in $(seq 0 $((FIX_COUNT - 1))); do
-      check_stop "FIX_ITEM_$fix_idx"
+    # Create temp dir for parallel fix results
+    FIX_TMPDIR=$(mktemp -d)
 
-      # Extract fix details via Python (safe JSON handling)
-      FIX_INFO=$(PLAN_FILE="$PLAN_FILE" FIX_IDX="$fix_idx" python3 - <<'PYEOF'
+    # Group fixes by repo: same-repo fixes run sequentially, cross-repo in parallel
+    declare -A FIX_REPO_GROUPS
+    for fix_idx in $(seq 0 $((FIX_COUNT - 1))); do
+      _fr=$(PLAN_FILE="$PLAN_FILE" FIX_IDX="$fix_idx" python3 -c "
+import json, os
+plan = json.load(open(os.environ['PLAN_FILE']))
+idx = int(os.environ['FIX_IDX'])
+fixes = plan.get('fixes', [])
+print(fixes[idx].get('repo', '') if idx < len(fixes) else '')
+" 2>/dev/null) || continue
+      [ -n "$_fr" ] && FIX_REPO_GROUPS[$_fr]+="$fix_idx "
+    done
+
+    log "  $FIX_COUNT fixes across ${#FIX_REPO_GROUPS[@]} repos (parallel across repos)"
+
+    # Launch one background job per repo (sequential within each repo)
+    for _group_repo in "${!FIX_REPO_GROUPS[@]}"; do
+      (
+        for fix_idx in ${FIX_REPO_GROUPS[$_group_repo]}; do
+
+          # Extract fix details via Python (safe JSON handling)
+          FIX_INFO=$(PLAN_FILE="$PLAN_FILE" FIX_IDX="$fix_idx" python3 - <<'PYEOF'
 import json, os
 
 plan = json.load(open(os.environ['PLAN_FILE']))
@@ -490,17 +521,17 @@ fix = fixes[idx]
 # Output pipe-delimited: repo|title|department|severity
 print(f'{fix.get("repo","")}\t{fix.get("title","")}\t{fix.get("department","")}\t{fix.get("severity","")}')
 PYEOF
-      ) || continue
+          ) || { echo "skip|$_group_repo||no-info" > "$FIX_TMPDIR/$fix_idx.result"; continue; }
 
-      IFS=$'\t' read -r fix_repo fix_title fix_dept fix_sev <<< "$FIX_INFO"
+          IFS=$'\t' read -r fix_repo fix_title fix_dept fix_sev <<< "$FIX_INFO"
 
-      if [ -z "$fix_repo" ]; then
-        log "  SKIP: fix $fix_idx — no repo specified"
-        continue
-      fi
+          if [ -z "$fix_repo" ]; then
+            echo "skip|unknown||no-repo" > "$FIX_TMPDIR/$fix_idx.result"
+            continue
+          fi
 
-      # Resolve repo path
-      FIX_PATH=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$fix_repo" python3 - <<'PYEOF'
+          # Resolve repo path
+          FIX_PATH=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$fix_repo" python3 - <<'PYEOF'
 import yaml, os
 config_path = os.environ['CONFIG_FILE']
 repo_name = os.environ['REPO_NAME']
@@ -511,35 +542,31 @@ for t in targets:
         print(t.get('path', ''))
         break
 PYEOF
-      ) || true
+          ) || true
 
-      if [ -z "$FIX_PATH" ] || [ ! -d "$FIX_PATH" ]; then
-        log "  SKIP: $fix_repo — path not found"
-        FIXES_FAIL=$((FIXES_FAIL + 1))
-        SKIPPED_ITEMS="$SKIPPED_ITEMS $fix_repo:path-not-found"
-        continue
-      fi
+          if [ -z "$FIX_PATH" ] || [ ! -d "$FIX_PATH" ]; then
+            echo "skip|$fix_repo|$fix_title|path-not-found" > "$FIX_TMPDIR/$fix_idx.result"
+            continue
+          fi
 
-      # Check autonomy policy: allow_fix
-      ALLOW_FIX=$(get_policy "$fix_repo" "allow_fix" "true")
-      if [ "$ALLOW_FIX" != "true" ]; then
-        log "  SKIP: $fix_repo — autonomy policy: allow_fix=false"
-        SKIPPED_ITEMS="$SKIPPED_ITEMS $fix_repo:policy-no-fix"
-        continue
-      fi
+          # Check autonomy policy: allow_fix
+          ALLOW_FIX=$(get_policy "$fix_repo" "allow_fix" "true")
+          if [ "$ALLOW_FIX" != "true" ]; then
+            echo "skip|$fix_repo|$fix_title|policy-no-fix" > "$FIX_TMPDIR/$fix_idx.result"
+            continue
+          fi
 
-      # Check clean worktree
-      REQUIRE_CLEAN=$(get_policy "$fix_repo" "require_clean_worktree" "true")
-      if [ "$REQUIRE_CLEAN" = "true" ] && ! is_worktree_clean "$FIX_PATH"; then
-        log "  SKIP: $fix_repo — dirty worktree (uncommitted changes)"
-        SKIPPED_ITEMS="$SKIPPED_ITEMS $fix_repo:dirty-worktree"
-        continue
-      fi
+          # Check clean worktree
+          REQUIRE_CLEAN=$(get_policy "$fix_repo" "require_clean_worktree" "true")
+          if [ "$REQUIRE_CLEAN" = "true" ] && ! is_worktree_clean "$FIX_PATH"; then
+            echo "skip|$fix_repo|$fix_title|dirty-worktree" > "$FIX_TMPDIR/$fix_idx.result"
+            continue
+          fi
 
-      log "  FIX: $fix_repo — [$fix_sev] $fix_title"
+          log "  FIX: $fix_repo — [$fix_sev] $fix_title"
 
-      # Get target-specific commands
-      FIX_TEST_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$fix_repo" python3 -c "
+          # Get target-specific commands
+          FIX_TEST_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$fix_repo" python3 -c "
 import yaml, os
 with open(os.environ['CONFIG_FILE']) as f:
     targets = yaml.safe_load(f).get('targets', [])
@@ -548,7 +575,7 @@ for t in targets:
         print(t.get('test_command', '')); break
 " 2>/dev/null) || true
 
-      FIX_COV_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$fix_repo" python3 -c "
+          FIX_COV_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$fix_repo" python3 -c "
 import yaml, os
 with open(os.environ['CONFIG_FILE']) as f:
     targets = yaml.safe_load(f).get('targets', [])
@@ -557,106 +584,110 @@ for t in targets:
         print(t.get('coverage_command', '')); break
 " 2>/dev/null) || true
 
-      # Get pre-fix coverage
-      PRE_COV=$(get_coverage_pct "$FIX_PATH" "$FIX_COV_CMD")
+          # Get pre-fix coverage
+          PRE_COV=$(get_coverage_pct "$FIX_PATH" "$FIX_COV_CMD")
 
-      # Run fix agent
-      if bash "$ROOT_DIR/agents/fix-bugs.sh" "$FIX_PATH" >/dev/null 2>&1; then
-        FIX_EXIT=0
-      else
-        FIX_EXIT=$?
-      fi
+          # Run fix agent
+          if bash "$ROOT_DIR/agents/fix-bugs.sh" "$FIX_PATH" >/dev/null 2>&1; then
+            FIX_EXIT=0
+          else
+            FIX_EXIT=$?
+          fi
 
-      if [ "$FIX_EXIT" -ne 0 ]; then
-        log "  FIX FAILED: $fix_repo — agent error (exit $FIX_EXIT)"
-        FIXES_FAIL=$((FIXES_FAIL + 1))
-        FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$fix_repo" TITLE="$fix_title" TYPE="fix" python3 -c "
-import json, os
-items = json.loads(os.environ['FAILED_ITEMS_JSON'])
-items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': 'agent_error'})
-print(json.dumps(items))
-") || true
-        continue
-      fi
+          if [ "$FIX_EXIT" -ne 0 ]; then
+            log "  FIX FAILED: $fix_repo — agent error (exit $FIX_EXIT)"
+            echo "fail|$fix_repo|$fix_title|agent_error" > "$FIX_TMPDIR/$fix_idx.result"
+            continue
+          fi
 
-      # Check if tests still required
-      REQUIRE_TESTS=$(get_policy "$fix_repo" "require_tests" "true")
+          # Check if tests required
+          REQUIRE_TESTS=$(get_policy "$fix_repo" "require_tests" "true")
 
-      # Verify tests pass after fix
-      if [ "$REQUIRE_TESTS" = "true" ] && [ -n "$FIX_TEST_CMD" ]; then
-        if run_tests "$FIX_PATH" "$FIX_TEST_CMD"; then
-          # Check coverage non-regression
-          POST_COV=$(get_coverage_pct "$FIX_PATH" "$FIX_COV_CMD")
-          if [ -n "$PRE_COV" ] && [ -n "$POST_COV" ] && [ "$PRE_COV" != "0" ] && [ "$POST_COV" != "0" ]; then
-            # Use Python for safe float comparison
-            COV_REGRESSED=$(PRE="$PRE_COV" POST="$POST_COV" python3 -c "
+          # Verify tests pass after fix
+          if [ "$REQUIRE_TESTS" = "true" ] && [ -n "$FIX_TEST_CMD" ]; then
+            if run_tests "$FIX_PATH" "$FIX_TEST_CMD"; then
+              # Check coverage non-regression
+              POST_COV=$(get_coverage_pct "$FIX_PATH" "$FIX_COV_CMD")
+              COV_REGRESSED="false"
+              if [ -n "$PRE_COV" ] && [ -n "$POST_COV" ] && [ "$PRE_COV" != "0" ] && [ "$POST_COV" != "0" ]; then
+                COV_REGRESSED=$(PRE="$PRE_COV" POST="$POST_COV" python3 -c "
 import os
 pre = float(os.environ['PRE'])
 post = float(os.environ['POST'])
 print('true' if post < pre else 'false')
 " 2>/dev/null) || COV_REGRESSED="false"
+              fi
 
-            if [ "$COV_REGRESSED" = "true" ]; then
-              log "  FIX ROLLED BACK: $fix_repo — coverage decreased ($PRE_COV% -> $POST_COV%)"
+              if [ "$COV_REGRESSED" = "true" ]; then
+                log "  FIX ROLLED BACK: $fix_repo — coverage decreased ($PRE_COV% -> $POST_COV%)"
+                (cd "$FIX_PATH" && git reset --hard "$TAG_NAME") >/dev/null 2>&1 || true
+                echo "rollback|$fix_repo|$fix_title|coverage_regression" > "$FIX_TMPDIR/$fix_idx.result"
+              else
+                log "  FIX OK: $fix_repo — tests pass, coverage $PRE_COV% -> $POST_COV%"
+                echo "ok|$fix_repo|$fix_title|" > "$FIX_TMPDIR/$fix_idx.result"
+              fi
+            else
+              log "  FIX ROLLED BACK: $fix_repo — tests failed after fix"
               (cd "$FIX_PATH" && git reset --hard "$TAG_NAME") >/dev/null 2>&1 || true
-              FIXES_FAIL=$((FIXES_FAIL + 1))
-              ROLLBACKS=$((ROLLBACKS + 1))
-              ROLLBACK_REPOS_JSON=$(ROLLBACK_REPOS_JSON="$ROLLBACK_REPOS_JSON" REPO="$fix_repo" python3 -c "
-import json, os
-items = json.loads(os.environ['ROLLBACK_REPOS_JSON'])
-items.append(os.environ['REPO'])
-print(json.dumps(items))
-") || true
-              FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$fix_repo" TITLE="$fix_title" TYPE="fix" python3 -c "
-import json, os
-items = json.loads(os.environ['FAILED_ITEMS_JSON'])
-items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': 'coverage_regression'})
-print(json.dumps(items))
-") || true
-              continue
+              echo "rollback|$fix_repo|$fix_title|tests_failed" > "$FIX_TMPDIR/$fix_idx.result"
             fi
+          else
+            log "  FIX OK: $fix_repo — no test gate (policy: require_tests=$REQUIRE_TESTS)"
+            echo "ok|$fix_repo|$fix_title|" > "$FIX_TMPDIR/$fix_idx.result"
           fi
+        done
+      ) &
+    done
+    wait
 
-          log "  FIX OK: $fix_repo — tests pass, coverage $PRE_COV% -> $POST_COV%"
-          FIXES_OK=$((FIXES_OK + 1))
-          MODIFIED_REPOS="$MODIFIED_REPOS $fix_repo"
-          CHANGED_REPOS_JSON=$(CHANGED_REPOS_JSON="$CHANGED_REPOS_JSON" REPO="$fix_repo" python3 -c "
+    # Aggregate fix results from temp files
+    for fix_idx in $(seq 0 $((FIX_COUNT - 1))); do
+      if [ -f "$FIX_TMPDIR/$fix_idx.result" ]; then
+        IFS='|' read -r _fstatus _frepo _ftitle _freason < "$FIX_TMPDIR/$fix_idx.result"
+        case "$_fstatus" in
+          ok)
+            FIXES_OK=$((FIXES_OK + 1))
+            MODIFIED_REPOS="$MODIFIED_REPOS $_frepo"
+            CHANGED_REPOS_JSON=$(CHANGED_REPOS_JSON="$CHANGED_REPOS_JSON" REPO="$_frepo" python3 -c "
 import json, os
 items = json.loads(os.environ['CHANGED_REPOS_JSON'])
 if os.environ['REPO'] not in items: items.append(os.environ['REPO'])
 print(json.dumps(items))
 ") || true
-        else
-          log "  FIX ROLLED BACK: $fix_repo — tests failed after fix"
-          (cd "$FIX_PATH" && git reset --hard "$TAG_NAME") >/dev/null 2>&1 || true
-          FIXES_FAIL=$((FIXES_FAIL + 1))
-          ROLLBACKS=$((ROLLBACKS + 1))
-          ROLLBACK_REPOS_JSON=$(ROLLBACK_REPOS_JSON="$ROLLBACK_REPOS_JSON" REPO="$fix_repo" python3 -c "
+            ;;
+          fail)
+            FIXES_FAIL=$((FIXES_FAIL + 1))
+            FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$_frepo" TITLE="$_ftitle" TYPE="fix" python3 -c "
+import json, os
+items = json.loads(os.environ['FAILED_ITEMS_JSON'])
+items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': '$_freason'})
+print(json.dumps(items))
+") || true
+            ;;
+          rollback)
+            FIXES_FAIL=$((FIXES_FAIL + 1))
+            ROLLBACKS=$((ROLLBACKS + 1))
+            ROLLBACK_REPOS_JSON=$(ROLLBACK_REPOS_JSON="$ROLLBACK_REPOS_JSON" REPO="$_frepo" python3 -c "
 import json, os
 items = json.loads(os.environ['ROLLBACK_REPOS_JSON'])
 items.append(os.environ['REPO'])
 print(json.dumps(items))
 ") || true
-          FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$fix_repo" TITLE="$fix_title" TYPE="fix" python3 -c "
+            FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$_frepo" TITLE="$_ftitle" TYPE="fix" python3 -c "
 import json, os
 items = json.loads(os.environ['FAILED_ITEMS_JSON'])
-items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': 'tests_failed'})
+items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': '$_freason'})
 print(json.dumps(items))
 ") || true
-        fi
-      else
-        # No tests required or no test command — accept the fix
-        log "  FIX OK: $fix_repo — no test gate (policy: require_tests=$REQUIRE_TESTS)"
-        FIXES_OK=$((FIXES_OK + 1))
-        MODIFIED_REPOS="$MODIFIED_REPOS $fix_repo"
-        CHANGED_REPOS_JSON=$(CHANGED_REPOS_JSON="$CHANGED_REPOS_JSON" REPO="$fix_repo" python3 -c "
-import json, os
-items = json.loads(os.environ['CHANGED_REPOS_JSON'])
-if os.environ['REPO'] not in items: items.append(os.environ['REPO'])
-print(json.dumps(items))
-") || true
+            ;;
+          skip)
+            SKIPPED_ITEMS="$SKIPPED_ITEMS $_frepo:$_freason"
+            ;;
+        esac
       fi
     done
+    rm -rf "$FIX_TMPDIR"
+    unset FIX_REPO_GROUPS
 
     # ── Phase 5: BUILD (Features) ────────────────────────────────────────
 
@@ -665,11 +696,31 @@ print(json.dumps(items))
 
     FEAT_COUNT=$(python3 -c "import json; print(len(json.load(open('$PLAN_FILE')).get('features',[])))" 2>/dev/null || echo 0)
 
-    for feat_idx in $(seq 0 $((FEAT_COUNT - 1))); do
-      check_stop "BUILD_ITEM_$feat_idx"
+    # Create temp dir for parallel feature results
+    FEAT_TMPDIR=$(mktemp -d)
 
-      # Extract feature JSON
-      FEAT_JSON=$(PLAN_FILE="$PLAN_FILE" FEAT_IDX="$feat_idx" python3 - <<'PYEOF'
+    # Group features by repo for cross-repo parallelism
+    declare -A FEAT_REPO_GROUPS
+    for feat_idx in $(seq 0 $((FEAT_COUNT - 1))); do
+      _featr=$(PLAN_FILE="$PLAN_FILE" FEAT_IDX="$feat_idx" python3 -c "
+import json, os
+plan = json.load(open(os.environ['PLAN_FILE']))
+idx = int(os.environ['FEAT_IDX'])
+features = plan.get('features', [])
+print(features[idx].get('repo', '') if idx < len(features) else '')
+" 2>/dev/null) || continue
+      [ -n "$_featr" ] && FEAT_REPO_GROUPS[$_featr]+="$feat_idx "
+    done
+
+    log "  $FEAT_COUNT features across ${#FEAT_REPO_GROUPS[@]} repos (parallel across repos)"
+
+    # Launch one background job per repo
+    for _group_repo in "${!FEAT_REPO_GROUPS[@]}"; do
+      (
+        for feat_idx in ${FEAT_REPO_GROUPS[$_group_repo]}; do
+
+          # Extract feature JSON
+          FEAT_JSON=$(PLAN_FILE="$PLAN_FILE" FEAT_IDX="$feat_idx" python3 - <<'PYEOF'
 import json, os
 plan = json.load(open(os.environ['PLAN_FILE']))
 idx = int(os.environ['FEAT_IDX'])
@@ -678,18 +729,18 @@ if idx >= len(features):
     exit(1)
 print(json.dumps(features[idx]))
 PYEOF
-      ) || continue
+          ) || { echo "skip|$_group_repo||no-info" > "$FEAT_TMPDIR/$feat_idx.result"; continue; }
 
-      FEAT_REPO=$(echo "$FEAT_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('repo',''))" 2>/dev/null) || true
-      FEAT_TITLE=$(echo "$FEAT_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('title','Feature'))" 2>/dev/null) || true
+          FEAT_REPO=$(echo "$FEAT_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('repo',''))" 2>/dev/null) || true
+          FEAT_TITLE=$(echo "$FEAT_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('title','Feature'))" 2>/dev/null) || true
 
-      if [ -z "$FEAT_REPO" ]; then
-        log "  SKIP: feature $feat_idx — no repo specified"
-        continue
-      fi
+          if [ -z "$FEAT_REPO" ]; then
+            echo "skip|unknown||no-repo" > "$FEAT_TMPDIR/$feat_idx.result"
+            continue
+          fi
 
-      # Resolve repo path
-      FEAT_PATH=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$FEAT_REPO" python3 - <<'PYEOF'
+          # Resolve repo path
+          FEAT_PATH=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$FEAT_REPO" python3 - <<'PYEOF'
 import yaml, os
 config_path = os.environ['CONFIG_FILE']
 repo_name = os.environ['REPO_NAME']
@@ -700,38 +751,34 @@ for t in targets:
         print(t.get('path', ''))
         break
 PYEOF
-      ) || true
+          ) || true
 
-      if [ -z "$FEAT_PATH" ] || [ ! -d "$FEAT_PATH" ]; then
-        log "  SKIP: $FEAT_REPO — path not found"
-        FEATURES_FAIL=$((FEATURES_FAIL + 1))
-        SKIPPED_ITEMS="$SKIPPED_ITEMS $FEAT_REPO:path-not-found"
-        continue
-      fi
+          if [ -z "$FEAT_PATH" ] || [ ! -d "$FEAT_PATH" ]; then
+            echo "skip|$FEAT_REPO|$FEAT_TITLE|path-not-found" > "$FEAT_TMPDIR/$feat_idx.result"
+            continue
+          fi
 
-      # Check autonomy policy: allow_feature_dev
-      ALLOW_FEAT=$(get_policy "$FEAT_REPO" "allow_feature_dev" "false")
-      if [ "$ALLOW_FEAT" != "true" ]; then
-        log "  SKIP: $FEAT_REPO — autonomy policy: allow_feature_dev=false"
-        SKIPPED_ITEMS="$SKIPPED_ITEMS $FEAT_REPO:policy-no-feature"
-        continue
-      fi
+          # Check autonomy policy: allow_feature_dev
+          ALLOW_FEAT=$(get_policy "$FEAT_REPO" "allow_feature_dev" "false")
+          if [ "$ALLOW_FEAT" != "true" ]; then
+            echo "skip|$FEAT_REPO|$FEAT_TITLE|policy-no-feature" > "$FEAT_TMPDIR/$feat_idx.result"
+            continue
+          fi
 
-      # Check clean worktree
-      REQUIRE_CLEAN=$(get_policy "$FEAT_REPO" "require_clean_worktree" "true")
-      if [ "$REQUIRE_CLEAN" = "true" ] && ! is_worktree_clean "$FEAT_PATH"; then
-        log "  SKIP: $FEAT_REPO — dirty worktree (uncommitted changes)"
-        SKIPPED_ITEMS="$SKIPPED_ITEMS $FEAT_REPO:dirty-worktree"
-        continue
-      fi
+          # Check clean worktree
+          REQUIRE_CLEAN=$(get_policy "$FEAT_REPO" "require_clean_worktree" "true")
+          if [ "$REQUIRE_CLEAN" = "true" ] && ! is_worktree_clean "$FEAT_PATH"; then
+            echo "skip|$FEAT_REPO|$FEAT_TITLE|dirty-worktree" > "$FEAT_TMPDIR/$feat_idx.result"
+            continue
+          fi
 
-      log "  BUILD: $FEAT_REPO — $FEAT_TITLE"
+          log "  BUILD: $FEAT_REPO — $FEAT_TITLE"
 
-      # Get the default branch for this repo
-      DEFAULT_BRANCH=$(get_default_branch "$FEAT_PATH")
+          # Get the default branch for this repo
+          DEFAULT_BRANCH=$(get_default_branch "$FEAT_PATH")
 
-      # Get target-specific commands
-      FEAT_TEST_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$FEAT_REPO" python3 -c "
+          # Get target-specific commands
+          FEAT_TEST_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$FEAT_REPO" python3 -c "
 import yaml, os
 with open(os.environ['CONFIG_FILE']) as f:
     targets = yaml.safe_load(f).get('targets', [])
@@ -740,7 +787,7 @@ for t in targets:
         print(t.get('test_command', '')); break
 " 2>/dev/null) || true
 
-      FEAT_COV_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$FEAT_REPO" python3 -c "
+          FEAT_COV_CMD=$(CONFIG_FILE="$CONFIG_FILE" REPO_NAME="$FEAT_REPO" python3 -c "
 import yaml, os
 with open(os.environ['CONFIG_FILE']) as f:
     targets = yaml.safe_load(f).get('targets', [])
@@ -749,120 +796,141 @@ for t in targets:
         print(t.get('coverage_command', '')); break
 " 2>/dev/null) || true
 
-      # Get pre-build coverage
-      PRE_COV=$(get_coverage_pct "$FEAT_PATH" "$FEAT_COV_CMD")
+          # Get pre-build coverage
+          PRE_COV=$(get_coverage_pct "$FEAT_PATH" "$FEAT_COV_CMD")
 
-      # Create feature branch (sanitize title for branch name)
-      BRANCH_NAME="overnight/$(date +%Y%m%d)-$(echo "$FEAT_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-' | head -c 40)"
+          # Create feature branch (sanitize title for branch name)
+          BRANCH_NAME="overnight/$(date +%Y%m%d)-$(echo "$FEAT_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-' | head -c 40)"
 
-      # Ensure we're on the default branch before creating feature branch
-      if ! (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" >/dev/null 2>&1); then
-        log "  BUILD FAILED: $FEAT_REPO — could not checkout $DEFAULT_BRANCH"
-        FEATURES_FAIL=$((FEATURES_FAIL + 1))
-        continue
-      fi
+          if ! (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" >/dev/null 2>&1); then
+            echo "fail|$FEAT_REPO|$FEAT_TITLE|checkout_failed" > "$FEAT_TMPDIR/$feat_idx.result"
+            continue
+          fi
 
-      if ! (cd "$FEAT_PATH" && git checkout -b "$BRANCH_NAME" >/dev/null 2>&1); then
-        log "  BUILD FAILED: $FEAT_REPO — could not create branch $BRANCH_NAME"
-        FEATURES_FAIL=$((FEATURES_FAIL + 1))
-        continue
-      fi
+          if ! (cd "$FEAT_PATH" && git checkout -b "$BRANCH_NAME" >/dev/null 2>&1); then
+            echo "fail|$FEAT_REPO|$FEAT_TITLE|branch_failed" > "$FEAT_TMPDIR/$feat_idx.result"
+            continue
+          fi
 
-      # Run feature dev agent
-      if bash "$ROOT_DIR/agents/feature-dev.sh" "$FEAT_PATH" "$FEAT_JSON" >/dev/null 2>&1; then
-        FEAT_EXIT=0
-      else
-        FEAT_EXIT=$?
-      fi
+          # Run feature dev agent
+          if bash "$ROOT_DIR/agents/feature-dev.sh" "$FEAT_PATH" "$FEAT_JSON" >/dev/null 2>&1; then
+            FEAT_EXIT=0
+          else
+            FEAT_EXIT=$?
+          fi
 
-      # Verify: tests must pass + coverage non-regression
-      REQUIRE_TESTS=$(get_policy "$FEAT_REPO" "require_tests" "true")
-      FEAT_TESTS_OK=false
+          # Verify: tests must pass + coverage non-regression
+          REQUIRE_TESTS=$(get_policy "$FEAT_REPO" "require_tests" "true")
+          FEAT_TESTS_OK=false
 
-      if [ "$FEAT_EXIT" -eq 0 ]; then
-        if [ "$REQUIRE_TESTS" = "true" ] && [ -n "$FEAT_TEST_CMD" ]; then
-          if run_tests "$FEAT_PATH" "$FEAT_TEST_CMD"; then
-            POST_COV=$(get_coverage_pct "$FEAT_PATH" "$FEAT_COV_CMD")
-            COV_REGRESSED="false"
-            if [ -n "$PRE_COV" ] && [ -n "$POST_COV" ] && [ "$PRE_COV" != "0" ] && [ "$POST_COV" != "0" ]; then
-              COV_REGRESSED=$(PRE="$PRE_COV" POST="$POST_COV" python3 -c "
+          if [ "$FEAT_EXIT" -eq 0 ]; then
+            if [ "$REQUIRE_TESTS" = "true" ] && [ -n "$FEAT_TEST_CMD" ]; then
+              if run_tests "$FEAT_PATH" "$FEAT_TEST_CMD"; then
+                POST_COV=$(get_coverage_pct "$FEAT_PATH" "$FEAT_COV_CMD")
+                COV_REGRESSED="false"
+                if [ -n "$PRE_COV" ] && [ -n "$POST_COV" ] && [ "$PRE_COV" != "0" ] && [ "$POST_COV" != "0" ]; then
+                  COV_REGRESSED=$(PRE="$PRE_COV" POST="$POST_COV" python3 -c "
 import os
 pre = float(os.environ['PRE'])
 post = float(os.environ['POST'])
 print('true' if post < pre else 'false')
 " 2>/dev/null) || COV_REGRESSED="false"
-            fi
+                fi
 
-            if [ "$COV_REGRESSED" = "true" ]; then
-              log "  BUILD ROLLED BACK: $FEAT_REPO — coverage decreased ($PRE_COV% -> $POST_COV%)"
+                if [ "$COV_REGRESSED" = "true" ]; then
+                  log "  BUILD ROLLED BACK: $FEAT_REPO — coverage decreased ($PRE_COV% -> $POST_COV%)"
+                else
+                  FEAT_TESTS_OK=true
+                  log "  Feature tests pass, coverage $PRE_COV% -> $POST_COV%"
+                fi
+              else
+                log "  Feature tests failed"
+              fi
             else
               FEAT_TESTS_OK=true
-              log "  Feature tests pass, coverage $PRE_COV% -> $POST_COV%"
             fi
           else
-            log "  Feature tests failed"
+            log "  Feature agent exited with error (exit $FEAT_EXIT)"
           fi
-        else
-          # No test gate
-          FEAT_TESTS_OK=true
-        fi
-      else
-        log "  Feature agent exited with error (exit $FEAT_EXIT)"
-      fi
 
-      if [ "$FEAT_TESTS_OK" = true ]; then
-        # Check merge policy
-        ALLOW_MERGE=$(get_policy "$FEAT_REPO" "allow_auto_merge" "false")
-        if [ "$ALLOW_MERGE" = "true" ]; then
-          # Merge feature branch into default branch
-          if (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" >/dev/null 2>&1 && \
-              git merge "$BRANCH_NAME" --no-ff -m "feat: $FEAT_TITLE (overnight loop)" >/dev/null 2>&1); then
-            (cd "$FEAT_PATH" && git branch -d "$BRANCH_NAME" >/dev/null 2>&1) || true
-            log "  BUILD OK: $FEAT_REPO — merged to $DEFAULT_BRANCH"
+          if [ "$FEAT_TESTS_OK" = true ]; then
+            ALLOW_MERGE=$(get_policy "$FEAT_REPO" "allow_auto_merge" "false")
+            if [ "$ALLOW_MERGE" = "true" ]; then
+              if (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" >/dev/null 2>&1 && \
+                  git merge "$BRANCH_NAME" --no-ff -m "feat: $FEAT_TITLE (overnight loop)" >/dev/null 2>&1); then
+                (cd "$FEAT_PATH" && git branch -d "$BRANCH_NAME" >/dev/null 2>&1) || true
+                log "  BUILD OK: $FEAT_REPO — merged to $DEFAULT_BRANCH"
+                echo "ok-merged|$FEAT_REPO|$FEAT_TITLE|" > "$FEAT_TMPDIR/$feat_idx.result"
+              else
+                log "  BUILD FAILED: $FEAT_REPO — merge conflict"
+                (cd "$FEAT_PATH" && git merge --abort 2>/dev/null; git checkout "$DEFAULT_BRANCH" 2>/dev/null; git branch -D "$BRANCH_NAME" 2>/dev/null) || true
+                echo "fail|$FEAT_REPO|$FEAT_TITLE|merge_conflict" > "$FEAT_TMPDIR/$feat_idx.result"
+              fi
+            else
+              (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" >/dev/null 2>&1) || true
+              log "  BUILD OK: $FEAT_REPO — on branch $BRANCH_NAME (auto-merge disabled)"
+              echo "ok-branch|$FEAT_REPO|$FEAT_TITLE|$BRANCH_NAME" > "$FEAT_TMPDIR/$feat_idx.result"
+            fi
+          else
+            (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" 2>/dev/null; git branch -D "$BRANCH_NAME" 2>/dev/null) || true
+            echo "rollback|$FEAT_REPO|$FEAT_TITLE|tests_or_agent_failed" > "$FEAT_TMPDIR/$feat_idx.result"
+          fi
+        done
+      ) &
+    done
+    wait
+
+    # Aggregate feature results from temp files
+    for feat_idx in $(seq 0 $((FEAT_COUNT - 1))); do
+      if [ -f "$FEAT_TMPDIR/$feat_idx.result" ]; then
+        IFS='|' read -r _bstatus _brepo _btitle _breason < "$FEAT_TMPDIR/$feat_idx.result"
+        case "$_bstatus" in
+          ok-merged)
             FEATURES_OK=$((FEATURES_OK + 1))
-            MODIFIED_REPOS="$MODIFIED_REPOS $FEAT_REPO"
-            CHANGED_REPOS_JSON=$(CHANGED_REPOS_JSON="$CHANGED_REPOS_JSON" REPO="$FEAT_REPO" python3 -c "
+            MODIFIED_REPOS="$MODIFIED_REPOS $_brepo"
+            CHANGED_REPOS_JSON=$(CHANGED_REPOS_JSON="$CHANGED_REPOS_JSON" REPO="$_brepo" python3 -c "
 import json, os
 items = json.loads(os.environ['CHANGED_REPOS_JSON'])
 if os.environ['REPO'] not in items: items.append(os.environ['REPO'])
 print(json.dumps(items))
 ") || true
-          else
-            log "  BUILD FAILED: $FEAT_REPO — merge conflict"
-            (cd "$FEAT_PATH" && git merge --abort 2>/dev/null; git checkout "$DEFAULT_BRANCH" 2>/dev/null; git branch -D "$BRANCH_NAME" 2>/dev/null) || true
+            ;;
+          ok-branch)
+            FEATURES_OK=$((FEATURES_OK + 1))
+            ;;
+          fail)
             FEATURES_FAIL=$((FEATURES_FAIL + 1))
-            FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$FEAT_REPO" TITLE="$FEAT_TITLE" TYPE="feature" python3 -c "
+            FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$_brepo" TITLE="$_btitle" TYPE="feature" python3 -c "
 import json, os
 items = json.loads(os.environ['FAILED_ITEMS_JSON'])
-items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': 'merge_conflict'})
+items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': '$_breason'})
 print(json.dumps(items))
 ") || true
-          fi
-        else
-          # Leave on branch, don't merge — count as success (branch available for review)
-          (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" >/dev/null 2>&1) || true
-          log "  BUILD OK: $FEAT_REPO — on branch $BRANCH_NAME (auto-merge disabled)"
-          FEATURES_OK=$((FEATURES_OK + 1))
-        fi
-      else
-        # Rollback: delete the feature branch, return to default
-        (cd "$FEAT_PATH" && git checkout "$DEFAULT_BRANCH" 2>/dev/null; git branch -D "$BRANCH_NAME" 2>/dev/null) || true
-        FEATURES_FAIL=$((FEATURES_FAIL + 1))
-        ROLLBACKS=$((ROLLBACKS + 1))
-        ROLLBACK_REPOS_JSON=$(ROLLBACK_REPOS_JSON="$ROLLBACK_REPOS_JSON" REPO="$FEAT_REPO" python3 -c "
+            ;;
+          rollback)
+            FEATURES_FAIL=$((FEATURES_FAIL + 1))
+            ROLLBACKS=$((ROLLBACKS + 1))
+            ROLLBACK_REPOS_JSON=$(ROLLBACK_REPOS_JSON="$ROLLBACK_REPOS_JSON" REPO="$_brepo" python3 -c "
 import json, os
 items = json.loads(os.environ['ROLLBACK_REPOS_JSON'])
 items.append(os.environ['REPO'])
 print(json.dumps(items))
 ") || true
-        FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$FEAT_REPO" TITLE="$FEAT_TITLE" TYPE="feature" python3 -c "
+            FAILED_ITEMS_JSON=$(FAILED_ITEMS_JSON="$FAILED_ITEMS_JSON" REPO="$_brepo" TITLE="$_btitle" TYPE="feature" python3 -c "
 import json, os
 items = json.loads(os.environ['FAILED_ITEMS_JSON'])
-items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': 'tests_or_agent_failed'})
+items.append({'repo': os.environ['REPO'], 'title': os.environ['TITLE'], 'type': os.environ['TYPE'], 'reason': '$_breason'})
 print(json.dumps(items))
 ") || true
+            ;;
+          skip)
+            SKIPPED_ITEMS="$SKIPPED_ITEMS $_brepo:$_breason"
+            ;;
+        esac
       fi
     done
+    rm -rf "$FEAT_TMPDIR"
+    unset FEAT_REPO_GROUPS
 
     # ── Phase 6: VERIFY ──────────────────────────────────────────────────
 
