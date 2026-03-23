@@ -48,7 +48,7 @@ This maintains the "one department = one script = one prompt = one findings file
 
 **Role:** Cloud Infrastructure Analyst performing a Well-Architected Review.
 
-**7 Phases:**
+**7 Phases (1 discovery + 6 pillar audits):**
 
 1. **Discover** — Find all `.tf` files, identify AWS services in use. Read `CLAUDE.md` and `README.md` for project context.
 2. **Cost Optimization** — Unused resources, over-provisioned capacity, missing lifecycle policies, price class choices, arm64 vs x86, missing cost allocation tags.
@@ -72,7 +72,7 @@ Follows `qa-scan.sh` pattern:
 
 1. Accept `TARGET` repo path and optional `--sync` flag
 2. Validate git repo
-3. Check for `terraform/` directory — if absent, output info-level finding and exit (score 100)
+3. Check for `terraform/` directory — if absent, write a full findings JSON to `results/<repo_name>/cloud-ops-findings.json` with all `pillar_scores` at 100, `cloud_ops_score` at 100, and a single info finding (`COPS-000: "No Terraform directory found"`), then exit cleanly
 4. Read config from `targets.yaml` via `parse-config.py`
 5. Concatenate prompt with target metadata
 6. Launch agent runner with tools: `Read, Glob, Grep, Bash, Write, Agent`
@@ -80,6 +80,8 @@ Follows `qa-scan.sh` pattern:
 8. Optionally sync via `quick-sync.sh`
 
 No `WebSearch` or `WebFetch` — static analysis only.
+
+**Note:** Existing launchers carry a dead `CONFIG_FILE="$QA_ROOT/config/qa-config.yaml"` variable that is set but never used. The Cloud Ops launcher should reference `targets.yaml` only and not carry forward this dead variable.
 
 ### 3. Findings Schema
 
@@ -186,17 +188,48 @@ write_json(dashboard_dir / "cloud-ops-data.json", cloud_ops)
 ```
 
 Additions to existing code:
-- `normalize_finding()` — preserve `pillar` field (alongside existing `wcag_criterion`, `regulation`, `revenue_estimate`)
-- `normalize_precalculated_summary()` — preserve `cloud_ops_score`, `pillar_scores` (alongside existing `seo_score`, `compliance_score`, etc.)
-- Grand total counter includes cloud-ops findings
+
+**`backoffice/backlog.py` — `normalize_finding()`:**
+Add a `cloud-ops` block to preserve the `pillar` field (alongside existing department-specific blocks for `monetization`, `compliance`, `ada`):
+
+```python
+if department == "cloud-ops":
+    if "pillar" in raw:
+        canonical["pillar"] = raw["pillar"]
+```
+
+**`backoffice/aggregate.py` — `normalize_precalculated_summary()`:**
+Add `cloud-ops` to the `score_map` dictionary:
+
+```python
+"cloud-ops": (
+    "cloud_ops_score",
+    [data.get("cloud_ops_score")],
+),
+```
+
+Additionally, `pillar_scores` must be surfaced in the aggregated repo entry. In `aggregate_department()`, add handling to pass through `pillar_scores` from the raw findings data into the repo entry (similar to how `scores` dict is currently handled).
+
+**`backoffice/aggregate.py` — `aggregate()` function:**
+- Add cloud-ops to the grand total counter (hardcoded sum of department finding counts)
+- Add `"cloud-ops": cloud_ops_data` to `dept_data_map` so cloud-ops findings flow into `merge_backlog()` and `update_score_history()`
+
+**`backoffice/aggregate.py` — score history extraction:**
+Add `summary.get("cloud_ops_score")` to the score extraction chain used for non-QA departments.
 
 ### 6. Dashboard (`dashboard/index.html`)
 
-**Score card:** 7th card in score-row grid. Shows `cloud_ops_score` with sparkline. Label: "Cloud Ops". Grid accommodates 7 cards (responsive wrap).
+**JavaScript registration:**
+- Add `'cloud-ops'` to `DEPT_KEYS` array
+- Add to `DEPT_SOURCES`: `'cloud-ops': {url: 'cloud-ops-data.json', scoreField: 'cloud_ops_score'}`
+
+**Score card:** 7th card in score-row grid. Shows `cloud_ops_score` with sparkline. Label: "Cloud Ops".
+
+**Grid layout adjustment:** Change `.score-row` from `repeat(6, 1fr)` to `repeat(auto-fill, minmax(160px, 1fr))` for responsive wrapping that handles 7 cards cleanly. The 1100px breakpoint can use `repeat(4, 1fr)` (4+3 layout) instead of `repeat(3, 1fr)` (which would leave an orphan). The 700px breakpoint at `repeat(2, 1fr)` works fine (4+3 → 2+2+2+1).
 
 **Slide-over panel (65% width):**
 - Pillar breakdown bar — 6 horizontal mini-bars with per-pillar scores, color-coded (green >80, yellow 50-80, red <50), showing weights
-- Filter bar — severity, status, effort, fixable, pillar (dropdown unique to Cloud Ops), search
+- Filter bar — severity, status, effort, fixable, pillar dropdown, search. The pillar dropdown is an additional `<select>` element that only renders when the active department is `cloud-ops`. It filters on `finding.pillar`. Extend `applyFilters()` to check for an active pillar filter and match against `finding.pillar` when present.
 - Findings list — standard cards with pillar badge + severity badge
 - Finding detail (45% width) — evidence, fix suggestion, backlog info
 
@@ -212,10 +245,16 @@ cloud-ops: ## Run Cloud Ops audit on TARGET repo
 ```
 
 **Audit waves (updated):**
-- Wave 1 (parallel): QA + SEO + ADA + Cloud Ops
+- Wave 1 (parallel): QA + SEO + ADA + Cloud Ops (Cloud Ops is lightweight Terraform static analysis, adds minimal load to Wave 1)
 - Wave 2 (parallel): Compliance + Monetization + Product
 
 **Sequential audit-all:** append `cloud-ops` to the list.
+
+**`audit-live` target:** Also add Cloud Ops to Wave 1, plus a `quick-sync.sh cloud-ops` call after completion.
+
+**`job-status.sh init` strings:** Update the department list in both `audit-all` and `audit-all-parallel` targets from `"qa seo ada compliance monetization product"` to `"qa seo ada compliance monetization product cloud-ops"`.
+
+**`clean` target:** Add `dashboard/cloud-ops-data.json` to the `rm -f` list.
 
 ### 8. Standards Reference (`lib/cloud-ops-standards.md`)
 
@@ -239,11 +278,12 @@ Add `cloud-ops` to `default_departments` for repos that have a `terraform/` dire
 
 | File | Change |
 |---|---|
-| `Makefile` | Add `cloud-ops` target, update audit waves |
-| `backoffice/aggregate.py` | Add cloud-ops aggregation call, preserve pillar fields |
-| `backoffice/backlog.py` | Preserve `pillar` in `normalize_finding()` |
-| `dashboard/index.html` | Add 7th score card, slide-over panel, pillar filter |
-| `config/targets.yaml` | Add `cloud-ops` to default_departments |
+| `Makefile` | Add `cloud-ops` target; update `audit-all`, `audit-all-parallel`, `audit-live` wave lists; update `job-status.sh init` strings; add `cloud-ops-data.json` to `clean` target |
+| `backoffice/aggregate.py` | Add `aggregate_department()` call for cloud-ops; add `cloud-ops` to `score_map` in `normalize_precalculated_summary()`; add to `dept_data_map` for backlog/history; add to grand total counter; add `cloud_ops_score` to score history extraction chain; handle `pillar_scores` passthrough in repo entry |
+| `backoffice/backlog.py` | Add `cloud-ops` block in `normalize_finding()` to preserve `pillar` field |
+| `dashboard/index.html` | Add `cloud-ops` to `DEPT_KEYS` and `DEPT_SOURCES`; add 7th score card; change grid to `auto-fill, minmax(160px, 1fr)`; update 1100px breakpoint to `repeat(4, 1fr)`; add slide-over panel with pillar breakdown bars; add conditional pillar dropdown to filter bar; extend `applyFilters()` for pillar filtering |
+| `config/targets.yaml` | Add `cloud-ops` to `default_departments` for repos with `terraform/` directories |
+| `tests/` | Add test cases for cloud-ops aggregation, pillar normalization, and score history if `test_aggregate.py` or similar exists |
 
 ## Out of Scope
 
