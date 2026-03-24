@@ -65,9 +65,19 @@ resource "aws_ce_anomaly_monitor" "cloudfront" {
   monitor_dimension = "SERVICE"
 }
 
+resource "aws_sns_topic" "billing_alerts" {
+  name = "${var.project_name}-billing-alerts"
+}
+
+resource "aws_sns_topic_subscription" "billing_email" {
+  topic_arn = aws_sns_topic.billing_alerts.arn
+  protocol  = "email"
+  endpoint  = var.billing_alert_email
+}
+
 resource "aws_ce_anomaly_subscription" "cloudfront" {
   name           = "${var.project_name}-cloudfront-anomalies"
-  frequency      = "DAILY"
+  frequency      = "IMMEDIATE"
   monitor_arn_list = [aws_ce_anomaly_monitor.cloudfront.arn]
 
   threshold_expression {
@@ -79,8 +89,8 @@ resource "aws_ce_anomaly_subscription" "cloudfront" {
   }
 
   subscriber {
-    type    = "EMAIL"
-    address = var.billing_alert_email
+    type    = "SNS"
+    address = aws_sns_topic.billing_alerts.arn
   }
 }
 
@@ -92,4 +102,9 @@ output "billing_alert_email" {
 output "cloudfront_anomaly_monitor_arn" {
   description = "Service-level cost anomaly monitor ARN used to catch CloudFront spend spikes"
   value       = aws_ce_anomaly_monitor.cloudfront.arn
+}
+
+output "billing_alerts_topic_arn" {
+  description = "SNS topic ARN receiving immediate billing anomaly alerts"
+  value       = aws_sns_topic.billing_alerts.arn
 }

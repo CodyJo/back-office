@@ -28,24 +28,30 @@ Back Office is the portfolio control plane for local repo audits, dashboard aggr
   - Monthly account budget: `back-office-account-monthly` at `USD 250`
   - Monthly CloudFront budget: `back-office-cloudfront-monthly` at `USD 100`
   - Service-level Cost Anomaly monitor for `SERVICE`
-  - Daily email anomaly subscription with `ANOMALY_TOTAL_IMPACT_ABSOLUTE >= USD 20`
+  - Immediate SNS-backed anomaly subscription with `ANOMALY_TOTAL_IMPACT_ABSOLUTE >= USD 20`
+  - SNS topic: `back-office-billing-alerts`
 - Verified the Terraform changes with:
   - `terraform -chdir=/home/merm/projects/back-office/terraform validate`
   - `terraform -chdir=/home/merm/projects/back-office/terraform plan`
   - `terraform -chdir=/home/merm/projects/back-office/terraform apply -auto-approve`
+- Added live per-project monthly AWS budgets for the remaining CloudFront-backed repos:
+  - `thenewbeautifulme-monthly` at `USD 100`
+  - `bible-app-monthly` at `USD 75`
+  - `fuel-monthly` at `USD 50`
+  - `certstudy-monthly` at `USD 50`
+  - `etheos-app-monthly` at `USD 50`
+  - `codyjo-com-monthly` at `USD 50`
 
 ## Pending
 
-- Add per-project AWS budgets across the remaining CloudFront-backed repos, reusing the `analogify` Terraform pattern where possible.
 - Review the existing dirty worktree files before bundling Back Office changes into any future commit. This repo already contains pre-existing modified and untracked files outside this change.
-- Clean up the existing Terraform warning in `main.tf`: `aws_s3_bucket_lifecycle_configuration.dashboard_data` should define `filter {}` or `prefix` explicitly before a future AWS provider upgrade turns the warning into an error.
 
 ## Key Decisions And Constraints
 
 - The billing math matched exactly: CloudFront invalidation pricing is effectively `($0.005 * (paths - 1000 free))`; `203,470 - 1,000 = 202,470`, and `202,470 * 0.005 = USD 1,012.35`.
 - The spike came from repeated dashboard syncs over a short window on March 24, 2026, not from normal traffic volume, Lambda usage, or origin transfer.
 - Provider-level normalization is required in addition to engine-level shaping because Back Office has multiple sync invocation paths (`make dashboard`, `quick-sync`, `watch`, `overnight`, CodeBuild CD).
-- AWS Cost Anomaly Detection with email subscriptions cannot use `IMMEDIATE` frequency; direct email subscriptions must use `DAILY` or `WEEKLY` unless an SNS topic is introduced.
+- AWS Cost Anomaly Detection can use `IMMEDIATE` only when the subscriber is SNS. Direct email subscriptions require `DAILY` or `WEEKLY`.
 - Do not assume the repo is clean; there were pre-existing modified and untracked files unrelated to this fix.
 
 ## Files To Read First
@@ -76,9 +82,8 @@ Back Office is the portfolio control plane for local repo audits, dashboard aggr
 
 ## Recommended Next Steps
 
-1. Add per-project AWS budgets to the remaining CloudFront-backed repos.
-2. Fix the `aws_s3_bucket_lifecycle_configuration.dashboard_data` warning in `terraform/main.tf`.
-3. Keep new deploy code aligned with the checklist in `docs/COST_GUARDRAILS.md`.
+1. Confirm the email subscription on `back-office-billing-alerts` is accepted by the mailbox recipient.
+2. Keep new deploy code aligned with the checklist in `docs/COST_GUARDRAILS.md`.
 
 ## Verification
 
