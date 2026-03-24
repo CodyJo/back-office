@@ -15,9 +15,12 @@ Back Office is the portfolio control plane for local repo audits, dashboard aggr
   - root target: `/*`
   - prefixed target: `/<prefix>/*`
 - Patched `backoffice/sync/providers/aws.py` so any future multi-path invalidation batch is normalized down to a single wildcard before it reaches CloudFront.
+- Patched `buildspec-cd.yml` to seed `config/backoffice.yaml` from a tracked CodeBuild-safe config template so deploys no longer depend on the untracked local config file.
+- Added `config/backoffice.codebuild.example.yaml` as the tracked CI/CD deploy config source.
 - Added regression coverage in `tests/test_sync_engine.py` and `tests/test_sync_providers.py`.
 - Verified the sync changes with:
   - `python3 -m pytest tests/test_sync_engine.py tests/test_sync_providers.py`
+- Ran `bash /home/merm/projects/back-office/scripts/sync-dashboard.sh` locally on March 24, 2026 and confirmed both dashboard distributions invalidated exactly one path each.
 
 ## Pending
 

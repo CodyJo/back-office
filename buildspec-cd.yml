@@ -27,4 +27,5 @@ phases:
 
   build:
     commands:
+      - cp config/backoffice.codebuild.example.yaml config/backoffice.yaml
       - bash scripts/sync-dashboard.sh

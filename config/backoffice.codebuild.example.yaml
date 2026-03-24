@@ -1,0 +1,43 @@
+# Back Office CodeBuild deploy config
+# Used only inside CI/CD to allow dashboard sync without relying on an
+# untracked local config/backoffice.yaml.
+
+runner:
+  command: "claude --model haiku"
+  mode: "claude-print"
+
+deploy:
+  provider: aws
+  aws:
+    region: us-west-2
+    dashboard_targets:
+      - bucket: "admin-thenewbeautifulme-site"
+        base_path: ""
+        distribution_id: "E372ZR95FXKVT5"
+        subdomain: "admin.thenewbeautifulme.com"
+        filter_repo: "thenewbeautifulme"
+        allow_public_read: false
+      - bucket: "admin-codyjo-site"
+        base_path: ""
+        distribution_id: "E30Z8D5XMDR1A9"
+        subdomain: "admin.codyjo.com"
+        filter_repo: null
+        allow_public_read: false
+      - bucket: "www.codyjo.com"
+        base_path: "back-office/dashboard"
+        distribution_id: "EF4U8A7W3OH5K"
+        subdomain: "www.codyjo.com"
+        filter_repo: null
+        allow_public_read: false
+
+targets:
+  back-office:
+    path: "."
+    language: python
+    default_departments: [qa]
+    lint_command: "make test"
+    test_command: "make test"
+    coverage_command: ""
+    deploy_command: "bash scripts/sync-dashboard.sh"
+    context: |
+      Back Office dashboard publishing config for CodeBuild.
