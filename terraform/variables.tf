@@ -20,3 +20,27 @@ variable "dashboard_domains" {
   }))
   default = []
 }
+
+variable "billing_alert_email" {
+  description = "Email address that receives AWS billing guardrail alerts"
+  type        = string
+  default     = "cody@codyjo.com"
+}
+
+variable "account_monthly_budget_usd" {
+  description = "Monthly total AWS spend budget for the account"
+  type        = number
+  default     = 250
+}
+
+variable "cloudfront_monthly_budget_usd" {
+  description = "Monthly CloudFront spend budget for the account"
+  type        = number
+  default     = 100
+}
+
+variable "cloudfront_anomaly_threshold_usd" {
+  description = "Minimum absolute USD impact for CloudFront anomaly alerts"
+  type        = number
+  default     = 20
+}
