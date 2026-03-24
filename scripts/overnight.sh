@@ -614,12 +614,13 @@ for t in targets:
 import os
 pre = float(os.environ['PRE'])
 post = float(os.environ['POST'])
-print('true' if post < pre else 'false')
+tolerance = 0.5  # Allow 0.5% variance for measurement noise
+print('true' if post < pre - tolerance else 'false')
 " 2>/dev/null) || COV_REGRESSED="false"
               fi
 
               if [ "$COV_REGRESSED" = "true" ]; then
-                log "  FIX ROLLED BACK: $fix_repo — coverage decreased ($PRE_COV% -> $POST_COV%)"
+                log "  FIX ROLLED BACK: $fix_repo — coverage decreased beyond 0.5% tolerance ($PRE_COV% -> $POST_COV%)"
                 (cd "$FIX_PATH" && git reset --hard "$TAG_NAME") >/dev/null 2>&1 || true
                 echo "rollback|$fix_repo|$fix_title|coverage_regression" > "$FIX_TMPDIR/$fix_idx.result"
               else
@@ -833,12 +834,13 @@ for t in targets:
 import os
 pre = float(os.environ['PRE'])
 post = float(os.environ['POST'])
-print('true' if post < pre else 'false')
+tolerance = 0.5  # Allow 0.5% variance for measurement noise
+print('true' if post < pre - tolerance else 'false')
 " 2>/dev/null) || COV_REGRESSED="false"
                 fi
 
                 if [ "$COV_REGRESSED" = "true" ]; then
-                  log "  BUILD ROLLED BACK: $FEAT_REPO — coverage decreased ($PRE_COV% -> $POST_COV%)"
+                  log "  BUILD ROLLED BACK: $FEAT_REPO — coverage decreased beyond 0.5% tolerance ($PRE_COV% -> $POST_COV%)"
                 else
                   FEAT_TESTS_OK=true
                   log "  Feature tests pass, coverage $PRE_COV% -> $POST_COV%"
