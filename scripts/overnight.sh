@@ -339,6 +339,10 @@ print(json.dumps(failures))
 PYEOF
 }
 
+# Export functions and variables for background subshells (parallel fix/feature phases)
+export -f log log_phase check_stop get_policy is_worktree_clean run_tests get_coverage_pct get_default_branch get_valid_targets
+export ROOT_DIR CONFIG_FILE RESULTS_DIR PLAN_FILE STOP_FILE DRY_RUN HISTORY_FILE SUMMARY_FILE
+
 # ── Banner ───────────────────────────────────────────────────────────────────
 
 log "╔══════════════════════════════════════════════════════════╗"
@@ -389,6 +393,7 @@ while true; do
 
   log_phase "PHASE 1: SNAPSHOT"
   TAG_NAME="overnight-before-$(date +%Y%m%d-%H%M%S)"
+  export TAG_NAME
 
   while IFS='|' read -r name path test_cmd deploy_cmd cov_cmd lang; do
     [ -z "$name" ] && continue
