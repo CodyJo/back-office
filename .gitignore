@@ -18,6 +18,9 @@ terraform/.terraform.lock.hcl
 # Config (may contain secrets)
 config/*.yaml
 config/*.yml
+config/backoffice.yaml
+config/targets.yaml
+config/task-queue.yaml
 config/agent-runner.env
 !config/*.example.yaml
 !config/*.example.yml

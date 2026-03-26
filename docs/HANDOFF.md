@@ -8,6 +8,13 @@ Back Office is centered on a human-centered approval model. The immediate produc
 
 ## Completed
 
+- Updated the target registry in both `config/targets.yaml` and `config/backoffice.yaml` so the newer `~/projects` repos are visible to Back Office:
+  - added/synced `continuum`, `pattern`, `pe-bootstrap`, and `shared`
+  - backfilled `config/backoffice.yaml` with targets that already existed in `config/targets.yaml` but were missing from the unified runtime config (`selah`, `analogify`, `cordivent`, `fuel`, `certstudy`, `auth-service`)
+- Verified target config loading with:
+  - `python3 -m backoffice list-targets`
+  - `python3 -m backoffice config show`
+  - YAML parse checks for `config/targets.yaml` and `config/backoffice.yaml`
 - Fixed the top-level CLI bridge so `python3 -m backoffice audit` and `python3 -m backoffice audit-all` correctly translate to the workflow module’s `run-target` and `run-all` commands.
 - Added regression coverage in `tests/test_main.py` for the `audit-all -> run-all` dispatch.
 - Added a one-command safe local runner at `scripts/run-safe-local-backoffice.sh`:
