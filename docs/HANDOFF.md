@@ -8,6 +8,13 @@ Back Office is centered on a human-centered approval model. The immediate produc
 
 ## Completed
 
+- Finished the shared-package cutover cleanup across the portfolio: removed the final checked-in mirror directory from `thenewbeautifulme`, retired `scripts/sync_shared_packages.py` and `tests/test_sync_shared_packages.py`, updated the portfolio audit to flag future mirror drift, and updated the engineering standard/roadmap to treat `/home/merm/projects/shared/packages` as the only approved shared package source.
+- Added the missing legal/e2e baseline in the remaining apps: `continuum` now has top-level `/privacy` and `/accessibility` pages, `pattern` now has `/accessibility`, and `certstudy`, `selah`, `thenewbeautifulme`, `continuum`, and `pattern` now all have Playwright config plus a public smoke spec.
+- Verified `continuum-ci` succeeds live with the `shared` secondary source attached, then removed the final fallback copy blocks from [continuum buildspecs](/home/merm/projects/continuum/buildspec-ci.yml). The Next app portfolio no longer depends on buildspec mirror fallbacks.
+- Verified the new CodeBuild `shared` secondary source live in CI for `fuel`, `certstudy`, `selah`, and `thenewbeautifulme`, then removed the repo-local fallback copy blocks from those apps' buildspecs.
+- Published `codebuild-module-v2` from `/home/merm/projects/codyjo.com` with secondary GitHub source support in the shared Terraform CodeBuild module, updated the app Terraform stacks to consume it, and applied the live CodeBuild project updates for `fuel`, `certstudy`, `selah`, `thenewbeautifulme`, and `continuum`.
+- CodeBuild now provides `CodyJo/shared` as the `shared` secondary source for those apps; the remaining package-distribution work is just removing mirror fallbacks after live build verification.
+- Moved all seven Next.js apps onto `/home/merm/projects/shared/packages` as their declared `@codyjo/*` dependency source. `fuel`, `certstudy`, `selah`, `thenewbeautifulme`, and `continuum` still keep mirrored package copies only as CI/bootstrap inputs, not as package.json source-of-truth.
 - Closed the product-audit issues that were directly supported by code:
   - `backoffice.tasks.find_task()` now raises `ValueError` instead of `SystemExit`, and the local task CLI converts that back into a clean CLI exit message
   - `backoffice.server` now returns HTTP `404` for unknown task ids on approve, cancel, PR request, and product approval paths instead of letting task lookup abort the handler

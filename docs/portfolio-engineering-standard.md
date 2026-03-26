@@ -113,8 +113,8 @@ The first enforcement script lives at:
 
 This should evolve into a normal Back Office audit/check step over time.
 
-The current transition model is:
+The current shared-package model is:
 
-- `/home/merm/projects/shared/packages` is the source of truth
-- app-local `vendor/shared-packages` remain allowed only as synced mirrors for standalone builds
-- sync should be automated rather than maintained by hand
+- `/home/merm/projects/shared/packages` is the only approved source of truth for shared frontend packages
+- checked-in app-local mirrors such as `vendor/shared-packages` or repo-local `packages/` are treated as drift and should be removed
+- CI should receive the `shared` repo directly instead of rebuilding mirror copies inside app repos

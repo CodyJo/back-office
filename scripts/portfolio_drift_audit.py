@@ -6,9 +6,7 @@ Scans /home/merm/projects and reports:
 - Next/React/tooling version skew
 - missing baseline scripts
 - missing app-shell/accessibility/e2e conventions
-
-This starts in Fuel because the current sandbox only permits writes here.
-The intended long-term home is Back Office once the workflow is proven.
+- obsolete checked-in shared-package mirrors
 """
 
 from __future__ import annotations
@@ -45,6 +43,7 @@ class AppAudit:
     has_accessibility_page: bool
     has_privacy_page: bool
     has_playwright: bool
+    mirror_dirs: list[str]
     app_shell_files: list[str]
 
 
@@ -53,6 +52,8 @@ def classify_source(raw: str) -> str:
         return "shared"
     if raw.startswith("file:./vendor/shared-packages/"):
         return "vendor"
+    if raw.startswith("file:packages/") or raw.startswith("file:./packages/"):
+        return "local-mirror"
     return raw
 
 
@@ -71,6 +72,14 @@ def find_app_shell_files(root: Path) -> list[str]:
         "src/lib/theme-context.tsx",
         "src/lib/site.ts",
         "src/app/layout.tsx",
+    )
+    return [rel for rel in candidates if (root / rel).exists()]
+
+
+def find_mirror_dirs(root: Path) -> list[str]:
+    candidates = (
+        "vendor/shared-packages",
+        "packages",
     )
     return [rel for rel in candidates if (root / rel).exists()]
 
@@ -107,6 +116,7 @@ def audit_app(root: Path) -> AppAudit:
         has_accessibility_page=(root / "src/app/accessibility/page.tsx").exists(),
         has_privacy_page=(root / "src/app/privacy/page.tsx").exists(),
         has_playwright=(root / "playwright.config.ts").exists() or (root / "playwright.config.mjs").exists(),
+        mirror_dirs=find_mirror_dirs(root),
         app_shell_files=find_app_shell_files(root),
     )
 
@@ -144,33 +154,34 @@ def render_markdown(audits: list[AppAudit]) -> str:
 
     lines.append("## Shared Package Source")
     lines.append("")
-    lines.append("| App | Shared deps | Vendor deps | Other sources |")
-    lines.append("| --- | --- | --- | --- |")
+    lines.append("| App | Shared deps | Vendor deps | Local mirror deps | Other sources |")
+    lines.append("| --- | --- | --- | --- | --- |")
     for audit in audits:
-        source_counts = {"shared": 0, "vendor": 0, "other": 0}
+        source_counts = {"shared": 0, "vendor": 0, "local-mirror": 0, "other": 0}
         for source in audit.codyjo_sources.values():
             if source in source_counts:
                 source_counts[source] += 1
             else:
                 source_counts["other"] += 1
         lines.append(
-            f"| {audit.name} | {source_counts['shared']} | {source_counts['vendor']} | {source_counts['other']} |"
+            f"| {audit.name} | {source_counts['shared']} | {source_counts['vendor']} | {source_counts['local-mirror']} | {source_counts['other']} |"
         )
     lines.append("")
 
     lines.append("## Standards Checklist")
     lines.append("")
-    lines.append("| App | Missing scripts | Skip link | Accessibility page | Privacy page | Playwright | App-shell files |")
-    lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+    lines.append("| App | Missing scripts | Skip link | Accessibility page | Privacy page | Playwright | Mirror dirs | App-shell files |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
     for audit in audits:
         lines.append(
-            "| {name} | {missing} | {skip} | {accessibility} | {privacy} | {playwright} | {shell_count} |".format(
+            "| {name} | {missing} | {skip} | {accessibility} | {privacy} | {playwright} | {mirror_dirs} | {shell_count} |".format(
                 name=audit.name,
                 missing=", ".join(audit.missing_scripts) or "none",
                 skip="yes" if audit.has_skip_link else "no",
                 accessibility="yes" if audit.has_accessibility_page else "no",
                 privacy="yes" if audit.has_privacy_page else "no",
                 playwright="yes" if audit.has_playwright else "no",
+                mirror_dirs=", ".join(audit.mirror_dirs) or "none",
                 shell_count=len(audit.app_shell_files),
             )
         )
@@ -185,17 +196,28 @@ def render_markdown(audits: list[AppAudit]) -> str:
     lines.append("## Immediate Priorities")
     lines.append("")
     vendor_apps = [audit.name for audit in audits if "vendor" in audit.codyjo_sources.values()]
+    local_mirror_apps = [audit.name for audit in audits if "local-mirror" in audit.codyjo_sources.values()]
+    mirror_dir_apps = [audit.name for audit in audits if audit.mirror_dirs]
     no_e2e = [audit.name for audit in audits if not audit.has_playwright]
     no_skip = [audit.name for audit in audits if not audit.has_skip_link]
     no_accessibility = [audit.name for audit in audits if not audit.has_accessibility_page]
+    no_privacy = [audit.name for audit in audits if not audit.has_privacy_page]
     if vendor_apps:
         lines.append(f"- Move vendored shared packages to `/shared/packages`: {', '.join(vendor_apps)}")
+    if local_mirror_apps:
+        lines.append(f"- Replace repo-local shared package mirrors with `/shared/packages`: {', '.join(local_mirror_apps)}")
+    if mirror_dir_apps:
+        lines.append(f"- Delete obsolete checked-in shared package mirrors: {', '.join(mirror_dir_apps)}")
     if no_e2e:
         lines.append(f"- Add baseline Playwright coverage: {', '.join(no_e2e)}")
     if no_skip:
         lines.append(f"- Add skip-link layout baseline: {', '.join(no_skip)}")
     if no_accessibility:
         lines.append(f"- Add accessibility statement baseline: {', '.join(no_accessibility)}")
+    if no_privacy:
+        lines.append(f"- Add privacy page baseline: {', '.join(no_privacy)}")
+    if lines[-1] == "":
+        lines.append("- None")
 
     return "\n".join(lines)
 

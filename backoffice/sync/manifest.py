@@ -20,6 +20,7 @@ DEPT_DATA_MAP: dict[str, tuple[str, str]] = {
     "privacy":      ("privacy-findings.json",     "privacy-data.json"),
     "monetization": ("monetization-findings.json", "monetization-data.json"),
     "product":      ("product-findings.json",     "product-data.json"),
+    "cloud-ops":    ("cloud-ops-findings.json",  "cloud-ops-data.json"),
     "self-audit":   ("findings.json",             "self-audit-data.json"),
 }
 
@@ -31,6 +32,7 @@ AGG_DATA_MAP: dict[str, str] = {
     "privacy-data.json":      "privacy-data.json",
     "monetization-data.json": "monetization-data.json",
     "product-data.json":      "product-data.json",
+    "cloud-ops-data.json":    "cloud-ops-data.json",
 }
 
 SHARED_META_FILES: list[str] = [

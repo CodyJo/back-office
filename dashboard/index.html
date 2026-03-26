@@ -560,6 +560,7 @@
         <th>Compliance</th>
         <th>Monetization</th>
         <th>Product</th>
+        <th>Cloud Ops</th>
       </tr>
     </thead>
     <tbody id="matrixBody"></tbody>
@@ -696,7 +697,9 @@
     var field = DEPT_SOURCES[dept].scoreField;
     if (!field) return null;
     var val = repoObj.summary[field];
-    return val != null ? val : null;
+    if (val == null) return null;
+    if (typeof val !== 'number') return 'N/A';
+    return val;
   }
 
   function timeAgo(dateStr) {
@@ -745,7 +748,7 @@
     var scores = [];
     repos.forEach(function(repoName) {
       var s = getRepoScore(dept, findRepo(dept, repoName));
-      if (s != null) scores.push(s);
+      if (typeof s === 'number') scores.push(s);
     });
     if (scores.length === 0) return null;
     return Math.round(scores.reduce(function(a, b) { return a + b; }, 0) / scores.length);
@@ -760,14 +763,14 @@
       if (repos.length === 0 && selectedProduct === 'all') {
         Object.keys(snap.scores).forEach(function(rk) {
           var v = snap.scores[rk][dept];
-          if (v != null) vals.push(v);
+          if (typeof v === 'number') vals.push(v);
         });
       } else {
         repos.forEach(function(repoName) {
           var sk = Object.keys(snap.scores).find(function(k) {
             return k === repoName || k.replace(/-/g, '') === repoName.replace(/-/g, '');
           });
-          if (sk && snap.scores[sk][dept] != null) vals.push(snap.scores[sk][dept]);
+          if (sk && typeof snap.scores[sk][dept] === 'number') vals.push(snap.scores[sk][dept]);
         });
       }
       if (vals.length === 0) return null;
@@ -958,6 +961,9 @@
           var gray = el('span', {className: 'cell gray'});
           gray.appendChild(document.createTextNode('\u2014'));
           td.appendChild(gray);
+        } else if (score === 'N/A') {
+          var na = el('span', {className: 'cell gray', textContent: 'N/A'});
+          td.appendChild(na);
         } else {
           var cls = 'cell ' + scoreColor(score);
           var cell = el('span', {className: cls, textContent: String(score), 'data-dept': dept, 'data-repo': repoName});
@@ -1251,10 +1257,10 @@
         label = 'Fixed'; value = String(fixedCount); color = 'var(--success)';
         break;
       case 'seo':
-        // Overall seo_score (avg)
+        // Overall seo_score (avg) — exclude non-numeric (N/A) scores
         var seoScores = [];
         repos.forEach(function(r) {
-          if (r.summary && r.summary.seo_score != null) seoScores.push(r.summary.seo_score);
+          if (r.summary && typeof r.summary.seo_score === 'number') seoScores.push(r.summary.seo_score);
         });
         var avgSeo = seoScores.length > 0 ? Math.round(seoScores.reduce(function(a,b){return a+b;},0)/seoScores.length) : null;
         label = 'SEO Score'; value = avgSeo != null ? String(avgSeo) : '--'; color = avgSeo != null ? scoreColorVar(avgSeo) : 'var(--text-dim)';
@@ -1401,6 +1407,7 @@
 
       var row = el('div', {className: 'finding-row'}, [
         el('span', {className: 'sev ' + f.severity, textContent: f.severity}),
+        el('span', {className: 'finding-repo', textContent: f.repo}),
         titleSpan,
         el('span', {className: 'finding-effort', textContent: f.effort})
       ]);
@@ -1427,11 +1434,11 @@
       });
     }
 
-    // Compute stats
+    // Compute stats — exclude non-numeric (N/A) scores
     var scores = [];
     repos.forEach(function(r) {
       var s = getRepoScore(dept === 'privacy' ? 'compliance' : dept, r);
-      if (s != null) scores.push(s);
+      if (typeof s === 'number') scores.push(s);
     });
     var avgScore = scores.length > 0 ? Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length) : null;
 
