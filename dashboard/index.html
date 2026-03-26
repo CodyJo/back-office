@@ -631,6 +631,7 @@
   var deptErrors = {};
   var backlogData = null;
   var historyData = null;
+  var taskQueueData = null;
   var selectedProduct = 'all';
 
   /* ── Helpers ── */
@@ -1117,6 +1118,9 @@
     promises.push(
       fetchJson('backlog.json').then(function(d) { backlogData = d; }).catch(function() { backlogData = null; })
     );
+    promises.push(
+      fetchJson('task-queue.json').then(function(d) { taskQueueData = d; }).catch(function() { taskQueueData = null; })
+    );
 
     DEPT_KEYS.forEach(function(dept) {
       promises.push(
@@ -1491,6 +1495,15 @@
   function renderFindingDetail(finding) {
     var body = document.getElementById('detailBody');
     clearChildren(body);
+    var findingTask = null;
+    if (taskQueueData && taskQueueData.tasks) {
+      findingTask = taskQueueData.tasks.find(function(task) {
+        var source = task.source_finding || {};
+        return task.repo === finding.repo &&
+          source.department === finding.department &&
+          (source.id && finding.id ? source.id === finding.id : source.file === finding.file && task.title === finding.title);
+      }) || null;
+    }
 
     // AI Fix Banner
     if (finding.fixable_by_agent) {
@@ -1516,6 +1529,27 @@
         bannerTextDiv
       ]));
     }
+
+    var actionCard = el('div', {className: 'detail-section'});
+    actionCard.appendChild(el('div', {className: 'detail-section-title', textContent: 'Approval Workflow'}));
+    actionCard.appendChild(el('div', {className: 'detail-text', textContent: findingTask
+      ? 'This finding is already in the human approval queue.'
+      : 'Queue this finding for a human-reviewed fix decision. Nothing runs automatically.'}));
+    var queueBtn = el('button', {
+      className: 'ops-btn ops-btn-primary',
+      textContent: findingTask ? 'Already Queued' : 'Queue for Approval',
+      disabled: !!findingTask
+    });
+    queueBtn.addEventListener('click', function() { queueFindingForApproval(finding, queueBtn); });
+    actionCard.appendChild(queueBtn);
+    if (findingTask) {
+      actionCard.appendChild(el('div', {
+        className: 'detail-text',
+        style: 'margin-top:0.65rem;color:var(--text-dim);',
+        textContent: 'Queue status: ' + (findingTask.status || 'pending_approval')
+      }));
+    }
+    body.appendChild(actionCard);
 
     // Description
     if (finding.description) {
@@ -2312,6 +2346,46 @@
     return base + 'make audit-all-parallel TARGET=' + target;
   }
 
+  function refreshTaskQueueCache() {
+    return fetch('/api/tasks?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
+      .then(function(data) {
+        taskQueueData = data;
+        if (opsStatusCache) opsStatusCache.task_queue = data;
+        return data;
+      });
+  }
+
+  function queueFindingForApproval(finding, btn) {
+    if (!finding || !finding.title || !finding.repo) return;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Queueing…';
+    }
+    fetch('/api/tasks/queue-finding', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({finding: finding, by: 'dashboard'})
+    })
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+      return refreshTaskQueueCache()
+        .catch(function() { return null; })
+        .then(function() {
+          if (btn) {
+            btn.disabled = res.ok || res.data.created === false;
+            btn.textContent = res.ok ? 'Queued' : (res.data.created === false ? 'Already Queued' : 'Queue for Approval');
+          }
+        });
+    })
+    .catch(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Queue for Approval';
+      }
+    });
+  }
+
   /* ════════════════════════════════════════════════
      TAB 1: LIVE JOBS
   ════════════════════════════════════════════════ */
@@ -2608,214 +2682,131 @@
   }
 
   /* ════════════════════════════════════════════════
-     TAB 3: OVERNIGHT LOOP
+     TAB 3: APPROVAL QUEUE
   ════════════════════════════════════════════════ */
 
-  function opsRenderOvernightTab() {
-    var container = document.getElementById('ops-overnight');
+  function opsRenderApprovalTab() {
+    var container = document.getElementById('ops-approval');
     if (!container) return;
     clearChildren(container);
 
-    var oData = (opsStatusCache && opsStatusCache.overnight) || {};
+    var queue = (opsStatusCache && opsStatusCache.task_queue) || taskQueueData || {summary: {}, tasks: []};
+    var summary = queue.summary || {};
+    var tasks = queue.tasks || [];
+    var productSummary = summary.by_product || {};
 
-    // Status cards — adapt from API shape: oData.running (bool), oData.plan, oData.history
     var statusGrid = el('div', {className: 'ops-overnight-status'});
-    var isRunning = oData.running || false;
-    var statusVal = isRunning ? 'Running' : 'Idle';
-    var statusColor = isRunning ? 'var(--success)' : 'var(--text-dim)';
-    var histLen = (oData.history || []).length;
-
     statusGrid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
-      el('div', {className: 'ops-overnight-stat-label', textContent: 'Status'}),
-      el('div', {className: 'ops-overnight-stat-value', style: 'color:' + statusColor, textContent: statusVal})
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Pending Approval'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.pending_approval || 0)})
     ]));
     statusGrid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
-      el('div', {className: 'ops-overnight-stat-label', textContent: 'Current Phase'}),
-      el('div', {className: 'ops-overnight-stat-value', style: 'font-size:0.9rem;', textContent: oData.phase || (isRunning ? 'Active' : '\u2014')})
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Ready Queue'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String((summary.by_status || {}).ready || 0)})
     ]));
     statusGrid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
-      el('div', {className: 'ops-overnight-stat-label', textContent: 'Cycles Run'}),
-      el('div', {className: 'ops-overnight-stat-value', textContent: String(histLen)})
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Ready For Review'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.ready_for_review || 0)})
     ]));
     statusGrid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
-      el('div', {className: 'ops-overnight-stat-label', textContent: 'Stop File'}),
-      el('div', {className: 'ops-overnight-stat-value', style: 'font-size:0.9rem;color:' + (oData.stop_file_exists ? 'var(--critical)' : 'var(--text-dim)'), textContent: oData.stop_file_exists ? 'Present' : 'None'})
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Open Draft PRs'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.pr_open || 0)})
     ]));
     container.appendChild(statusGrid);
 
-    // Buttons
-    var btnRow = el('div', {style: 'display:flex;gap:0.75rem;margin-bottom:1.25rem;'});
-    var startLoopBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Start Loop'});
-    var stopLoopBtn = el('button', {className: 'ops-btn ops-btn-danger', textContent: 'Stop Gracefully'});
-    btnRow.appendChild(startLoopBtn);
-    btnRow.appendChild(stopLoopBtn);
-    container.appendChild(btnRow);
+    var intro = el('div', {className: 'ops-card'});
+    intro.appendChild(el('div', {className: 'ops-card-title', textContent: 'Human-Centered Approval'}));
+    intro.appendChild(el('div', {className: 'ops-card-subtitle', textContent: 'Nothing runs unattended. Findings, fixes, product suggestions, and PRs move only after explicit approval.'}));
+    container.appendChild(intro);
 
-    // Settings card
-    var settingsCard = el('div', {className: 'ops-card'});
-    settingsCard.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.5rem;', textContent: 'Loop Settings'}));
-    var settingsRow = el('div', {className: 'ops-form-row', style: 'margin-bottom:0.75rem;'});
-
-    var intervalGroup = el('div', {className: 'ops-form-group', style: 'margin:0;'});
-    intervalGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Interval (minutes)'}));
-    var intervalInput = el('input', {className: 'ops-form-input', type: 'number', value: '120', style: 'width:100px;', id: 'opsOvernightInterval'});
-    intervalGroup.appendChild(intervalInput);
-    settingsRow.appendChild(intervalGroup);
-
-    var targetGroup = el('div', {className: 'ops-form-group', style: 'margin:0;'});
-    targetGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Targets'}));
-    var targetSelect = el('select', {className: 'ops-form-select', id: 'opsOvernightTarget'});
-    targetSelect.appendChild(el('option', {value: 'all', textContent: 'All targets'}));
-    var oTargets = (opsStatusCache && opsStatusCache.targets) || [];
-    oTargets.forEach(function(t) {
-      var name = typeof t === 'string' ? t : (t.name || t.key || '');
-      if (name) targetSelect.appendChild(el('option', {value: name, textContent: name}));
-    });
-    targetGroup.appendChild(targetSelect);
-    settingsRow.appendChild(targetGroup);
-
-    settingsCard.appendChild(settingsRow);
-
-    // tmux command
-    var tmuxCmd = "tmux new-session -d -s overnight 'cd /home/merm/projects/back-office && make overnight INTERVAL=120'";
-    var tmuxBox = el('div', {className: 'ops-cmd-box'});
-    var tmuxText = el('span', {textContent: tmuxCmd});
-    var tmuxCopy = el('button', {className: 'ops-cmd-copy', textContent: 'Copy'});
-    tmuxCopy.addEventListener('click', function() { opsCopyToClipboard(tmuxText.textContent, tmuxCopy); });
-    tmuxBox.appendChild(tmuxText);
-    tmuxBox.appendChild(tmuxCopy);
-    settingsCard.appendChild(tmuxBox);
-
-    // Update tmux command when interval changes
-    intervalInput.addEventListener('input', function() {
-      tmuxText.textContent = "tmux new-session -d -s overnight 'cd /home/merm/projects/back-office && make overnight INTERVAL=" + (intervalInput.value || '120') + "'";
-    });
-
-    container.appendChild(settingsCard);
-
-    // Latest plan card — API shape: plan.rationale, plan.fixes[], plan.features[], plan.decided_at
-    var plan = oData.plan || null;
-    if (plan) {
-      var planCard = el('div', {className: 'ops-card'});
-      planCard.appendChild(el('div', {className: 'ops-card-header'}, [
-        el('div', {className: 'ops-card-title', textContent: 'Latest Plan (Product Owner)'}),
-        el('div', {className: 'ops-card-subtitle', textContent: plan.decided_at ? timeAgo(plan.decided_at) : ''})
-      ]));
-      if (plan.rationale) {
-        planCard.appendChild(el('div', {style: 'font-size:0.82rem;color:var(--text-dim);margin-bottom:0.75rem;font-style:italic;', textContent: '\u201C' + plan.rationale + '\u201D'}));
-      }
-
-      // Render fixes
-      var planFixes = plan.fixes || [];
-      var planFeatures = plan.features || [];
-      if (planFixes.length > 0 || planFeatures.length > 0) {
-        var itemsWrap = el('div', {style: 'font-size:0.78rem;'});
-        planFixes.forEach(function(item) {
-          var row = el('div', {style: 'margin-bottom:0.35rem;'}, [
-            el('span', {className: 'ops-badge ops-badge-running', style: 'margin-right:0.5rem;', textContent: 'FIX'}),
-            document.createTextNode((item.repo || '') + ' \u2014 ' + (item.title || '')),
-            el('span', {style: 'color:var(--text-dim);', textContent: ' (' + (item.severity || '') + ', ' + (item.department || '') + ')'})
-          ]);
-          itemsWrap.appendChild(row);
-        });
-        planFeatures.forEach(function(item) {
-          var row = el('div', {style: 'margin-bottom:0.35rem;'}, [
-            el('span', {className: 'ops-badge ops-badge-idle', style: 'margin-right:0.5rem;', textContent: 'FEAT'}),
-            document.createTextNode((item.repo || '') + ' \u2014 ' + (item.title || '')),
-            el('span', {style: 'color:var(--text-dim);', textContent: ' (' + (item.effort || '') + ', ' + (item.department || '') + ')'})
-          ]);
-          itemsWrap.appendChild(row);
-        });
-        planCard.appendChild(itemsWrap);
-      }
-      container.appendChild(planCard);
-    }
-
-    // Cycle history — API shape: oData.history[]
-    var cycles = oData.history || [];
-    if (cycles.length > 0) {
-      var histCard = el('div', {className: 'ops-card'});
-      histCard.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: 'Cycle History'}));
-
-      // Header
-      histCard.appendChild(el('div', {className: 'ops-cycle-row', style: 'font-weight:600;color:var(--text-dim);font-size:0.65rem;text-transform:uppercase;'}, [
-        el('span', {textContent: 'Cycle'}),
-        el('span', {textContent: 'Rationale'}),
-        el('span', {textContent: 'Fixes'}),
-        el('span', {textContent: 'Features'}),
-        el('span', {textContent: 'Deploys'}),
-        el('span', {textContent: 'Status'})
-      ]));
-
-      cycles.slice(0, 5).forEach(function(c) {
-        histCard.appendChild(el('div', {className: 'ops-cycle-row'}, [
-          el('span', {className: 'ops-cycle-id', textContent: c.timestamp || c.id || '\u2014'}),
-          el('span', {style: 'font-size:0.75rem;', textContent: c.rationale || '\u2014'}),
-          el('span', {style: 'color:var(--success);', textContent: c.fixes || '\u2014'}),
-          el('span', {style: 'color:var(--success);', textContent: c.features || '\u2014'}),
-          el('span', {textContent: c.deploys != null ? String(c.deploys) : '\u2014'}),
-          el('span', null, [el('span', {className: opsBadgeClass(c.status), textContent: c.status || 'Done'})])
+    var productKeys = Object.keys(productSummary);
+    if (productKeys.length > 0) {
+      var productCard = el('div', {className: 'ops-card'});
+      productCard.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: 'Per-Product Backlog Visibility'}));
+      productKeys.sort().forEach(function(productKey) {
+        var stats = productSummary[productKey] || {};
+        productCard.appendChild(el('div', {className: 'ops-cycle-row'}, [
+          el('span', {className: 'ops-cycle-id', textContent: productKey}),
+          el('span', {textContent: 'total ' + (stats.total || 0)}),
+          el('span', {textContent: 'open ' + (stats.open || 0)}),
+          el('span', {textContent: 'pending approval ' + (stats.pending_approval || 0)}),
+          el('span', {textContent: 'done ' + (stats.done || 0)}),
+          el('span', null, [el('span', {className: 'ops-badge ops-badge-idle', textContent: 'isolated'})])
         ]));
       });
-      container.appendChild(histCard);
+      container.appendChild(productCard);
     }
 
-    // Wire buttons
-    startLoopBtn.addEventListener('click', function() {
-      startLoopBtn.disabled = true;
-      startLoopBtn.textContent = 'Starting\u2026';
-      var payload = {interval: parseInt(intervalInput.value, 10) || 120};
-      var target = targetSelect.value;
-      if (target !== 'all') payload.target = target;
+    if (tasks.length === 0) {
+      container.appendChild(el('div', {className: 'empty-state', textContent: 'No queued work yet. Use a finding detail or the Suggest Product tab to create approval items.'}));
+      return;
+    }
 
-      fetch('/api/ops/overnight/start', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      })
-      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
-      .then(function(res) {
-        startLoopBtn.disabled = false;
-        startLoopBtn.textContent = 'Start Loop';
-        if (res.ok) {
-          opsFeedback(container, 'Overnight loop started.', false);
-          setTimeout(function() { opsRefreshLiveJobs(); opsRenderOvernightTab(); }, 2000);
-        } else {
-          opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
-        }
-      })
-      .catch(function(err) {
-        startLoopBtn.disabled = false;
-        startLoopBtn.textContent = 'Start Loop';
-        opsFeedback(container, 'Network error: ' + err, true);
-      });
+    var queueCard = el('div', {className: 'ops-card'});
+    queueCard.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: 'Approval Queue'}));
+    tasks.slice(0, 24).forEach(function(task) {
+      var row = el('div', {className: 'ops-job-row', style: 'grid-template-columns: 1.1fr 1fr 0.8fr auto;align-items:start;'});
+      var left = el('div');
+      left.appendChild(el('div', {className: 'ops-job-target', textContent: task.title || task.id}));
+      left.appendChild(el('div', {style: 'font-size:0.72rem;color:var(--text-dim);margin-top:0.25rem;', textContent: (task.repo || 'unknown repo') + ' · ' + (task.product_key || 'no product')}));
+      row.appendChild(left);
+      row.appendChild(el('span', {className: 'ops-job-dept', textContent: task.task_type || task.category || 'task'}));
+      row.appendChild(el('span', null, [el('span', {className: opsBadgeClass(task.status), textContent: task.status || 'pending'})]));
+
+      var actions = el('div', {style: 'display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:flex-end;'});
+      if (task.status === 'pending_approval') {
+        var approveBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: task.task_type === 'product_suggestion' ? 'Approve & Add' : 'Approve'});
+        approveBtn.addEventListener('click', function() {
+          var endpoint = task.task_type === 'product_suggestion' ? '/api/ops/product/approve' : '/api/tasks/approve';
+          fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: task.id, by: 'dashboard'})
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            opsFeedback(container, res.ok ? 'Approval recorded.' : ('Error: ' + (res.data.error || 'Unknown error')), !res.ok);
+            if (res.ok) refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
+          });
+        });
+        actions.appendChild(approveBtn);
+      }
+      if (task.status === 'ready_for_review') {
+        var prBtn = el('button', {className: 'ops-btn', textContent: 'Create Draft PR'});
+        prBtn.addEventListener('click', function() {
+          fetch('/api/tasks/request-pr', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: task.id, by: 'dashboard'})
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            opsFeedback(container, res.ok ? 'Draft PR created.' : ('Error: ' + (res.data.error || 'Unknown error')), !res.ok);
+            if (res.ok) refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
+          });
+        });
+        actions.appendChild(prBtn);
+      }
+      if (task.status !== 'done' && task.status !== 'cancelled') {
+        var cancelBtn = el('button', {className: 'ops-btn ops-btn-danger', textContent: 'Cancel'});
+        cancelBtn.addEventListener('click', function() {
+          fetch('/api/tasks/cancel', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: task.id, by: 'dashboard'})
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            opsFeedback(container, res.ok ? 'Task cancelled.' : ('Error: ' + (res.data.error || 'Unknown error')), !res.ok);
+            if (res.ok) refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
+          });
+        });
+        actions.appendChild(cancelBtn);
+      }
+      row.appendChild(actions);
+      queueCard.appendChild(row);
     });
-
-    stopLoopBtn.addEventListener('click', function() {
-      stopLoopBtn.disabled = true;
-      stopLoopBtn.textContent = 'Stopping\u2026';
-
-      fetch('/api/ops/overnight/stop', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({})
-      })
-      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
-      .then(function(res) {
-        stopLoopBtn.disabled = false;
-        stopLoopBtn.textContent = 'Stop Gracefully';
-        if (res.ok) {
-          opsFeedback(container, 'Stop signal sent. Loop will stop after current phase.', false);
-        } else {
-          opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
-        }
-      })
-      .catch(function(err) {
-        stopLoopBtn.disabled = false;
-        stopLoopBtn.textContent = 'Stop Gracefully';
-        opsFeedback(container, 'Network error: ' + err, true);
-      });
-    });
+    container.appendChild(queueCard);
   }
 
   /* ════════════════════════════════════════════════
@@ -2936,7 +2927,7 @@
     clearChildren(container);
 
     var card = el('div', {className: 'ops-card'});
-    card.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:1rem;', textContent: 'Add a New Product'}));
+    card.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:1rem;', textContent: 'Suggest a Product'}));
 
     // Source cards
     card.appendChild(el('label', {className: 'ops-form-label', textContent: 'Source'}));
@@ -3034,7 +3025,7 @@
 
     // Add button
     var actionRow = el('div', {style: 'display:flex;gap:0.75rem;align-items:center;margin-top:1.25rem;'});
-    var addBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Add Product'});
+    var addBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Submit Suggestion'});
     actionRow.appendChild(addBtn);
     actionRow.appendChild(el('span', {style: 'font-size:0.72rem;color:var(--text-dim);', textContent: 'This will:'}));
     card.appendChild(actionRow);
@@ -3099,7 +3090,7 @@
       }
 
       addBtn.disabled = true;
-      addBtn.textContent = 'Adding\u2026';
+      addBtn.textContent = 'Submitting\u2026';
 
       var depts = [];
       card.querySelectorAll('input[data-product-dept]:checked').forEach(function(cb) {
@@ -3120,7 +3111,7 @@
       if (repoInput.value.trim()) payload.github_repo = repoInput.value.trim();
       if (pathInput.value.trim()) payload.local_path = pathInput.value.trim();
 
-      fetch('/api/ops/product/add', {
+      fetch('/api/ops/product/suggest', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
@@ -3128,20 +3119,21 @@
       .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
       .then(function(res) {
         addBtn.disabled = false;
-        addBtn.textContent = 'Add Product';
+        addBtn.textContent = 'Submit Suggestion';
         if (res.ok) {
-          opsFeedback(container, 'Product "' + name + '" added successfully!', false);
+          opsFeedback(container, 'Product "' + name + '" sent to the approval queue.', false);
           nameInput.value = '';
           repoInput.value = '';
           pathInput.value = '';
           updateProductPreview();
+          refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
         } else {
           opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
         }
       })
       .catch(function(err) {
         addBtn.disabled = false;
-        addBtn.textContent = 'Add Product';
+        addBtn.textContent = 'Submit Suggestion';
         opsFeedback(container, 'Network error: ' + err, true);
       });
     });
@@ -3159,16 +3151,16 @@
 
     // Title + subtitle
     wrap.appendChild(el('h2', {style: 'font-size:1.2rem;margin-bottom:0.25rem;', textContent: 'Operations'}));
-    wrap.appendChild(el('p', {style: 'color:var(--text-dim);font-size:0.85rem;margin-bottom:1.5rem;', textContent: 'Control plane for Back Office \u2014 manage audits, overnight loop, backends, and products'}));
+    wrap.appendChild(el('p', {style: 'color:var(--text-dim);font-size:0.85rem;margin-bottom:1.5rem;', textContent: 'Control plane for Back Office \u2014 manage audits, approvals, backends, and product suggestions'}));
 
     // Tabs
     var tabBar = el('div', {className: 'ops-tabs', id: 'opsTabsWrap'});
     var tabDefs = [
       {key: 'jobs', label: 'Live Jobs'},
       {key: 'audit', label: 'Run Audit'},
-      {key: 'overnight', label: 'Overnight Loop'},
+      {key: 'approval', label: 'Approval Queue'},
       {key: 'backends', label: 'Backends'},
-      {key: 'products', label: 'Add Product'}
+      {key: 'products', label: 'Suggest Product'}
     ];
     tabDefs.forEach(function(t) {
       var btn = el('button', {className: 'ops-tab' + (t.key === opsActiveTab ? ' active' : ''), 'data-tab': t.key, textContent: t.label});
@@ -3184,8 +3176,8 @@
     wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'audit' ? ' active' : ''), id: 'ops-sec-audit'}, [
       el('div', {id: 'ops-run-audit'})
     ]));
-    wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'overnight' ? ' active' : ''), id: 'ops-sec-overnight'}, [
-      el('div', {id: 'ops-overnight'})
+    wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'approval' ? ' active' : ''), id: 'ops-sec-approval'}, [
+      el('div', {id: 'ops-approval'})
     ]));
     wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'backends' ? ' active' : ''), id: 'ops-sec-backends'}, [
       el('div', {id: 'ops-backends'})
@@ -3204,7 +3196,7 @@
         opsStatusCache = data;
         opsRenderLiveJobs(data);
         opsRenderAuditTab();
-        opsRenderOvernightTab();
+        opsRenderApprovalTab();
         opsRenderBackendsTab();
         opsRenderAddProductTab();
 

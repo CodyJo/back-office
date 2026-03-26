@@ -24,11 +24,15 @@ logger = logging.getLogger(__name__)
 
 
 STATUS_ORDER = [
+    "pending_approval",
     "proposed",
+    "approved",
     "ready",
+    "queued",
     "in_progress",
     "blocked",
     "ready_for_review",
+    "pr_open",
     "done",
     "cancelled",
 ]
@@ -112,6 +116,7 @@ def ensure_task_defaults(task: dict, targets: dict[str, dict]) -> dict:
     task.setdefault("status", "proposed")
     task.setdefault("priority", "medium")
     task.setdefault("category", "feature")
+    task.setdefault("task_type", "implementation")
     task.setdefault("owner", "")
     task.setdefault("created_by", "product-owner")
     task.setdefault("created_at", iso_now())
@@ -125,6 +130,9 @@ def ensure_task_defaults(task: dict, targets: dict[str, dict]) -> dict:
     task.setdefault("audits_required", target.get("default_departments", ["qa", "product"]))
     task.setdefault("product_key", infer_product_key(repo))
     task.setdefault("target_path", target.get("path", ""))
+    task.setdefault("approval", {})
+    task.setdefault("source_finding", {})
+    task.setdefault("pr", {})
     if not task.get("id"):
         task["id"] = generate_task_id(repo, task["title"])
     return task
@@ -183,16 +191,27 @@ def build_dashboard_payload(tasks: list[dict]) -> dict:
 
     counts_by_status: dict[str, int] = {}
     counts_by_repo: dict[str, dict[str, int]] = {}
+    counts_by_product: dict[str, dict[str, int]] = {}
     for task in tasks:
         status = task.get("status", "proposed")
         repo = task.get("repo", "unknown")
+        product_key = task.get("product_key", infer_product_key(repo))
         counts_by_status[status] = counts_by_status.get(status, 0) + 1
         repo_bucket = counts_by_repo.setdefault(repo, {"total": 0, "open": 0, "done": 0})
+        product_bucket = counts_by_product.setdefault(
+            product_key,
+            {"total": 0, "open": 0, "done": 0, "pending_approval": 0},
+        )
         repo_bucket["total"] += 1
+        product_bucket["total"] += 1
         if status == "done":
             repo_bucket["done"] += 1
+            product_bucket["done"] += 1
         elif status != "cancelled":
             repo_bucket["open"] += 1
+            product_bucket["open"] += 1
+        if status == "pending_approval":
+            product_bucket["pending_approval"] += 1
 
     def sort_key(task: dict) -> tuple[int, int, str]:
         try:
@@ -211,12 +230,101 @@ def build_dashboard_payload(tasks: list[dict]) -> dict:
             "done": sum(1 for task in ordered if task.get("status") == "done"),
             "blocked": sum(1 for task in ordered if task.get("status") == "blocked"),
             "in_progress": sum(1 for task in ordered if task.get("status") == "in_progress"),
+            "pending_approval": sum(1 for task in ordered if task.get("status") == "pending_approval"),
             "ready_for_review": sum(1 for task in ordered if task.get("status") == "ready_for_review"),
+            "pr_open": sum(1 for task in ordered if task.get("status") == "pr_open"),
             "by_status": counts_by_status,
             "by_repo": counts_by_repo,
+            "by_product": counts_by_product,
         },
         "tasks": ordered,
     }
+
+
+def find_existing_task_for_finding(tasks: list[dict], repo: str, finding_hash: str) -> dict | None:
+    """Return the existing queue item for a finding hash, if one exists."""
+    for task in tasks:
+        source = task.get("source_finding", {})
+        if task.get("repo") == repo and source.get("hash") == finding_hash:
+            return task
+    return None
+
+
+def create_finding_task(context: TaskContext, finding: dict, actor: str = "dashboard") -> tuple[dict, bool]:
+    """Queue a finding for human approval, deduplicating by finding hash."""
+    repo = finding.get("repo", "")
+    title = finding.get("title", "")
+    finding_id = finding.get("id", "")
+    finding_key = finding.get("hash") or f"{repo}:{finding_id}:{slugify(title)}"
+    tasks = context.payload.setdefault("tasks", [])
+    existing = find_existing_task_for_finding(tasks, repo, finding_key)
+    if existing:
+        return ensure_task_defaults(existing, context.targets), False
+
+    task = ensure_task_defaults(
+        {
+            "repo": repo,
+            "title": title or "Queued finding",
+            "category": "bugfix" if finding.get("fixable_by_agent") else "review",
+            "task_type": "finding_fix",
+            "priority": "high" if str(finding.get("severity", "")).lower() in {"critical", "high"} else "medium",
+            "status": "pending_approval",
+            "created_by": actor,
+            "notes": finding.get("description", ""),
+            "source_finding": {
+                "hash": finding_key,
+                "id": finding_id,
+                "department": finding.get("department", ""),
+                "severity": finding.get("severity", ""),
+                "category": finding.get("category", ""),
+                "file": finding.get("file", ""),
+                "line": finding.get("line"),
+                "fixable_by_agent": bool(finding.get("fixable_by_agent")),
+            },
+            "acceptance_criteria": [
+                "finding is reproduced or otherwise validated",
+                "change is implemented in a reviewable branch",
+                "required audits and verification pass before completion",
+            ],
+        },
+        context.targets,
+    )
+    append_history(task, "pending_approval", actor, "Queued from finding detail for human approval")
+    tasks.append(task)
+    return task, True
+
+
+def create_product_suggestion_task(
+    context: TaskContext,
+    suggestion: dict,
+    actor: str = "product-owner",
+) -> dict:
+    """Create a human-approval task for a suggested product."""
+    name = suggestion.get("name", "").strip()
+    repo = name or suggestion.get("repo", "").strip() or "back-office"
+    task = ensure_task_defaults(
+        {
+            "repo": repo,
+            "title": f"Suggest product: {name or 'Unnamed product'}",
+            "category": "product",
+            "task_type": "product_suggestion",
+            "priority": "medium",
+            "status": "pending_approval",
+            "created_by": actor,
+            "notes": suggestion.get("description", ""),
+            "product_key": suggestion.get("product_key") or infer_product_key(repo),
+            "approval": {"suggested_product": suggestion},
+            "acceptance_criteria": [
+                "human approves product fit and scope",
+                "repo path and ownership are confirmed",
+                "target configuration is reviewed before activation",
+            ],
+        },
+        context.targets,
+    )
+    append_history(task, "pending_approval", actor, "Product suggestion submitted for approval")
+    context.payload.setdefault("tasks", []).append(task)
+    return task
 
 
 def find_task(tasks: list[dict], task_id: str) -> dict:

@@ -103,6 +103,14 @@ def _save_manual_items(items: list[dict], root: Path | None = None) -> None:
         f.write("\n")
 
 
+def _read_json(path: Path) -> dict | list | None:
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Agent runner helpers
 # ---------------------------------------------------------------------------
@@ -236,6 +244,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_ops_status()
         elif path == "/api/ops/backends":
             self._handle_ops_backends()
+        elif path == "/api/tasks":
+            self._handle_tasks_get()
         else:
             # Fall through to SimpleHTTPRequestHandler for static files
             super().do_GET()
@@ -259,6 +269,18 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_ops_overnight_stop()
         elif path == "/api/ops/product/add":
             self._handle_ops_product_add()
+        elif path == "/api/ops/product/suggest":
+            self._handle_ops_product_suggest()
+        elif path == "/api/ops/product/approve":
+            self._handle_ops_product_approve()
+        elif path == "/api/tasks/queue-finding":
+            self._handle_task_queue_finding()
+        elif path == "/api/tasks/approve":
+            self._handle_task_approve()
+        elif path == "/api/tasks/cancel":
+            self._handle_task_cancel()
+        elif path == "/api/tasks/request-pr":
+            self._handle_task_request_pr()
         else:
             self.send_error(404, "Not found")
 
@@ -445,6 +467,13 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     # Ops GET handlers
     # ------------------------------------------------------------------
 
+    def _handle_tasks_get(self) -> None:
+        """GET /api/tasks — current task queue payload."""
+        payload = _read_json(self._root / "results" / "task-queue.json")
+        if not isinstance(payload, dict):
+            payload = {"generated_at": None, "summary": {}, "tasks": []}
+        self._json_response(200, payload)
+
     def _handle_ops_status(self) -> None:
         """GET /api/ops/status — current operational status."""
         r = self._root
@@ -497,6 +526,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                     overnight_history = raw.get("history", [])[-5:]
             except (json.JSONDecodeError, OSError):
                 overnight_history = []
+
+        task_queue = _read_json(results_dir / "task-queue.json")
+        if not isinstance(task_queue, dict):
+            task_queue = {"generated_at": None, "summary": {"total": 0}, "tasks": []}
 
         # Backends
         backends: dict = {}
@@ -555,6 +588,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 "plan": overnight_plan,
                 "history": overnight_history,
             },
+            "task_queue": task_queue,
             "backends": backends,
             "targets": targets,
         })
@@ -734,17 +768,34 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             "message": "Overnight loop will stop after the current phase completes.",
         })
 
-    def _handle_ops_product_add(self) -> None:
-        """POST /api/ops/product/add — add a new product/target."""
-        body = self._read_body()
-        if not body:
-            self._json_response(400, {"error": "Request body required"})
-            return
+    def _task_queue_context(self):
+        from backoffice.tasks import load_context  # noqa: PLC0415
 
+        return load_context(
+            self._root / "config" / "task-queue.yaml",
+            self._root / "config" / "targets.yaml",
+            self._root / "results",
+            self._root / "dashboard",
+        )
+
+    def _save_task_queue(self, context) -> dict:
+        from backoffice.tasks import save_payload  # noqa: PLC0415
+
+        return save_payload(
+            context.payload,
+            context.targets,
+            context.config_path,
+            context.results_dir,
+            context.dashboard_dir,
+        )
+
+    def _task_response(self, task: dict, message: str, status: int = 200) -> None:
+        self._json_response(status, {"ok": True, "message": message, "task": task})
+
+    def _add_product_from_payload(self, body: dict) -> dict:
         name = (body.get("name") or "").strip()
         if not name:
-            self._json_response(400, {"error": "name is required"})
-            return
+            raise ValueError("name is required")
 
         source = (body.get("source") or "local").strip()
         github_repo = (body.get("github_repo") or "").strip()
@@ -757,14 +808,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         if source in ("github", "both"):
             if not github_repo:
-                self._json_response(400, {
-                    "error": "github_repo is required when source is 'github' or 'both'"
-                })
-                return
-            # Determine clone destination
-            clone_dest = local_path or str(
-                Path.home() / "projects" / name
-            )
+                raise ValueError("github_repo is required when source is 'github' or 'both'")
+            clone_dest = local_path or str(Path.home() / "projects" / name)
             clone_dest_path = Path(clone_dest)
             if not clone_dest_path.exists():
                 try:
@@ -775,33 +820,20 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                         timeout=120,
                     )
                     if result.returncode != 0:
-                        # Fall back to git clone
                         result = subprocess.run(
-                            [
-                                "git", "clone",
-                                f"https://github.com/{github_repo}.git",
-                                clone_dest,
-                            ],
+                            ["git", "clone", f"https://github.com/{github_repo}.git", clone_dest],
                             capture_output=True,
                             text=True,
                             timeout=120,
                         )
                     if result.returncode != 0:
-                        self._json_response(500, {
-                            "error": f"Clone failed: {result.stderr.strip()}"
-                        })
-                        return
-                except subprocess.TimeoutExpired:
-                    self._json_response(500, {"error": "Clone timed out after 120s"})
-                    return
-                except OSError as exc:
-                    self._json_response(500, {"error": f"Clone failed: {exc}"})
-                    return
+                        raise OSError(f"Clone failed: {result.stderr.strip()}")
+                except subprocess.TimeoutExpired as exc:
+                    raise OSError("Clone timed out after 120s") from exc
             resolved_path = clone_dest
         else:
             resolved_path = local_path or str(Path.home() / "projects" / name)
 
-        # Build the new YAML entry
         depts_yaml = ", ".join(f'"{d}"' for d in departments)
         autonomy_block = ""
         if autonomy:
@@ -819,28 +851,241 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             f"    test_command: \"\"\n"
             f"    deploy_command: \"\"\n"
             f"    context: |\n"
-            f"      {name} — added via Back Office Operations panel.\n"
+            f"      {name} — added via Back Office approval workflow.\n"
             f"{autonomy_block}"
         )
 
-        # Append to config/backoffice.yaml
         config_path = self._root / "config" / "backoffice.yaml"
-        try:
-            with open(config_path, "a", encoding="utf-8") as f:
-                f.write(new_entry)
-        except OSError as exc:
-            self._json_response(500, {"error": f"Failed to update config: {exc}"})
-            return
+        with open(config_path, "a", encoding="utf-8") as f:
+            f.write(new_entry)
 
-        logger.info("ops/product/add: added target %s at %s", name, resolved_path)
-        self._json_response(200, {
+        return {
             "status": "added",
             "name": name,
             "path": resolved_path,
             "language": language or "unknown",
             "departments": departments,
+        }
+
+    def _handle_task_queue_finding(self) -> None:
+        """POST /api/tasks/queue-finding — queue a finding for human approval."""
+        body = self._read_body()
+        finding = body.get("finding") if isinstance(body.get("finding"), dict) else body
+        if not finding or not (finding.get("title") or "").strip() or not (finding.get("repo") or "").strip():
+            self._json_response(400, {"error": "finding title and repo are required"})
+            return
+
+        from backoffice.tasks import create_finding_task, ensure_task_defaults  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        task, created = create_finding_task(context, finding, actor=(body.get("by") or "dashboard"))
+        payload = self._save_task_queue(context)
+        task = ensure_task_defaults(task, context.targets)
+        self._json_response(200 if created else 409, {
+            "ok": created,
+            "created": created,
+            "task": task,
+            "summary": payload.get("summary", {}),
+            "message": "Finding queued for approval." if created else "Finding already exists in queue.",
+        })
+
+    def _handle_task_approve(self) -> None:
+        """POST /api/tasks/approve — approve a queue item for human-reviewed execution."""
+        body = self._read_body()
+        task_id = (body.get("id") or "").strip()
+        if not task_id:
+            self._json_response(400, {"error": "id is required"})
+            return
+
+        from backoffice.tasks import append_history, find_task, iso_now  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        task = find_task(context.payload.setdefault("tasks", []), task_id)
+        actor = (body.get("by") or "operator").strip()
+        note = (body.get("note") or "Approved for queued implementation").strip()
+        task["status"] = "ready"
+        task["updated_at"] = iso_now()
+        task["approval"] = {
+            **task.get("approval", {}),
+            "approved_at": iso_now(),
+            "approved_by": actor,
+            "note": note,
+        }
+        append_history(task, "ready", actor, note)
+        self._save_task_queue(context)
+        self._task_response(task, "Task approved and moved to ready queue.")
+
+    def _handle_task_cancel(self) -> None:
+        """POST /api/tasks/cancel — reject or cancel a queue item."""
+        body = self._read_body()
+        task_id = (body.get("id") or "").strip()
+        if not task_id:
+            self._json_response(400, {"error": "id is required"})
+            return
+
+        from backoffice.tasks import append_history, find_task, iso_now  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        task = find_task(context.payload.setdefault("tasks", []), task_id)
+        actor = (body.get("by") or "operator").strip()
+        note = (body.get("note") or "Cancelled during approval review").strip()
+        task["status"] = "cancelled"
+        task["updated_at"] = iso_now()
+        append_history(task, "cancelled", actor, note)
+        self._save_task_queue(context)
+        self._task_response(task, "Task cancelled.")
+
+    def _handle_task_request_pr(self) -> None:
+        """POST /api/tasks/request-pr — create a draft GitHub PR for approval."""
+        body = self._read_body()
+        task_id = (body.get("id") or "").strip()
+        if not task_id:
+            self._json_response(400, {"error": "id is required"})
+            return
+
+        from backoffice.tasks import append_history, find_task, iso_now  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        task = find_task(context.payload.setdefault("tasks", []), task_id)
+        repo_path = task.get("target_path") or ""
+        if not repo_path or not Path(repo_path).exists():
+            self._json_response(400, {"error": f"task target_path is missing or does not exist: {repo_path}"})
+            return
+
+        try:
+            branch_result = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            self._json_response(500, {"error": f"Could not determine current branch: {exc}"})
+            return
+
+        branch = branch_result.stdout.strip()
+        if branch_result.returncode != 0 or not branch:
+            self._json_response(500, {"error": branch_result.stderr.strip() or "Could not determine current branch"})
+            return
+        if branch in {"main", "master"}:
+            self._json_response(409, {"error": "Refusing to create PR from default branch. Use a review branch first."})
+            return
+
+        pr_title = (body.get("title") or f"Review: {task.get('title', 'Queued work')}").strip()
+        pr_body = (body.get("body") or "").strip()
+        if not pr_body:
+            pr_body = (
+                "## Approval Request\n"
+                f"- Task: {task.get('id')}\n"
+                f"- Repo: {task.get('repo')}\n"
+                f"- Status: {task.get('status')}\n"
+                "\n"
+                "This PR was opened from the Back Office human approval workflow and requires GitHub review before merge."
+            )
+
+        try:
+            pr_result = subprocess.run(
+                ["gh", "pr", "create", "--draft", "--title", pr_title, "--body", pr_body],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            self._json_response(500, {"error": f"Failed to create GitHub PR: {exc}"})
+            return
+
+        if pr_result.returncode != 0:
+            self._json_response(500, {"error": pr_result.stderr.strip() or "gh pr create failed"})
+            return
+
+        pr_url = pr_result.stdout.strip().splitlines()[-1] if pr_result.stdout.strip() else ""
+        task["status"] = "pr_open"
+        task["updated_at"] = iso_now()
+        task["pr"] = {
+            "url": pr_url,
+            "title": pr_title,
+            "branch": branch,
+            "created_at": iso_now(),
+        }
+        append_history(task, "pr_open", body.get("by") or "operator", f"Draft PR opened on branch {branch}")
+        self._save_task_queue(context)
+        self._json_response(200, {"ok": True, "task": task, "pr_url": pr_url})
+
+    def _handle_ops_product_suggest(self) -> None:
+        """POST /api/ops/product/suggest — submit a product suggestion for approval."""
+        body = self._read_body()
+        if not (body.get("name") or "").strip():
+            self._json_response(400, {"error": "name is required"})
+            return
+
+        from backoffice.tasks import create_product_suggestion_task  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        task = create_product_suggestion_task(context, body, actor=(body.get("by") or "product-owner"))
+        self._save_task_queue(context)
+        self._task_response(task, "Product suggestion queued for human approval.")
+
+    def _handle_ops_product_approve(self) -> None:
+        """POST /api/ops/product/approve — approve and add a suggested product."""
+        body = self._read_body()
+        task_id = (body.get("id") or "").strip()
+        if not task_id:
+            self._json_response(400, {"error": "id is required"})
+            return
+
+        from backoffice.tasks import append_history, find_task, iso_now  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        task = find_task(context.payload.setdefault("tasks", []), task_id)
+        suggestion = task.get("approval", {}).get("suggested_product", {})
+        if not isinstance(suggestion, dict) or not suggestion.get("name"):
+            self._json_response(400, {"error": "task does not contain a suggested product payload"})
+            return
+
+        payload = dict(suggestion)
+        payload.update({k: v for k, v in body.items() if k not in {"id", "by", "note"}})
+        try:
+            add_result = self._add_product_from_payload(payload)
+        except (OSError, ValueError) as exc:
+            self._json_response(500, {"error": str(exc)})
+            return
+
+        actor = (body.get("by") or "operator").strip()
+        note = (body.get("note") or "Approved product suggestion and added target").strip()
+        task["status"] = "approved"
+        task["updated_at"] = iso_now()
+        task["approval"] = {
+            **task.get("approval", {}),
+            "approved_at": iso_now(),
+            "approved_by": actor,
+            "activation": add_result,
+        }
+        append_history(task, "approved", actor, note)
+        self._save_task_queue(context)
+        self._json_response(200, {"ok": True, "task": task, "product": add_result})
+
+    def _handle_ops_product_add(self) -> None:
+        """POST /api/ops/product/add — add a new product/target."""
+        body = self._read_body()
+        if not body:
+            self._json_response(400, {"error": "Request body required"})
+            return
+        try:
+            result = self._add_product_from_payload(body)
+        except ValueError as exc:
+            self._json_response(400, {"error": str(exc)})
+            return
+        except OSError as exc:
+            self._json_response(500, {"error": str(exc)})
+            return
+
+        logger.info("ops/product/add: added target %s at %s", result["name"], result["path"])
+        self._json_response(200, {
+            **result,
             "next_steps": [
-                f"Run initial audit: make audit-all-parallel TARGET={resolved_path}",
+                f"Run initial audit: make audit-all-parallel TARGET={result['path']}",
                 "Refresh dashboard: python -m backoffice refresh",
             ],
         })

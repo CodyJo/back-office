@@ -13,6 +13,8 @@ from backoffice.tasks import (
     append_history,
     build_dashboard_payload,
     build_parser,
+    create_finding_task,
+    create_product_suggestion_task,
     ensure_task_defaults,
     find_task,
     generate_task_id,
@@ -460,6 +462,41 @@ class TestBuildDashboardPayload:
         assert by_repo["repo-a"]["open"] == 1
         assert by_repo["repo-b"]["total"] == 1
         assert by_repo["repo-b"]["open"] == 0  # cancelled doesn't count as open
+
+    def test_by_product_counts_stay_isolated(self):
+        tasks = [
+            {"id": "fuel:1", "repo": "fuel", "product_key": "fuel", "title": "A", "status": "pending_approval", "priority": "medium", "created_at": "2026-01-01T00:00:00+00:00", "history": []},
+            {"id": "selah:1", "repo": "selah", "product_key": "selah", "title": "B", "status": "ready", "priority": "medium", "created_at": "2026-01-01T00:00:00+00:00", "history": []},
+        ]
+        result = build_dashboard_payload(tasks)
+        by_product = result["summary"]["by_product"]
+        assert by_product["fuel"]["total"] == 1
+        assert by_product["fuel"]["pending_approval"] == 1
+        assert by_product["selah"]["total"] == 1
+        assert by_product["selah"]["pending_approval"] == 0
+
+
+class TestTaskCreationHelpers:
+    def test_create_finding_task_deduplicates(self, tmp_dirs):
+        config_path, targets_path, results, dashboard = tmp_dirs
+        write_yaml(config_path, {"version": 1, "tasks": []})
+        ctx = load_context(config_path, targets_path, results, dashboard)
+        finding = {"repo": "fuel", "title": "Fix auth bug", "id": "QA-1", "department": "qa", "severity": "high", "file": "src/app.ts"}
+        task, created = create_finding_task(ctx, finding)
+        assert created is True
+        task2, created2 = create_finding_task(ctx, finding)
+        assert created2 is False
+        assert task["status"] == "pending_approval"
+        assert task2["id"] == task["id"]
+
+    def test_create_product_suggestion_task_is_pending_approval(self, tmp_dirs):
+        config_path, targets_path, results, dashboard = tmp_dirs
+        write_yaml(config_path, {"version": 1, "tasks": []})
+        ctx = load_context(config_path, targets_path, results, dashboard)
+        task = create_product_suggestion_task(ctx, {"name": "puppet-demo", "description": "Internal observability pilot"})
+        assert task["task_type"] == "product_suggestion"
+        assert task["status"] == "pending_approval"
+        assert task["approval"]["suggested_product"]["name"] == "puppet-demo"
 
 
 # ---------------------------------------------------------------------------
@@ -1049,7 +1086,19 @@ class TestListFiltering:
 
 class TestStatusOrder:
     def test_contains_all_expected_statuses(self):
-        expected = {"proposed", "ready", "in_progress", "blocked", "ready_for_review", "done", "cancelled"}
+        expected = {
+            "pending_approval",
+            "proposed",
+            "approved",
+            "ready",
+            "queued",
+            "in_progress",
+            "blocked",
+            "ready_for_review",
+            "pr_open",
+            "done",
+            "cancelled",
+        }
         assert set(STATUS_ORDER) == expected
 
     def test_proposed_comes_before_done(self):

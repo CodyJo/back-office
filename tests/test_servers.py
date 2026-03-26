@@ -33,6 +33,8 @@ def tmp_root(tmp_path: Path) -> Path:
     (tmp_path / "results").mkdir()
     (tmp_path / "agents").mkdir()
     (tmp_path / "scripts").mkdir()
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "backoffice.yaml").write_text("targets:\n")
     return tmp_path
 
 
@@ -449,6 +451,85 @@ class TestRunAllEndpoint:
         resp = conn.getresponse()
         resp.read()
         assert resp.status == 404
+
+
+class TestApprovalQueueEndpoints:
+    def _post(self, host, port, path, payload):
+        body = json.dumps(payload).encode()
+        headers = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(body)),
+        }
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("POST", path, body=body, headers=headers)
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        return resp.status, data
+
+    def test_queue_finding_creates_pending_approval_task(self, live_server, tmp_root: Path) -> None:
+        host, port = live_server
+        status, data = self._post(host, port, "/api/tasks/queue-finding", {
+            "finding": {
+                "repo": "fuel",
+                "title": "Fix CloudFront invalidation guardrails",
+                "id": "QA-7",
+                "department": "qa",
+                "severity": "high",
+                "file": "terraform/main.tf",
+            }
+        })
+        assert status == 200
+        assert data["task"]["status"] == "pending_approval"
+        queue_file = tmp_root / "results" / "task-queue.json"
+        assert queue_file.exists()
+        queue_payload = json.loads(queue_file.read_text())
+        assert queue_payload["summary"]["pending_approval"] == 1
+
+    def test_queue_finding_duplicate_returns_conflict(self, live_server) -> None:
+        host, port = live_server
+        payload = {
+            "finding": {
+                "repo": "fuel",
+                "title": "Fix duplicate queue item",
+                "id": "QA-8",
+                "department": "qa",
+                "severity": "medium",
+                "file": "src/app.ts",
+            }
+        }
+        self._post(host, port, "/api/tasks/queue-finding", payload)
+        status, data = self._post(host, port, "/api/tasks/queue-finding", payload)
+        assert status == 409
+        assert data["created"] is False
+
+    def test_approve_task_moves_it_to_ready(self, live_server) -> None:
+        host, port = live_server
+        _, created = self._post(host, port, "/api/tasks/queue-finding", {
+            "finding": {
+                "repo": "selah",
+                "title": "Review approval flow",
+                "id": "QA-9",
+                "department": "qa",
+                "severity": "high",
+                "file": "src/page.tsx",
+            }
+        })
+        task_id = created["task"]["id"]
+        status, data = self._post(host, port, "/api/tasks/approve", {"id": task_id, "by": "owner"})
+        assert status == 200
+        assert data["task"]["status"] == "ready"
+
+    def test_product_suggestion_enters_queue(self, live_server) -> None:
+        host, port = live_server
+        status, data = self._post(host, port, "/api/ops/product/suggest", {
+            "name": "puppet-observability-demo",
+            "description": "Human-in-the-loop repo operations pilot",
+            "source": "local",
+            "local_path": "/tmp/puppet-demo",
+        })
+        assert status == 200
+        assert data["task"]["task_type"] == "product_suggestion"
+        assert data["task"]["status"] == "pending_approval"
 
 
 class TestRunRegressionEndpoint:
