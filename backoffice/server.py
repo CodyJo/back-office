@@ -15,6 +15,7 @@ from __future__ import annotations
 import http.server
 import json
 import logging
+import os
 import subprocess
 import threading
 import time
@@ -109,6 +110,13 @@ def _read_json(path: Path) -> dict | list | None:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return None
+
+
+def _local_unattended_allowed() -> bool:
+    """Require explicit opt-in for unattended local workflows."""
+    if os.environ.get("CI") or os.environ.get("CODEBUILD_BUILD_ID"):
+        return True
+    return os.environ.get("BACK_OFFICE_ENABLE_UNATTENDED", "").lower() in {"1", "true", "yes", "on"}
 
 
 # ---------------------------------------------------------------------------
@@ -712,6 +720,15 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
     def _handle_ops_overnight_start(self) -> None:
         """POST /api/ops/overnight/start — start the overnight loop."""
+        if not _local_unattended_allowed():
+            self._json_response(403, {
+                "error": (
+                    "Unattended local workflows are disabled by default. "
+                    "Set BACK_OFFICE_ENABLE_UNATTENDED=1 to enable overnight runs."
+                )
+            })
+            return
+
         body = self._read_body()
 
         interval = int(body.get("interval") or 120)

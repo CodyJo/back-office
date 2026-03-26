@@ -8,6 +8,26 @@ Back Office is centered on a human-centered approval model. The immediate produc
 
 ## Completed
 
+- Added local safety defaults so Back Office can be used against `~/projects` without accidental CloudFront cost or unattended execution:
+  - `backoffice.sync.engine` now blocks remote publish by default unless `BACK_OFFICE_ENABLE_REMOTE_SYNC=1` is set, while still allowing CI/CodeBuild delivery paths
+  - `backoffice.server` now blocks overnight start from the local dashboard unless `BACK_OFFICE_ENABLE_UNATTENDED=1` is set
+  - `Makefile` now requires explicit opt-in for:
+    - remote publish: `BACK_OFFICE_ENABLE_REMOTE_SYNC=1`
+    - auto-fix: `BACK_OFFICE_ENABLE_AUTOFIX=1`
+    - unattended workflows: `BACK_OFFICE_ENABLE_UNATTENDED=1`
+  - `audit-all` and `audit-all-parallel` now refresh the local dashboard with `python3 -m backoffice refresh` instead of publishing remotely
+  - `watch`, `scan-and-fix`, and `full-scan` no longer piggyback remote sync by default
+- Added regression coverage for the new local safety defaults:
+  - `tests/test_sync_engine.py` verifies remote sync is blocked unless explicitly enabled
+  - `tests/test_servers.py` verifies overnight start is blocked by default
+- Verified the local safety changes with:
+  - `python3 -m pytest tests/test_sync_engine.py tests/test_servers.py tests/test_tasks.py tests/test_backlog.py`
+  - `ruff check backoffice/sync/engine.py backoffice/server.py tests/test_sync_engine.py tests/test_servers.py`
+- Audited the current GitHub-facing claims against the actual codebase and confirmed the main story is only partially supported:
+  - approval queue, task persistence, per-product queue summaries, and draft PR creation are implemented
+  - the repo still contains legacy autonomous and auto-fix paths (`overnight`, `watch --auto-fix`, `scan-and-fix`, `full-scan`) that contradict the strongest "nothing runs unattended" and "approval before execution" language in the README
+  - GitHub PR creation is implemented, but the dashboard/server path only covers `pending_approval -> ready` and `ready_for_review -> pr_open`; moving work from `ready` to `ready_for_review` still depends on the task CLI or external workflow
+  - cost-control claims around bounded CloudFront invalidation are supported in both `backoffice/sync/engine.py` and `backoffice/sync/providers/aws.py`
 - Audited the dirty Back Office worktree and separated it into:
   - a coherent approval-workflow feature (`backoffice/tasks.py`, `backoffice/server.py`, `dashboard/index.html`, `tests/test_tasks.py`, `tests/test_servers.py`)
   - a coherent portfolio tooling set (`scripts/sync_shared_packages.py`, `tests/test_sync_shared_packages.py`, `scripts/portfolio_drift_audit.py`, `docs/portfolio-engineering-standard.md`)
@@ -79,6 +99,12 @@ Back Office is centered on a human-centered approval model. The immediate produc
 
 ## Pending
 
+- Decide whether to commit and push the local safety default changes. At the moment they are implemented and tested locally but not yet committed.
+- Decide whether to bring the code in line with the approval-first docs or soften the docs to match reality. The current gap is specifically around:
+  - `Makefile` targets: `watch`, `scan-and-fix`, `full-scan`, and all `overnight*` targets
+  - `backoffice/server.py` overnight start/stop/status endpoints
+  - dashboard copy that says "Nothing runs unattended" while direct fix commands still exist
+- If the approval-first story is the product direction, add an explicit server/dashboard/worker path for `ready -> in_progress -> ready_for_review` so the GitHub PR flow is truly end-to-end from the queue.
 - Generated and scratch files are still present locally and should stay out of normal pushes unless there is an explicit archival reason:
   - `coverage.json`, `coverage.xml`, `lint-check.json`, `lint-output.json`, `pytest-output.txt`, `ruff-output.json`
   - `2026-03-23-compliance-audit-plan.md`

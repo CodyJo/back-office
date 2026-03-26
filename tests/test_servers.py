@@ -532,6 +532,29 @@ class TestApprovalQueueEndpoints:
         assert data["task"]["status"] == "pending_approval"
 
 
+class TestLocalSafetyGuards:
+    def _post(self, host, port, path, payload):
+        body = json.dumps(payload).encode()
+        headers = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(body)),
+        }
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("POST", path, body=body, headers=headers)
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        return resp.status, data
+
+    def test_overnight_start_disabled_by_default(self, live_server, monkeypatch) -> None:
+        monkeypatch.delenv("BACK_OFFICE_ENABLE_UNATTENDED", raising=False)
+        monkeypatch.delenv("CI", raising=False)
+        monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
+        host, port = live_server
+        status, data = self._post(host, port, "/api/ops/overnight/start", {"interval": 60})
+        assert status == 403
+        assert "disabled by default" in data["error"]
+
+
 class TestRunRegressionEndpoint:
     def _post_run_regression(self, host, port, origin: str | None = None):
         headers: dict[str, str] = {"Content-Length": "0"}

@@ -61,6 +61,13 @@ def results_dir(tmp_path):
     return r
 
 
+@pytest.fixture
+def remote_sync_enabled(monkeypatch):
+    monkeypatch.setenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", "1")
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
+
+
 def test_dry_run_does_not_upload(dashboard_dir, results_dir):
     storage = MemoryStorage()
     cdn = MemoryCDN()
@@ -72,6 +79,39 @@ def test_dry_run_does_not_upload(dashboard_dir, results_dir):
     )
     engine.run(dry_run=True)
     assert len(storage.uploads) == 0
+
+
+def test_local_sync_is_blocked_without_opt_in(dashboard_dir, results_dir, monkeypatch):
+    monkeypatch.delenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
+    target = DashboardTarget(bucket="test-bucket", subdomain="admin.test.com")
+    storage = MemoryStorage()
+    cdn = MemoryCDN()
+    engine = SyncEngine(
+        storage=storage, cdn=cdn,
+        dashboard_dir=dashboard_dir, results_dir=results_dir,
+        dashboard_targets=[target], skip_gate=True,
+    )
+    assert engine.run() == 2
+    assert storage.uploads == []
+    assert cdn.invalidations == []
+
+
+def test_local_sync_allowed_with_opt_in(dashboard_dir, results_dir, monkeypatch):
+    monkeypatch.setenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", "1")
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
+    target = DashboardTarget(bucket="test-bucket", subdomain="admin.test.com")
+    storage = MemoryStorage()
+    cdn = MemoryCDN()
+    engine = SyncEngine(
+        storage=storage, cdn=cdn,
+        dashboard_dir=dashboard_dir, results_dir=results_dir,
+        dashboard_targets=[target], skip_gate=True,
+    )
+    assert engine.run() == 0
+    assert len(storage.uploads) > 0
 
 
 def test_allow_public_read_false_skips_public_target(dashboard_dir, results_dir):
@@ -91,7 +131,7 @@ def test_allow_public_read_false_skips_public_target(dashboard_dir, results_dir)
     assert len(storage.uploads) == 0
 
 
-def test_admin_target_uploads_files(dashboard_dir, results_dir):
+def test_admin_target_uploads_files(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
         bucket="admin-bucket",
         subdomain="admin.example.com",
@@ -119,7 +159,7 @@ def test_admin_target_uploads_files(dashboard_dir, results_dir):
     assert cdn.invalidations == [{"dist": "EADMIN123", "paths": ["/*"]}]
 
 
-def test_per_repo_target_uses_findings(dashboard_dir, results_dir):
+def test_per_repo_target_uses_findings(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
         bucket="admin-bucket",
         subdomain="admin.example.com",
@@ -138,7 +178,7 @@ def test_per_repo_target_uses_findings(dashboard_dir, results_dir):
     assert any("results" in str(p) and "findings.json" in str(p) for p in local_paths)
 
 
-def test_quick_sync_skips_html(dashboard_dir, results_dir):
+def test_quick_sync_skips_html(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
         bucket="admin-bucket",
         subdomain="admin.example.com",
@@ -161,7 +201,7 @@ def test_quick_sync_skips_html(dashboard_dir, results_dir):
     assert any("org-data.json" in k for k in keys)
 
 
-def test_base_path_prefix(dashboard_dir, results_dir):
+def test_base_path_prefix(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
         bucket="www-bucket",
         subdomain="admin.example.com",

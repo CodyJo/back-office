@@ -6,6 +6,18 @@
 
 TARGET ?=
 
+define require_remote_sync
+	@test "$$CI" = "true" -o -n "$$CODEBUILD_BUILD_ID" -o "$$BACK_OFFICE_ENABLE_REMOTE_SYNC" = "1" || (echo "Remote sync is disabled by default for local use. Set BACK_OFFICE_ENABLE_REMOTE_SYNC=1 to enable." && exit 1)
+endef
+
+define require_auto_fix
+	@test "$$BACK_OFFICE_ENABLE_AUTOFIX" = "1" || (echo "Auto-fix is disabled by default for local use. Set BACK_OFFICE_ENABLE_AUTOFIX=1 to enable." && exit 1)
+endef
+
+define require_unattended
+	@test "$$CI" = "true" -o -n "$$CODEBUILD_BUILD_ID" -o "$$BACK_OFFICE_ENABLE_UNATTENDED" = "1" || (echo "Unattended workflows are disabled by default for local use. Set BACK_OFFICE_ENABLE_UNATTENDED=1 to enable." && exit 1)
+endef
+
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
@@ -23,16 +35,21 @@ qa: ## Run QA scan on TARGET repo (make qa TARGET=/path/to/repo)
 
 fix: ## Run fix agent on TARGET repo (make fix TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make fix TARGET=/path/to/repo" && exit 1)
+	$(require_auto_fix)
 	bash agents/fix-bugs.sh "$(TARGET)"
 
 watch: ## Watch for new findings and auto-fix (make watch TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make watch TARGET=/path/to/repo" && exit 1)
-	bash agents/watch.sh "$(TARGET)" --auto-fix --sync --rescan $(if $(INTERVAL),--interval "$(INTERVAL)",)
+	$(require_unattended)
+	$(require_auto_fix)
+	bash agents/watch.sh "$(TARGET)" --auto-fix --rescan $(if $(INTERVAL),--interval "$(INTERVAL)",)
 
 scan-and-fix: ## Run full cycle: scan then fix (make scan-and-fix TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make scan-and-fix TARGET=/path/to/repo" && exit 1)
-	bash agents/qa-scan.sh "$(TARGET)" --sync
-	bash agents/fix-bugs.sh "$(TARGET)" --sync
+	$(require_auto_fix)
+	bash agents/qa-scan.sh "$(TARGET)"
+	bash agents/fix-bugs.sh "$(TARGET)"
+	python3 -m backoffice refresh
 
 # ── SEO Department ────────────────────────────────────────────────────────────
 
@@ -82,17 +99,17 @@ audit-all: ## Run ALL audits sequentially on TARGET repo
 	@echo "Progress: http://localhost:8070/jobs.html"
 	@echo ""
 	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product cloud-ops"
-	bash agents/qa-scan.sh "$(TARGET)" --sync
-	bash agents/seo-audit.sh "$(TARGET)" --sync
-	bash agents/ada-audit.sh "$(TARGET)" --sync
-	bash agents/compliance-audit.sh "$(TARGET)" --sync
-	bash agents/monetization-audit.sh "$(TARGET)" --sync
-	bash agents/product-audit.sh "$(TARGET)" --sync
-	bash agents/cloud-ops-audit.sh "$(TARGET)" --sync
+	bash agents/qa-scan.sh "$(TARGET)"
+	bash agents/seo-audit.sh "$(TARGET)"
+	bash agents/ada-audit.sh "$(TARGET)"
+	bash agents/compliance-audit.sh "$(TARGET)"
+	bash agents/monetization-audit.sh "$(TARGET)"
+	bash agents/product-audit.sh "$(TARGET)"
+	bash agents/cloud-ops-audit.sh "$(TARGET)"
 	bash scripts/job-status.sh finalize
-	bash scripts/sync-dashboard.sh 2>/dev/null || true
+	python3 -m backoffice refresh
 	@echo ""
-	@echo "All audits complete. Dashboard deployed."
+	@echo "All audits complete. Dashboard refreshed locally."
 
 audit-all-parallel: ## Run ALL audits in parallel (2 waves of 3)
 	@test -n "$(TARGET)" || (echo "Usage: make audit-all-parallel TARGET=/path/to/repo" && exit 1)
@@ -104,27 +121,30 @@ audit-all-parallel: ## Run ALL audits in parallel (2 waves of 3)
 	@echo "Progress: http://localhost:8070/jobs.html"
 	@echo ""
 	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product cloud-ops"
-	bash agents/qa-scan.sh "$(TARGET)" --sync & \
-	bash agents/seo-audit.sh "$(TARGET)" --sync & \
-	bash agents/ada-audit.sh "$(TARGET)" --sync & \
-	bash agents/cloud-ops-audit.sh "$(TARGET)" --sync & \
+	bash agents/qa-scan.sh "$(TARGET)" & \
+	bash agents/seo-audit.sh "$(TARGET)" & \
+	bash agents/ada-audit.sh "$(TARGET)" & \
+	bash agents/cloud-ops-audit.sh "$(TARGET)" & \
 	wait
-	bash agents/compliance-audit.sh "$(TARGET)" --sync & \
-	bash agents/monetization-audit.sh "$(TARGET)" --sync & \
-	bash agents/product-audit.sh "$(TARGET)" --sync & \
+	bash agents/compliance-audit.sh "$(TARGET)" & \
+	bash agents/monetization-audit.sh "$(TARGET)" & \
+	bash agents/product-audit.sh "$(TARGET)" & \
 	wait
 	bash scripts/job-status.sh finalize
-	bash scripts/sync-dashboard.sh 2>/dev/null || true
+	python3 -m backoffice refresh
 	@echo ""
-	@echo "All audits complete. Dashboard deployed."
+	@echo "All audits complete. Dashboard refreshed locally."
 
 full-scan: ## Run all audits + auto-fix (make full-scan TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make full-scan TARGET=/path/to/repo" && exit 1)
+	$(require_auto_fix)
 	$(MAKE) audit-all TARGET="$(TARGET)"
-	bash agents/fix-bugs.sh "$(TARGET)" --sync
+	bash agents/fix-bugs.sh "$(TARGET)"
+	python3 -m backoffice refresh
 
 audit-live: ## Run ALL audits with live dashboard refresh after each (make audit-live TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make audit-live TARGET=/path/to/repo" && exit 1)
+	$(require_remote_sync)
 	@REPO_NAME=$$(basename "$(TARGET)") && \
 	echo "╔══════════════════════════════════════════════════════════╗" && \
 	echo "║  Cody Jo Method — Live Audit (auto-refresh dashboard)  ║" && \
@@ -182,6 +202,7 @@ self-audit-local: ## Run the Back Office self-audit and refresh the local dashbo
 # ── Dashboard & Infrastructure ────────────────────────────────────────────────
 
 dashboard: ## Deploy all dashboards to S3
+	$(require_remote_sync)
 	python3 -m backoffice sync
 
 scaffold-workflows: ## Scaffold GitHub Actions into a configured target (make scaffold-workflows TARGET_NAME=selah)
@@ -208,16 +229,20 @@ grafana-logs: ## Tail Grafana logs
 # ── Overnight Loop ───────────────────────────────────────────────────────────
 
 overnight: ## Start overnight autonomous loop
+	$(require_unattended)
 	@echo "Starting overnight loop... Stop with: make overnight-stop"
 	bash scripts/overnight.sh $(if $(INTERVAL),--interval "$(INTERVAL)",) $(if $(TARGETS),--targets "$(TARGETS)",) 2>&1 | tee -a results/overnight.log
 
 overnight-dry: ## Dry-run overnight (audit + decide only, no changes)
+	$(require_unattended)
 	bash scripts/overnight.sh --dry-run $(if $(INTERVAL),--interval "$(INTERVAL)",) $(if $(TARGETS),--targets "$(TARGETS)",) 2>&1 | tee -a results/overnight.log
 
 overnight-stop: ## Stop overnight loop gracefully
+	$(require_unattended)
 	@touch results/.overnight-stop && echo "Stop signal sent. Loop will exit after current phase."
 
 overnight-status: ## Show overnight status and history
+	$(require_unattended)
 	@echo "=== Latest Plan ==="
 	@python3 -c "import json,os; p='results/overnight-plan.json'; d=json.load(open(p)) if os.path.exists(p) else {}; print(f'Plan: {len(d.get(\"fixes\",[]))} fixes, {len(d.get(\"features\",[]))} features'); print(d.get('rationale','(no plan)'))" 2>/dev/null || echo "(no plan)"
 	@echo ""
@@ -225,6 +250,7 @@ overnight-status: ## Show overnight status and history
 	@python3 -c "import json,os; p='results/overnight-history.json'; d=json.load(open(p)) if os.path.exists(p) else {'cycles':[]}; [print(f'{c[\"cycle_id\"]}: {c.get(\"fixes_succeeded\",0)} fixes, {c.get(\"features_succeeded\",0)} features, {c.get(\"deploys_succeeded\",0)} deploys') for c in d['cycles'][-5:]]" 2>/dev/null || echo "(no history)"
 
 overnight-rollback: ## Roll back all repos to last overnight snapshot
+	$(require_unattended)
 	@echo "Rolling back all repos to latest overnight snapshot..."
 	@python3 -c "\
 	import yaml, subprocess, os; \

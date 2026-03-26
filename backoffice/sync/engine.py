@@ -6,6 +6,7 @@ invalidates CDN caches.
 """
 from __future__ import annotations
 
+import os
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -26,6 +27,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 CACHE_CONTROL = "no-cache, no-store, must-revalidate"
+
+
+def _remote_sync_allowed() -> bool:
+    """Require explicit opt-in for remote sync during local use.
+
+    CI and CodeBuild remain allowed so the tracked delivery path still works.
+    """
+    if os.environ.get("CI") or os.environ.get("CODEBUILD_BUILD_ID"):
+        return True
+    return os.environ.get("BACK_OFFICE_ENABLE_REMOTE_SYNC", "").lower() in {"1", "true", "yes", "on"}
 
 
 class SyncEngine:
@@ -89,6 +100,13 @@ class SyncEngine:
         Returns:
             0 on success, 1 on partial failure, 2 on fatal error.
         """
+        if not dry_run and not _remote_sync_allowed():
+            logger.error(
+                "Remote sync is disabled by default for local use. "
+                "Set BACK_OFFICE_ENABLE_REMOTE_SYNC=1 to enable publishing."
+            )
+            return 2
+
         quick = department is not None
         had_errors = False
 
