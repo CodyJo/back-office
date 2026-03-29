@@ -1,0 +1,20 @@
+{
+  "name": "back-office",
+  "version": "1.0.0",
+  "description": "**Portfolio observability and delivery control for AI-assisted engineering. Privacy-first. Human-centered. Reviewable.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

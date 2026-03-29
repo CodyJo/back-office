@@ -1,4 +1,4 @@
-.PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression
+.PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression og-remediate
 .PHONY: seo ada compliance monetization product cloud-ops audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
@@ -43,6 +43,10 @@ watch: ## Watch for new findings and auto-fix (make watch TARGET=/path/to/repo)
 	$(require_unattended)
 	$(require_auto_fix)
 	bash agents/watch.sh "$(TARGET)" --auto-fix --rescan $(if $(INTERVAL),--interval "$(INTERVAL)",)
+
+og-remediate: ## Generate OG images, favicons, and fix meta tags (make og-remediate TARGET=/path/to/repo)
+	@test -n "$(TARGET)" || (echo "Usage: make og-remediate TARGET=/path/to/repo" && exit 1)
+	bash agents/og-remediation.sh "$(TARGET)"
 
 scan-and-fix: ## Run full cycle: scan then fix (make scan-and-fix TARGET=/path/to/repo)
 	@test -n "$(TARGET)" || (echo "Usage: make scan-and-fix TARGET=/path/to/repo" && exit 1)
