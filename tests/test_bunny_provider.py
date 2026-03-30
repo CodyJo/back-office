@@ -1,4 +1,4 @@
-"""Tests for BunnyStorage provider."""
+"""Tests for Bunny storage and CDN providers."""
 from __future__ import annotations
 
 import os
@@ -12,8 +12,8 @@ import pytest
 # Import under test
 # ---------------------------------------------------------------------------
 
-from backoffice.sync.providers.bunny import BunnyStorage
-from backoffice.sync.providers.base import StorageProvider
+from backoffice.sync.providers.bunny import BunnyCDN, BunnyStorage
+from backoffice.sync.providers.base import CDNProvider, StorageProvider
 
 
 # ---------------------------------------------------------------------------
@@ -328,3 +328,60 @@ def test_upload_file_raises_after_max_retries(tmp_path):
             s = _make_storage()
             with pytest.raises(OSError, match="always fails"):
                 s.upload_file("bucket", str(local_file), "fail.html", "text/html", "no-cache")
+
+
+# ---------------------------------------------------------------------------
+# BunnyCDN
+# ---------------------------------------------------------------------------
+
+def test_bunny_cdn_is_cdn_provider():
+    cdn = BunnyCDN(dustbunny_bin="/usr/local/bin/dustbunny")
+    assert isinstance(cdn, CDNProvider)
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_calls_dustbunny_pz_purge(mock_run):
+    """invalidate should shell out to dustbunny pz purge with the pull zone ID."""
+    cdn = BunnyCDN(dustbunny_bin="/usr/local/bin/dustbunny")
+    cdn.invalidate("123456", ["/*"])
+
+    mock_run.assert_called_once()
+    cmd = mock_run.call_args[0][0]
+    assert cmd == ["/usr/local/bin/dustbunny", "pz", "purge", "123456"]
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_ignores_paths(mock_run):
+    """Bunny purge is zone-wide; paths param is accepted but ignored."""
+    cdn = BunnyCDN(dustbunny_bin="dustbunny")
+    cdn.invalidate("789", ["/foo/*", "/bar/*"])
+
+    cmd = mock_run.call_args[0][0]
+    assert cmd == ["dustbunny", "pz", "purge", "789"]
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_skips_empty_distribution_id(mock_run):
+    """invalidate with an empty distribution_id should be a no-op."""
+    cdn = BunnyCDN(dustbunny_bin="dustbunny")
+    cdn.invalidate("", ["/*"])
+
+    mock_run.assert_not_called()
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_uses_default_dustbunny_path(mock_run):
+    """When no dustbunny_bin is given, use the default path."""
+    cdn = BunnyCDN()
+    cdn.invalidate("999", ["/*"])
+
+    cmd = mock_run.call_args[0][0]
+    assert "dustbunny" in cmd[0]
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run",
+       side_effect=FileNotFoundError("dustbunny not found"))
+def test_invalidate_logs_warning_on_failure(mock_run, caplog):
+    """invalidate should log a warning (not raise) when purge fails."""
+    cdn = BunnyCDN(dustbunny_bin="dustbunny")
+    cdn.invalidate("123", ["/*"])  # should not raise

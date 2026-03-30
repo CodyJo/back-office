@@ -1,14 +1,15 @@
-"""Bunny.net Storage provider implementation."""
+"""Bunny.net Storage Zone + Pull Zone (CDN) provider implementation."""
 from __future__ import annotations
 
 import logging
 import mimetypes
 import os
+import subprocess
 import time
 import urllib.request
 from pathlib import Path
 
-from backoffice.sync.providers.base import StorageProvider
+from backoffice.sync.providers.base import CDNProvider, StorageProvider
 
 logger = logging.getLogger(__name__)
 
@@ -114,3 +115,30 @@ class BunnyStorage(StorageProvider):
             content_type, _ = mimetypes.guess_type(str(local_file))
             content_type = content_type or "application/octet-stream"
             self.upload_file(bucket, str(local_file), remote_key, content_type, "no-cache")
+
+
+class BunnyCDN(CDNProvider):
+    """Purge Bunny Pull Zone cache via DustBunny CLI."""
+
+    def __init__(self, dustbunny_bin: str | None = None) -> None:
+        self._bin = dustbunny_bin or os.environ.get(
+            "DUSTBUNNY_BIN",
+            str(Path.home() / "projects" / "dustbunny" / "bin" / "dustbunny.mjs"),
+        )
+
+    def invalidate(self, distribution_id: str, paths: list[str]) -> None:
+        """Purge the entire Pull Zone cache.
+
+        The distribution_id parameter is semantically a Pull Zone ID for
+        Bunny targets.  The paths parameter is accepted for interface
+        compatibility but ignored — Bunny purge is always zone-wide and free.
+        """
+        if not distribution_id:
+            return
+        pull_zone_id = distribution_id
+        cmd = [self._bin, "pz", "purge", pull_zone_id]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            logger.info("Purged Pull Zone %s", pull_zone_id)
+        except Exception as exc:
+            logger.warning("Pull Zone purge failed for %s: %s", pull_zone_id, exc)
