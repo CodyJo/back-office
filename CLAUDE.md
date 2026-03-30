@@ -26,15 +26,16 @@ backoffice/       — Python package (CLI, aggregation, backlog, sync, config)
 agents/           — Shell agent launchers + system prompts
   prompts/        — System prompts for each agent type
 config/           — Target repo configuration (gitignored)
-  backoffice.yaml — Unified config (runner, deploy, scan, fix, targets)
-  targets.yaml    — Target repos with autonomy policy
+  backoffice.yaml             — Unified config (runner, deploy, scan, fix, targets)
+  backoffice.bunny.example.yaml — Example config for Bunny Storage/Pull Zone deployment
+  targets.yaml                — Target repos with autonomy policy
 dashboard/        — Consolidated HQ dashboard with slide-over panels
   index.html      — Single HQ page (matrix view + all department panels)
   backlog.json    — Persistent finding registry (content-hash dedup)
   score-history.json — Score snapshots for sparklines
-results/          — Agent findings output (gitignored, synced to S3)
+results/          — Agent findings output (gitignored, synced to Bunny Storage)
 scripts/          — Shell scripts (overnight loop, setup, sync, agent runner)
-terraform/        — AWS infrastructure (S3 + CloudFront + CodeBuild)
+ci/               — CI/CD webhook server for Bunny Magic Container
 tests/            — Pytest suite
 lib/              — Standards references and severity definitions
 ```
@@ -65,7 +66,7 @@ lib/              — Standards references and severity definitions
 ### Dashboard
 - `python -m backoffice serve --port 8070` — Local dashboard server
 - `python -m backoffice refresh` — Regenerate dashboard data from results
-- `python -m backoffice sync` — Deploy dashboards to S3/CloudFront
+- `python -m backoffice sync` — Deploy dashboards to Bunny Storage/Pull Zone
 
 ### Testing
 - `make test` — Run pytest suite
@@ -78,16 +79,16 @@ lib/              — Standards references and severity definitions
 2. Agents write findings to `results/<repo>/<department>-findings.json`
 3. `backoffice.aggregate` normalizes findings, merges into backlog, updates score history
 4. Dashboard loads `*-data.json`, `backlog.json`, `score-history.json`
-5. `backoffice.sync` pushes to S3 + CloudFront
+5. `backoffice.sync` uploads to Bunny Storage + purges Pull Zone
 
-## CI/CD — AWS CodeBuild
+## CI/CD — Bunny Magic Container
 
-- **CI** (`back-office-ci`): Pull requests. Shell syntax, Python linting (ruff), pytest regression.
-  - Config: `buildspec-ci.yml`
-- **CD** (`back-office-cd`): Push to main. Validates, tests, deploys dashboards.
-  - Config: `buildspec-cd.yml`
-- **IAM role**: `back-office-codebuild-cd` — scoped to S3 + CloudFront
-- **Logs**: CloudWatch `/codebuild/back-office`
+- **CI** (pull requests): Shell syntax, Python linting (ruff), pytest regression.
+  - Config: `ci/` directory
+- **CD** (push to main): Validates, tests, deploys dashboards.
+  - Config: `ci/` directory
+- **Auth**: Bunny API key authentication for storage and pull zone access
+- **Logs**: Magic Container webhook server logs
 
 ## Key Architecture Decisions
 

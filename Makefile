@@ -205,7 +205,7 @@ self-audit-local: ## Run the Back Office self-audit and refresh the local dashbo
 
 # ── Dashboard & Infrastructure ────────────────────────────────────────────────
 
-dashboard: ## Deploy all dashboards to S3
+dashboard: ## Deploy all dashboards to Bunny Storage
 	$(require_remote_sync)
 	python3 -m backoffice sync
 
