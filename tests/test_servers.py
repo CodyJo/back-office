@@ -453,6 +453,204 @@ class TestRunAllEndpoint:
         assert resp.status == 404
 
 
+class TestMigrationPlanEndpoints:
+    def _post(self, host, port, path, payload):
+        body = json.dumps(payload).encode()
+        headers = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(body)),
+        }
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("POST", path, body=body, headers=headers)
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        return resp.status, data
+
+    def test_get_seeds_default_plan(self, live_server, tmp_root: Path) -> None:
+        host, port = live_server
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("GET", "/api/migration-plan")
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        assert resp.status == 200
+        assert data["summary"]["bunny_targets"] >= 1
+        assert (tmp_root / "config" / "migration-plan.yaml").exists()
+
+    def test_get_migration_comparison(self, live_server, tmp_root: Path) -> None:
+        host, port = live_server
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("GET", "/api/migration-plan/comparison")
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        assert resp.status == 200
+        assert len(data["scenarios"]) == 4
+        assert data["baseline"]["normalized_basis_month_to_date"] > 0
+        assert (tmp_root / "config" / "cloud-cost-comparison.yaml").exists()
+
+    def test_update_repository_item(self, live_server) -> None:
+        host, port = live_server
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("GET", "/api/migration-plan")
+        payload = json.loads(conn.getresponse().read().decode())
+        repo_id = payload["repositories"][0]["id"]
+
+        status, data = self._post(host, port, "/api/migration-plan/item/update", {
+            "collection": "repositories",
+            "id": repo_id,
+            "status": "blocked",
+            "target": "hybrid",
+            "notes": "Waiting on bootstrap",
+        })
+        assert status == 200
+        repo = next(item for item in data["plan"]["repositories"] if item["id"] == repo_id)
+        assert repo["status"] == "blocked"
+        assert repo["target"] == "hybrid"
+
+    def test_update_domain_targets(self, live_server) -> None:
+        host, port = live_server
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("GET", "/api/migration-plan")
+        payload = json.loads(conn.getresponse().read().decode())
+        domain_id = payload["domains"][0]["id"]
+
+        status, data = self._post(host, port, "/api/migration-plan/item/update", {
+            "collection": "domains",
+            "id": domain_id,
+            "status": "in_progress",
+            "dns_target": "bunny",
+            "registration_target": "keep-current",
+        })
+        assert status == 200
+        domain = next(item for item in data["plan"]["domains"] if item["id"] == domain_id)
+        assert domain["dns_target"] == "bunny"
+        assert domain["registration_target"] == "keep-current"
+
+    def test_add_migration_update(self, live_server) -> None:
+        host, port = live_server
+        status, data = self._post(host, port, "/api/migration-plan/updates/add", {
+            "actor": "dashboard",
+            "message": "Started provider foundation work",
+            "kind": "status",
+        })
+        assert status == 200
+        assert data["plan"]["updates"][0]["message"] == "Started provider foundation work"
+
+    def test_seed_wave_one_tasks(self, live_server, tmp_root: Path) -> None:
+        (tmp_root / "config" / "targets.yaml").write_text(
+            "targets:\n"
+            "  - name: back-office\n"
+            f"    path: {tmp_root}\n"
+            "    language: python\n"
+            "  - name: codyjo.com\n"
+            f"    path: {tmp_root / 'codyjo.com'}\n"
+            "    language: astro\n"
+            "  - name: auth-service\n"
+            f"    path: {tmp_root / 'auth-service'}\n"
+            "    language: node\n"
+            "  - name: certstudy\n"
+            f"    path: {tmp_root / 'certstudy'}\n"
+            "    language: typescript\n"
+            "  - name: fuel\n"
+            f"    path: {tmp_root / 'fuel'}\n"
+            "    language: typescript\n"
+        )
+        host, port = live_server
+        status, data = self._post(host, port, "/api/migration-plan/seed-wave-one", {})
+        assert status == 200
+        assert len(data["created_task_ids"]) == 5
+        queue_payload = json.loads((tmp_root / "results" / "task-queue.json").read_text())
+        assert queue_payload["summary"]["total"] == 5
+
+
+class TestRemediationPlanEndpoints:
+    def _post(self, host, port, path, payload):
+        body = json.dumps(payload).encode()
+        headers = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(body)),
+        }
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("POST", path, body=body, headers=headers)
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        return resp.status, data
+
+    def test_get_seeds_default_plan(self, live_server, tmp_root: Path) -> None:
+        host, port = live_server
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("GET", "/api/remediation-plan")
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode())
+        assert resp.status == 200
+        assert data["summary"]["wave_count"] == 4
+        assert (tmp_root / "config" / "remediation-plan.yaml").exists()
+
+    def test_seed_wave_one_tasks(self, live_server, tmp_root: Path) -> None:
+        (tmp_root / "config" / "targets.yaml").write_text(
+            "targets:\n"
+            "  - name: back-office\n"
+            f"    path: {tmp_root}\n"
+            "    language: python\n"
+            "  - name: auth-service\n"
+            f"    path: {tmp_root / 'auth-service'}\n"
+            "    language: node\n"
+            "  - name: continuum\n"
+            f"    path: {tmp_root / 'continuum'}\n"
+            "    language: typescript\n"
+            "  - name: pe-bootstrap\n"
+            f"    path: {tmp_root / 'pe-bootstrap'}\n"
+            "    language: python\n"
+        )
+        host, port = live_server
+        status, data = self._post(host, port, "/api/remediation-plan/seed-wave-one", {})
+        assert status == 200
+        assert len(data["created_task_ids"]) == 4
+        queue_payload = json.loads((tmp_root / "results" / "task-queue.json").read_text())
+        assert queue_payload["summary"]["total"] == 4
+
+    def test_update_wave_and_repo_status(self, live_server, tmp_root: Path) -> None:
+        (tmp_root / "results" / "back-office").mkdir(parents=True, exist_ok=True)
+        (tmp_root / "results" / "back-office" / "findings.json").write_text(
+            json.dumps({"repo_name": "back-office", "findings": [{"severity": "critical", "title": "x"}]})
+        )
+        host, port = live_server
+        conn = HTTPConnection(host, port, timeout=5)
+        conn.request("GET", "/api/remediation-plan")
+        conn.getresponse().read()
+
+        status, data = self._post(host, port, "/api/remediation-plan/item/update", {
+            "collection": "waves",
+            "id": "wave-1",
+            "status": "in_progress",
+            "notes": "started",
+        })
+        assert status == 200
+        assert data["plan"]["waves"][0]["status"] == "in_progress"
+
+        status, data = self._post(host, port, "/api/remediation-plan/item/update", {
+            "collection": "repositories",
+            "id": "back-office",
+            "status": "blocked",
+            "notes": "waiting",
+        })
+        assert status == 200
+        assert data["plan"]["waves"][0]["repositories"][0]["status"] == "blocked"
+
+    def test_add_remediation_update(self, live_server, tmp_root: Path) -> None:
+        (tmp_root / "results" / "back-office").mkdir(parents=True, exist_ok=True)
+        (tmp_root / "results" / "back-office" / "findings.json").write_text(
+            json.dumps({"repo_name": "back-office", "findings": [{"severity": "critical", "title": "x"}]})
+        )
+        host, port = live_server
+        status, data = self._post(host, port, "/api/remediation-plan/updates/add", {
+            "actor": "dashboard",
+            "message": "Started execution",
+            "kind": "status",
+        })
+        assert status == 200
+        assert data["plan"]["updates"][0]["message"] == "Started execution"
+
+
 class TestApprovalQueueEndpoints:
     def _post(self, host, port, path, payload):
         body = json.dumps(payload).encode()
@@ -536,6 +734,21 @@ class TestApprovalQueueEndpoints:
         assert status == 200
         assert data["task"]["task_type"] == "product_suggestion"
         assert data["task"]["status"] == "pending_approval"
+    def test_mentor_plan_enters_queue(self, live_server) -> None:
+        host, port = live_server
+        status, data = self._post(host, port, "/api/ops/mentor/plan", {
+            "goal": "Renew Google Cloud Associate Cloud Engineer",
+            "target_cloud": "gcp",
+            "current_state": "Expired GCP cert, expired AWS SA, only renewing GCP",
+            "weekly_hours": 6,
+            "horizon_weeks": 8,
+            "use_portfolio_context": True,
+        })
+        assert status == 200
+        assert data["task"]["task_type"] == "mentor_plan"
+        assert data["task"]["status"] == "pending_approval"
+        assert data["plan"]["target_cloud"] == "gcp"
+
 
 
 class TestProductAddValidation:
@@ -605,7 +818,7 @@ class TestLocalSafetyGuards:
     def test_overnight_start_disabled_by_default(self, live_server, monkeypatch) -> None:
         monkeypatch.delenv("BACK_OFFICE_ENABLE_UNATTENDED", raising=False)
         monkeypatch.delenv("CI", raising=False)
-        monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
+        monkeypatch.delenv("BUNNY_CI", raising=False)
         host, port = live_server
         status, data = self._post(host, port, "/api/ops/overnight/start", {"interval": 60})
         assert status == 403

@@ -32,9 +32,9 @@ CACHE_CONTROL = "no-cache, no-store, must-revalidate"
 def _remote_sync_allowed() -> bool:
     """Require explicit opt-in for remote sync during local use.
 
-    CI and CodeBuild remain allowed so the tracked delivery path still works.
+    CI and Bunny CI remain allowed so the tracked delivery path still works.
     """
-    if os.environ.get("CI") or os.environ.get("CODEBUILD_BUILD_ID"):
+    if os.environ.get("CI") or os.environ.get("BUNNY_CI"):
         return True
     return os.environ.get("BACK_OFFICE_ENABLE_REMOTE_SYNC", "").lower() in {"1", "true", "yes", "on"}
 
@@ -82,7 +82,7 @@ class SyncEngine:
             cdn=cdn,
             dashboard_dir=config.root / "dashboard",
             results_dir=config.root / "results",
-            dashboard_targets=config.deploy.aws.dashboard_targets,
+            dashboard_targets=config.deploy.bunny.dashboard_targets,
             skip_gate=False,
         )
 
@@ -117,7 +117,7 @@ class SyncEngine:
             try:
                 self._sync_target(target, department=department, dry_run=dry_run, quick=quick)
             except Exception:
-                logger.exception("Failed to sync target %s", target.bucket)
+                logger.exception("Failed to sync target %s", target.subdomain)
                 had_errors = True
 
         return 1 if had_errors else 0
@@ -182,24 +182,23 @@ class SyncEngine:
         if dry_run:
             for m in file_mappings:
                 logger.info(
-                    "[dry-run] Would upload %s -> s3://%s/%s",
+                    "[dry-run] Would upload %s -> %s/%s",
                     m["local_path"],
-                    target.bucket,
+                    target.subdomain,
                     m["remote_key"],
                 )
             return
 
         # Upload
-        bucket = target.bucket
         for m in file_mappings:
-            m["bucket"] = bucket
+            m["bucket"] = ""
         self.storage.upload_files(file_mappings)
 
         # CDN invalidation
-        if target.distribution_id:
+        if target.pull_zone_id:
             paths = self._invalidation_paths(prefix)
             if paths:
-                self.cdn.invalidate(target.distribution_id, paths)
+                self.cdn.invalidate(target.pull_zone_id, paths)
 
         # Regression log sync (full sync only)
         if not quick:
@@ -314,9 +313,9 @@ class SyncEngine:
             return
 
         remote_prefix = f"{prefix}results/regression" if prefix else "results/regression"
-        logger.info("Syncing regression logs -> s3://%s/%s", target.bucket, remote_prefix)
+        logger.info("Syncing regression logs -> %s/%s", target.subdomain, remote_prefix)
         self.storage.sync_directory(
-            bucket=target.bucket,
+            bucket="",
             local_dir=str(regression_dir),
             remote_prefix=remote_prefix,
             delete=True,
@@ -325,10 +324,8 @@ class SyncEngine:
     def _invalidation_paths(self, prefix: str) -> list[str]:
         """Collapse sync invalidations to a bounded wildcard set.
 
-        CloudFront charges per invalidated path. Invalidating every uploaded
-        object scales linearly with dashboard size and quickly becomes
-        expensive under frequent syncs. A single wildcard per target keeps
-        the cost flat while still clearing the dashboard namespace.
+        A single wildcard per target keeps the invalidation count flat
+        while still clearing the dashboard namespace.
         """
         normalized = prefix.rstrip("/")
         if not normalized:

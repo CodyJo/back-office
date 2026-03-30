@@ -117,7 +117,7 @@ def _read_json(path: Path) -> dict | list | None:
 
 def _local_unattended_allowed() -> bool:
     """Require explicit opt-in for unattended local workflows."""
-    if os.environ.get("CI") or os.environ.get("CODEBUILD_BUILD_ID"):
+    if os.environ.get("CI") or os.environ.get("BUNNY_CI"):
         return True
     return os.environ.get("BACK_OFFICE_ENABLE_UNATTENDED", "").lower() in {"1", "true", "yes", "on"}
 
@@ -298,6 +298,12 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_ops_status()
         elif path == "/api/ops/backends":
             self._handle_ops_backends()
+        elif path == "/api/remediation-plan":
+            self._handle_remediation_plan_get()
+        elif path == "/api/migration-plan":
+            self._handle_migration_plan_get()
+        elif path == "/api/migration-plan/comparison":
+            self._handle_migration_plan_comparison_get()
         elif path == "/api/tasks":
             self._handle_tasks_get()
         else:
@@ -325,6 +331,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_ops_product_add()
         elif path == "/api/ops/product/suggest":
             self._handle_ops_product_suggest()
+        elif path == "/api/ops/mentor/plan":
+            self._handle_ops_mentor_plan()
         elif path == "/api/ops/product/approve":
             self._handle_ops_product_approve()
         elif path == "/api/tasks/queue-finding":
@@ -335,6 +343,18 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_task_cancel()
         elif path == "/api/tasks/request-pr":
             self._handle_task_request_pr()
+        elif path == "/api/remediation-plan/item/update":
+            self._handle_remediation_plan_item_update()
+        elif path == "/api/remediation-plan/updates/add":
+            self._handle_remediation_plan_update_add()
+        elif path == "/api/remediation-plan/seed-wave-one":
+            self._handle_remediation_plan_seed_wave_one()
+        elif path == "/api/migration-plan/item/update":
+            self._handle_migration_plan_item_update()
+        elif path == "/api/migration-plan/updates/add":
+            self._handle_migration_plan_update_add()
+        elif path == "/api/migration-plan/seed-wave-one":
+            self._handle_migration_plan_seed_wave_one()
         else:
             self.send_error(404, "Not found")
 
@@ -527,6 +547,24 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         if not isinstance(payload, dict):
             payload = {"generated_at": None, "summary": {}, "tasks": []}
         self._json_response(200, payload)
+
+    def _handle_migration_plan_get(self) -> None:
+        """GET /api/migration-plan — current migration plan payload."""
+        from backoffice import migration_plan  # noqa: PLC0415
+
+        self._json_response(200, migration_plan.load(self._root))
+
+    def _handle_migration_plan_comparison_get(self) -> None:
+        """GET /api/migration-plan/comparison — current service mapping and cost comparison."""
+        from backoffice import cloud_migration_compare  # noqa: PLC0415
+
+        self._json_response(200, cloud_migration_compare.load(self._root))
+
+    def _handle_remediation_plan_get(self) -> None:
+        """GET /api/remediation-plan — current portfolio remediation plan."""
+        from backoffice import remediation_plan  # noqa: PLC0415
+
+        self._json_response(200, remediation_plan.load(self._root))
 
     def _handle_ops_status(self) -> None:
         """GET /api/ops/status — current operational status."""
@@ -1122,6 +1160,127 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         append_history(task, "pr_open", body.get("by") or "operator", f"Draft PR opened on branch {branch}")
         self._save_task_queue(context)
         self._json_response(200, {"ok": True, "task": task, "pr_url": pr_url})
+
+    def _handle_migration_plan_item_update(self) -> None:
+        """POST /api/migration-plan/item/update — update a migration plan item."""
+        from backoffice import migration_plan  # noqa: PLC0415
+
+        body = self._read_body()
+        collection = (body.get("collection") or "").strip()
+        item_id = (body.get("id") or "").strip()
+        if not collection or not item_id:
+            self._json_response(400, {"error": "collection and id are required"})
+            return
+
+        try:
+            payload = migration_plan.update_item(
+                self._root,
+                collection,
+                item_id,
+                status=(body.get("status") or None),
+                target=(body.get("target") or None),
+                dns_target=(body.get("dns_target") or None),
+                registration_target=(body.get("registration_target") or None),
+                notes=body.get("notes"),
+                next_step=body.get("next_step"),
+            )
+        except ValueError as exc:
+            self._json_response(400, {"error": str(exc)})
+            return
+
+        self._json_response(200, {"ok": True, "plan": payload})
+
+    def _handle_migration_plan_update_add(self) -> None:
+        """POST /api/migration-plan/updates/add — append a migration update entry."""
+        from backoffice import migration_plan  # noqa: PLC0415
+
+        body = self._read_body()
+        try:
+            payload = migration_plan.add_update(
+                self._root,
+                actor=(body.get("actor") or "operator"),
+                message=body.get("message") or "",
+                kind=(body.get("kind") or "note"),
+            )
+        except ValueError as exc:
+            self._json_response(400, {"error": str(exc)})
+            return
+
+        self._json_response(200, {"ok": True, "plan": payload})
+
+    def _handle_migration_plan_seed_wave_one(self) -> None:
+        """POST /api/migration-plan/seed-wave-one — seed first migration tasks."""
+        from backoffice import migration_plan  # noqa: PLC0415
+
+        payload = migration_plan.seed_wave_one_tasks(self._root)
+        self._json_response(200, {"ok": True, **payload})
+
+    def _handle_remediation_plan_seed_wave_one(self) -> None:
+        """POST /api/remediation-plan/seed-wave-one — seed first remediation-wave tasks."""
+        from backoffice import remediation_plan  # noqa: PLC0415
+
+        payload = remediation_plan.seed_wave_one_tasks(self._root)
+        self._json_response(200, {"ok": True, **payload})
+
+    def _handle_remediation_plan_item_update(self) -> None:
+        """POST /api/remediation-plan/item/update — update a remediation wave or repo item."""
+        from backoffice import remediation_plan  # noqa: PLC0415
+
+        body = self._read_body()
+        collection = (body.get("collection") or "").strip()
+        item_id = (body.get("id") or "").strip()
+        if not collection or not item_id:
+            self._json_response(400, {"error": "collection and id are required"})
+            return
+
+        try:
+            payload = remediation_plan.update_item(
+                self._root,
+                collection,
+                item_id,
+                status=(body.get("status") or None),
+                notes=body.get("notes"),
+            )
+        except ValueError as exc:
+            self._json_response(400, {"error": str(exc)})
+            return
+
+        self._json_response(200, {"ok": True, "plan": payload})
+
+    def _handle_remediation_plan_update_add(self) -> None:
+        """POST /api/remediation-plan/updates/add — append a remediation update entry."""
+        from backoffice import remediation_plan  # noqa: PLC0415
+
+        body = self._read_body()
+        try:
+            payload = remediation_plan.add_update(
+                self._root,
+                actor=(body.get("actor") or "operator"),
+                message=body.get("message") or "",
+                kind=(body.get("kind") or "note"),
+            )
+        except ValueError as exc:
+            self._json_response(400, {"error": str(exc)})
+            return
+
+        self._json_response(200, {"ok": True, "plan": payload})
+
+
+    def _handle_ops_mentor_plan(self) -> None:
+        """POST /api/ops/mentor/plan — generate and queue a mentorship plan."""
+        body = self._read_body()
+        if not (body.get("goal") or "").strip():
+            self._json_response(400, {"error": "goal is required"})
+            return
+
+        from backoffice.mentor import build_mentor_plan  # noqa: PLC0415
+        from backoffice.tasks import create_mentor_plan_task  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        plan = build_mentor_plan(body, context.targets)
+        task = create_mentor_plan_task(context, body, plan, actor=(body.get("by") or "mentor"))
+        self._save_task_queue(context)
+        self._json_response(200, {"ok": True, "task": task, "plan": plan})
 
     def _handle_ops_product_suggest(self) -> None:
         """POST /api/ops/product/suggest — submit a product suggestion for approval."""

@@ -50,24 +50,25 @@ class ApiConfig:
 
 @dataclass(frozen=True)
 class DashboardTarget:
-    bucket: str = ""
+    pull_zone_id: str = ""
     base_path: str = ""
-    distribution_id: str = ""
     subdomain: str = ""
     filter_repo: str | None = None
     allow_public_read: bool = False
 
 
 @dataclass(frozen=True)
-class AWSConfig:
-    region: str = "us-east-1"
+class BunnyConfig:
+    storage_zone: str = ""
+    storage_region: str = "ny"
+    storage_key: str | None = None
     dashboard_targets: list[DashboardTarget] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
 class DeployConfig:
-    provider: str = "aws"
-    aws: AWSConfig = field(default_factory=AWSConfig)
+    provider: str = "bunny"
+    bunny: BunnyConfig = field(default_factory=BunnyConfig)
 
 
 @dataclass(frozen=True)
@@ -94,7 +95,7 @@ class FixConfig:
 
 @dataclass(frozen=True)
 class NotificationsConfig:
-    sync_to_s3: bool = True
+    sync_to_storage: bool = True
 
 
 @dataclass(frozen=True)
@@ -147,14 +148,13 @@ def _build_targets(raw: dict) -> dict[str, Target]:
     return targets
 
 
-def _build_dashboard_targets(raw: list | None) -> list[DashboardTarget]:
+def _build_bunny_dashboard_targets(raw: list | None) -> list[DashboardTarget]:
     if not raw:
         return []
     return [
         DashboardTarget(
-            bucket=str(t.get("bucket", "")),
+            pull_zone_id=str(t.get("pull_zone_id", "")),
             base_path=str(t.get("base_path", "")),
-            distribution_id=str(t.get("distribution_id", "")),
             subdomain=str(t.get("subdomain", "")),
             filter_repo=t.get("filter_repo"),
             allow_public_read=bool(t.get("allow_public_read", False)),
@@ -232,7 +232,7 @@ def load_config(path: Path | None = None) -> Config:
     runner_raw = raw.get("runner", {}) or {}
     api_raw = raw.get("api", {}) or {}
     deploy_raw = raw.get("deploy", {}) or {}
-    aws_raw = deploy_raw.get("aws", {}) or {}
+    bunny_raw = deploy_raw.get("bunny", {}) or {}
     scan_raw = raw.get("scan", {}) or {}
     fix_raw = raw.get("fix", {}) or {}
     notif_raw = raw.get("notifications", {}) or {}
@@ -273,11 +273,13 @@ def load_config(path: Path | None = None) -> Config:
             allowed_origins=list(api_raw.get("allowed_origins", [])),
         ),
         deploy=DeployConfig(
-            provider=str(deploy_raw.get("provider", "aws")),
-            aws=AWSConfig(
-                region=str(aws_raw.get("region", "us-east-1")),
-                dashboard_targets=_build_dashboard_targets(
-                    aws_raw.get("dashboard_targets")
+            provider=str(deploy_raw.get("provider", "bunny")),
+            bunny=BunnyConfig(
+                storage_zone=str(bunny_raw.get("storage_zone", "")),
+                storage_region=str(bunny_raw.get("storage_region", "ny")),
+                storage_key=bunny_raw.get("storage_key"),
+                dashboard_targets=_build_bunny_dashboard_targets(
+                    bunny_raw.get("dashboard_targets")
                 ),
             ),
         ),
@@ -300,7 +302,7 @@ def load_config(path: Path | None = None) -> Config:
             auto_push=bool(fix_raw.get("auto_push", False)),
         ),
         notifications=NotificationsConfig(
-            sync_to_s3=bool(notif_raw.get("sync_to_s3", True)),
+            sync_to_storage=bool(notif_raw.get("sync_to_storage", True)),
         ),
         targets=targets,
     )

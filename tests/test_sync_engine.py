@@ -37,6 +37,7 @@ def dashboard_dir(tmp_path):
     d = tmp_path / "dashboard"
     d.mkdir()
     (d / "index.html").write_text("<html>test</html>")
+    (d / "migration.html").write_text("<html>migration</html>")
     (d / "qa.html").write_text("<html>qa</html>")
     (d / "qa-data.json").write_text('{"findings":[]}')
     (d / "data.json").write_text('{"findings":[]}')
@@ -45,6 +46,10 @@ def dashboard_dir(tmp_path):
     (d / "regression-data.json").write_text('{}')
     (d / "local-audit-log.json").write_text('{}')
     (d / "local-audit-log.md").write_text('# log')
+    (d / "migration-plan.json").write_text('{"summary":{}}')
+    (d / "cloud-cost-comparison.json").write_text('{"scenarios":[]}')
+    (d / "remediation-plan.json").write_text('{"waves":[]}')
+    (d / "task-queue.json").write_text('{"tasks":[]}')
     (d / ".jobs.json").write_text('[]')
     (d / ".jobs-history.json").write_text('[]')
     return d
@@ -65,13 +70,13 @@ def results_dir(tmp_path):
 def remote_sync_enabled(monkeypatch):
     monkeypatch.setenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", "1")
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
+    monkeypatch.delenv("BUNNY_CI", raising=False)
 
 
 def test_dry_run_does_not_upload(dashboard_dir, results_dir):
     storage = MemoryStorage()
     cdn = MemoryCDN()
-    target = DashboardTarget(bucket="test-bucket", subdomain="admin.test.com")
+    target = DashboardTarget(subdomain="admin.test.com")
     engine = SyncEngine(
         storage=storage, cdn=cdn,
         dashboard_dir=dashboard_dir, results_dir=results_dir,
@@ -84,8 +89,8 @@ def test_dry_run_does_not_upload(dashboard_dir, results_dir):
 def test_local_sync_is_blocked_without_opt_in(dashboard_dir, results_dir, monkeypatch):
     monkeypatch.delenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", raising=False)
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
-    target = DashboardTarget(bucket="test-bucket", subdomain="admin.test.com")
+    monkeypatch.delenv("BUNNY_CI", raising=False)
+    target = DashboardTarget(subdomain="admin.test.com")
     storage = MemoryStorage()
     cdn = MemoryCDN()
     engine = SyncEngine(
@@ -101,8 +106,8 @@ def test_local_sync_is_blocked_without_opt_in(dashboard_dir, results_dir, monkey
 def test_local_sync_allowed_with_opt_in(dashboard_dir, results_dir, monkeypatch):
     monkeypatch.setenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", "1")
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("CODEBUILD_BUILD_ID", raising=False)
-    target = DashboardTarget(bucket="test-bucket", subdomain="admin.test.com")
+    monkeypatch.delenv("BUNNY_CI", raising=False)
+    target = DashboardTarget(subdomain="admin.test.com")
     storage = MemoryStorage()
     cdn = MemoryCDN()
     engine = SyncEngine(
@@ -116,7 +121,6 @@ def test_local_sync_allowed_with_opt_in(dashboard_dir, results_dir, monkeypatch)
 
 def test_allow_public_read_false_skips_public_target(dashboard_dir, results_dir):
     target = DashboardTarget(
-        bucket="www.example.com",
         subdomain="www.example.com",
         allow_public_read=False,
     )
@@ -133,9 +137,8 @@ def test_allow_public_read_false_skips_public_target(dashboard_dir, results_dir)
 
 def test_admin_target_uploads_files(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
-        bucket="admin-bucket",
         subdomain="admin.example.com",
-        distribution_id="EADMIN123",
+        pull_zone_id="EADMIN123",
         filter_repo=None,
     )
     storage = MemoryStorage()
@@ -150,10 +153,12 @@ def test_admin_target_uploads_files(dashboard_dir, results_dir, remote_sync_enab
     keys = [u["remote_key"] for u in storage.uploads if "remote_key" in u]
     # Should include HTML files
     assert any("index.html" in k for k in keys)
+    assert any("migration.html" in k for k in keys)
     # Should include aggregated data
     assert any("qa-data.json" in k for k in keys)
     # Should include shared metadata
     assert any("org-data.json" in k for k in keys)
+    assert any("migration-plan.json" in k for k in keys)
     # Should include job status
     assert any(".jobs.json" in k for k in keys)
     assert cdn.invalidations == [{"dist": "EADMIN123", "paths": ["/*"]}]
@@ -161,7 +166,6 @@ def test_admin_target_uploads_files(dashboard_dir, results_dir, remote_sync_enab
 
 def test_per_repo_target_uses_findings(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
-        bucket="admin-bucket",
         subdomain="admin.example.com",
         filter_repo="demo",
     )
@@ -180,7 +184,6 @@ def test_per_repo_target_uses_findings(dashboard_dir, results_dir, remote_sync_e
 
 def test_quick_sync_skips_html(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
-        bucket="admin-bucket",
         subdomain="admin.example.com",
         filter_repo="demo",
     )
@@ -203,10 +206,9 @@ def test_quick_sync_skips_html(dashboard_dir, results_dir, remote_sync_enabled):
 
 def test_base_path_prefix(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
-        bucket="www-bucket",
         subdomain="admin.example.com",
         base_path="back-office/dashboard",
-        distribution_id="EDASH123",
+        pull_zone_id="EDASH123",
         filter_repo=None,
     )
     storage = MemoryStorage()

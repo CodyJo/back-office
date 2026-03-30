@@ -7,7 +7,7 @@
 TARGET ?=
 
 define require_remote_sync
-	@test "$$CI" = "true" -o -n "$$CODEBUILD_BUILD_ID" -o "$$BACK_OFFICE_ENABLE_REMOTE_SYNC" = "1" || (echo "Remote sync is disabled by default for local use. Set BACK_OFFICE_ENABLE_REMOTE_SYNC=1 to enable." && exit 1)
+	@test "$$CI" = "true" -o -n "$$BUNNY_CI" -o "$$BACK_OFFICE_ENABLE_REMOTE_SYNC" = "1" || (echo "Remote sync is disabled by default for local use. Set BACK_OFFICE_ENABLE_REMOTE_SYNC=1 to enable." && exit 1)
 endef
 
 define require_auto_fix
@@ -15,7 +15,7 @@ define require_auto_fix
 endef
 
 define require_unattended
-	@test "$$CI" = "true" -o -n "$$CODEBUILD_BUILD_ID" -o "$$BACK_OFFICE_ENABLE_UNATTENDED" = "1" || (echo "Unattended workflows are disabled by default for local use. Set BACK_OFFICE_ENABLE_UNATTENDED=1 to enable." && exit 1)
+	@test "$$CI" = "true" -o -n "$$BUNNY_CI" -o "$$BACK_OFFICE_ENABLE_UNATTENDED" = "1" || (echo "Unattended workflows are disabled by default for local use. Set BACK_OFFICE_ENABLE_UNATTENDED=1 to enable." && exit 1)
 endef
 
 help: ## Show this help

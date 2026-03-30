@@ -7,25 +7,19 @@ runner:
   mode: "claude-print"
 
 deploy:
-  provider: aws
-  aws:
-    region: us-west-2
+  provider: bunny
+  bunny:
+    storage_zone: "admin-codyjo-site"
+    storage_region: "ny"
+    # storage_key: set via BUNNY_STORAGE_KEY env var
     dashboard_targets:
-      - bucket: "admin-thenewbeautifulme-site"
+      - pull_zone_id: ""
         base_path: ""
-        distribution_id: "E372ZR95FXKVT5"
-        subdomain: "admin.thenewbeautifulme.com"
-        filter_repo: "thenewbeautifulme"
-        allow_public_read: false
-      - bucket: "admin-codyjo-site"
-        base_path: ""
-        distribution_id: "E30Z8D5XMDR1A9"
         subdomain: "admin.codyjo.com"
         filter_repo: null
         allow_public_read: false
-      - bucket: "www.codyjo.com"
+      - pull_zone_id: ""
         base_path: "back-office/dashboard"
-        distribution_id: "EF4U8A7W3OH5K"
         subdomain: "www.codyjo.com"
         filter_repo: null
         allow_public_read: false

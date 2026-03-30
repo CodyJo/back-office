@@ -11,8 +11,11 @@ from backoffice.sync.providers.base import CDNProvider, StorageProvider
 def get_providers(config: "Config") -> tuple[StorageProvider, CDNProvider]:
     """Create storage and CDN providers from config."""
     provider = config.deploy.provider
-    if provider == "aws":
-        from backoffice.sync.providers.aws import AWSCloudFront, AWSStorage
-        region = config.deploy.aws.region
-        return AWSStorage(region), AWSCloudFront(region)
+    if provider == "bunny":
+        from backoffice.sync.providers.bunny import BunnyCDN, BunnyStorage
+        bunny = config.deploy.bunny
+        return (
+            BunnyStorage(bunny.storage_zone, bunny.storage_region, bunny.storage_key),
+            BunnyCDN(),
+        )
     raise ValueError(f"Unknown deploy provider: {provider}")

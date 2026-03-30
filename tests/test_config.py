@@ -27,16 +27,17 @@ def minimal_config(tmp_path):
           api_key: ""
           allowed_origins: []
         deploy:
-          provider: aws
-          aws:
-            region: us-west-2
+          provider: bunny
+          bunny:
+            storage_zone: test-zone
+            storage_region: ny
             dashboard_targets: []
         scan:
           max_findings: 200
         fix:
           auto_commit: true
         notifications:
-          sync_to_s3: true
+          sync_to_storage: true
         targets:
           demo:
             path: /tmp/demo
