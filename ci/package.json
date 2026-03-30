@@ -1,0 +1,17 @@
+{
+  "name": "back-office-ci",
+  "version": "1.0.0",
+  "description": "CI/CD webhook server for Bunny Magic Container",
+  "type": "module",
+  "main": "server.mjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test server.test.mjs"
+  },
+  "dependencies": {
+    "fastify": "^5.8.4"
+  }
+}
