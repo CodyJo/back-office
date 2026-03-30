@@ -54,8 +54,11 @@ GitHub push → webhook → Magic Container (back-office-ci)
 - `sync_directory()` — walks local dir, uploads each file, optionally deletes remote files not present locally
 
 `BunnyCDN(CDNProvider)`:
-- Purges Pull Zone cache by shelling out to `dustbunny pull-zones purge --pull-zone-id {id}`
-- `invalidate(pull_zone_id, paths)` — runs purge command. Bunny purge is free, so no need for the path-collapsing logic that AWS required.
+- Purges Pull Zone cache by shelling out to `dustbunny pz purge <pullZoneId>`
+- `invalidate(distribution_id, paths)` — accepts the base class signature; `distribution_id` is semantically a Pull Zone ID for Bunny targets, `paths` is ignored (Bunny purge is always zone-wide and free). No path-collapsing logic needed.
+- Uses `urllib.request` (stdlib) to avoid adding an HTTP dependency
+
+**HTTP client:** `BunnyStorage` uses `urllib.request` (stdlib) for PUT uploads — no new dependency needed. Retry logic is self-contained in the provider (same pattern as `aws.py`).
 
 **Modified: `backoffice/sync/providers/__init__.py`**
 
@@ -63,16 +66,22 @@ GitHub push → webhook → Magic Container (back-office-ci)
 
 ### 2. Configuration
 
+**Updated: `DeployConfig`** — replace `aws: AWSConfig` with `bunny: BunnyConfig`, change default `provider` to `"bunny"`. `AWSConfig` is deleted.
+
 **New dataclass: `BunnyConfig`**
 - `storage_zone: str` — storage zone name
 - `storage_region: str` — region code (e.g., `"ny"`)
 - `storage_key: str | None` — access key (falls back to `BUNNY_STORAGE_KEY` env var)
 - `dashboard_targets: list[DashboardTarget]`
 
-**Updated: `DashboardTarget`**
-- `pull_zone_id: str` replaces `distribution_id` for Bunny targets
-- `storage_zone: str` replaces `bucket` for Bunny targets
-- Fields are provider-agnostic where possible
+**Updated: `DashboardTarget`** — simplified for Bunny-only:
+- `pull_zone_id: str` — Bunny Pull Zone ID (replaces `distribution_id`)
+- `base_path`, `subdomain`, `filter_repo`, `allow_public_read` — unchanged
+- `bucket` field removed — storage zone name lives on `BunnyConfig`, not per-target (all targets share one zone, differentiated by `base_path`)
+
+Since this is a big-bang migration, all AWS references are removed in the same changeset. The frozen dataclass fields are renamed, and all call sites (engine, tests, config loader) are updated together.
+
+The `BunnyStorage` provider gets the storage zone name from `BunnyConfig` (passed at construction time), not from individual targets. The engine passes `base_path` per target for upload key prefixing.
 
 **New: `config/backoffice.bunny.example.yaml`**
 ```yaml
@@ -88,6 +97,8 @@ deploy:
         base_path: "back-office/dashboard"
         subdomain: "www.codyjo.com"
 ```
+
+YAML field names match the `DashboardTarget` dataclass directly — no mapping needed in the config loader.
 
 ### 3. CI/CD — Magic Container Webhook Server
 
@@ -123,6 +134,7 @@ Single container `back-office-ci` following the standard Cody Jo Bunny app patte
       "liveness": { "type": "http", "http": { "path": "/health", "port": 3000 } }
     },
     "environmentVariables": [
+      { "name": "BUNNY_CI", "value": "1" },
       { "name": "GITHUB_WEBHOOK_SECRET" },
       { "name": "GITHUB_TOKEN" },
       { "name": "BUNNY_STORAGE_KEY" },
@@ -139,17 +151,32 @@ Single container `back-office-ci` following the standard Cody Jo Bunny app patte
 ### 4. DNS Updates
 
 Both domains already have DNS on Bunny. Updates via DustBunny:
-- `dustbunny dns set` to point `admin.codyjo.com` at the Pull Zone
-- `dustbunny dns set` to point `www.codyjo.com` at the Pull Zone
+- `dustbunny dns set <zoneId> admin <type> <pullZoneHostname> [ttl]`
+- `dustbunny dns set <zoneId> www <type> <pullZoneHostname> [ttl]`
 - DustBunny's `set` command updates existing records (no duplicates)
 
 ### 5. SyncEngine Changes
 
-Minimal changes:
-- `from_config()` reads `deploy.bunny` when provider is `"bunny"`
-- `_remote_sync_allowed()` drops `CODEBUILD_BUILD_ID` check, adds Bunny container environment detection
-- Log messages updated (no more `s3://` references)
-- `_invalidation_paths()` simplification — Bunny purge is free, no need for wildcard collapsing
+**`from_config()` update:**
+```python
+if config.deploy.provider == "bunny":
+    storage, cdn = get_providers(config)
+    targets = config.deploy.bunny.dashboard_targets
+```
+Config loader gains `_build_bunny_config()` and `_build_bunny_dashboard_targets()` to parse the `deploy.bunny` YAML block, mirroring the existing `_build_dashboard_targets()` for AWS.
+
+**`_remote_sync_allowed()` update:**
+- Drop `CODEBUILD_BUILD_ID` check
+- Add `BUNNY_CI` env var check (set explicitly in the Magic Container's `environmentVariables`)
+- Keep `BACK_OFFICE_ENABLE_REMOTE_SYNC` as the local opt-in
+
+**Also update:** `backoffice/server.py` which has its own `CODEBUILD_BUILD_ID` check for the remote-sync gate.
+
+**`NotificationsConfig.sync_to_s3`** — rename to `sync_to_storage` (provider-agnostic).
+
+**Log messages** — remove `s3://` references, use generic "storage" language.
+
+**`_invalidation_paths()`** — simplify; Bunny purge is free and zone-wide.
 
 ### 6. Teardown
 
@@ -165,24 +192,28 @@ Minimal changes:
 **Modified:**
 | Path | Change |
 |---|---|
-| `backoffice/config.py` | Add `BunnyConfig`, update `DeployConfig` |
+| `backoffice/config.py` | Add `BunnyConfig`, rename `DashboardTarget` fields, add `_build_bunny_config()`, rename `sync_to_s3` → `sync_to_storage` |
 | `backoffice/sync/providers/__init__.py` | Add `"bunny"` branch |
-| `backoffice/sync/engine.py` | Update factory + gate |
-| `Makefile` | Remove CodeBuild refs, update deploy targets |
+| `backoffice/sync/engine.py` | Update `from_config()`, `_remote_sync_allowed()`, log messages |
+| `backoffice/server.py` | Update `CODEBUILD_BUILD_ID` gate to `BUNNY_CI` |
+| `Makefile` | Remove `CODEBUILD_BUILD_ID` guards, update deploy targets |
 | `scripts/sync-dashboard.sh` | Update for Bunny config |
+| `scripts/quick-sync.sh`, `scripts/job-status.sh` | Update or remove AWS-specific logic |
+| `tests/test_sync_engine.py` | Update all `DashboardTarget` constructions to new field names |
 | `CLAUDE.md` | Update architecture docs |
 
 ## Infrastructure Setup (One-Time)
 
 Run via DustBunny CLI:
 
-1. `dustbunny pull-zones create` — create storage-backed Pull Zones
-2. `dustbunny pull-zones hostnames add` — attach custom domains
-3. `dustbunny pull-zones ssl activate` — enable SSL per hostname
-4. `dustbunny dns set` — point domains at Pull Zones
-5. `dustbunny apps create` — deploy CI container
-6. `dustbunny env set` — configure container secrets
-7. Configure GitHub webhook to point at container URL
+1. Create Bunny Storage Zone (via Bunny dashboard — DustBunny does not have storage zone management)
+2. `dustbunny pz create <name> <storageZoneOriginUrl>` — create Pull Zone backed by storage zone
+3. `dustbunny pz hostname <pullZoneId> <hostname>` — attach custom domains
+4. `dustbunny pz ssl <pullZoneId> <hostname>` — enable SSL per hostname
+5. `dustbunny dns set <zoneId> <name> <type> <value> [ttl]` — point domains at Pull Zones
+6. `dustbunny app create back-office-ci <namespace/name:tag> <registryId> 3000` — deploy CI container
+7. `dustbunny env sync <appId> <envFile>` — configure container secrets
+8. Configure GitHub webhook to point at container URL
 
 ## Test Plan
 
@@ -200,7 +231,7 @@ Big bang cutover: build the Bunny provider, test end-to-end, flip the config, up
 ## DustBunny Usage
 
 DustBunny (`~/projects/dustbunny`) is used as a CLI tool throughout:
-- **Pull Zone management:** create, hostnames, SSL, purge
-- **DNS:** record updates
-- **Magic Containers:** app create, update, env set
-- **Not used for:** storage uploads (direct HTTP PUT from Python is simpler)
+- **Pull Zone management:** `pz create`, `pz hostname`, `pz ssl`, `pz purge`
+- **DNS:** `dns set` (updates existing records, no duplicates)
+- **Magic Containers:** `app create`, `app apply`, `env sync`
+- **Not used for:** storage zone creation (use Bunny dashboard) or storage uploads (direct HTTP PUT via `urllib.request` from Python)
