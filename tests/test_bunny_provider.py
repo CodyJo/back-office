@@ -55,7 +55,7 @@ def test_upload_file_sends_put_request(tmp_path):
 
     captured = []
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, **kwargs):
         captured.append(request)
         return FakeResponse()
 
@@ -88,7 +88,7 @@ def test_upload_file_uses_primary_region_hostname(tmp_path):
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (captured.append(req), FakeResponse())[1]):
         s = _make_storage(zone="myzone", region="de", key="secret")
         s.upload_file("bucket", str(local_file), "test.html", "text/html", "no-cache")
 
@@ -112,7 +112,7 @@ def test_upload_file_sets_access_key_header(tmp_path):
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (captured.append(req), FakeResponse())[1]):
         s = _make_storage(key="my-secret-key")
         s.upload_file("bucket", str(local_file), "style.css", "text/css", "max-age=3600")
 
@@ -137,7 +137,7 @@ def test_upload_file_sets_content_type_header(tmp_path):
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (captured.append(req), FakeResponse())[1]):
         s = _make_storage()
         s.upload_file("bucket", str(local_file), "data.json", "application/json", "no-cache")
 
@@ -162,7 +162,7 @@ def test_upload_file_bucket_param_ignored(tmp_path):
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (captured.append(req), FakeResponse())[1]):
         s = _make_storage(zone="correct-zone", region="de")
         s.upload_file("wrong-bucket-should-be-ignored", str(local_file), "file.txt",
                       "text/plain", "no-cache")
@@ -194,7 +194,7 @@ def test_upload_file_uses_env_var_when_access_key_is_none(tmp_path, monkeypatch)
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (captured.append(req), FakeResponse())[1]):
         s = BunnyStorage(storage_zone="zone", storage_region="ny", access_key=None)
         s.upload_file("bucket", str(local_file), "index.html", "text/html", "no-cache")
 
@@ -273,7 +273,7 @@ def test_sync_directory_uploads_all_files(tmp_path):
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (upload_calls.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (upload_calls.append(req), FakeResponse())[1]):
         s = _make_storage(zone="myzone", region="ny")
         s.sync_directory("ignored-bucket", str(tmp_path), "prefix/")
 
@@ -299,11 +299,60 @@ def test_sync_directory_uses_remote_prefix(tmp_path):
             pass
 
     import urllib.request
-    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+    with patch.object(urllib.request, "urlopen", lambda req, **kw: (captured.append(req), FakeResponse())[1]):
         s = _make_storage(zone="z", region="sg")
         s.sync_directory("b", str(tmp_path), "myprefix")
 
     assert any("myprefix" in r.full_url for r in captured)
+
+
+# ---------------------------------------------------------------------------
+# Upload safeguards
+# ---------------------------------------------------------------------------
+
+def test_upload_file_rejects_oversized_file(tmp_path):
+    """upload_file should reject files exceeding MAX_UPLOAD_SIZE."""
+    from backoffice.sync.providers.bunny import MAX_UPLOAD_SIZE
+
+    large_file = tmp_path / "huge.bin"
+    # Create a sparse file that reports large size without using disk
+    large_file.write_bytes(b"x")
+    import os
+    os.truncate(str(large_file), MAX_UPLOAD_SIZE + 1)
+
+    s = _make_storage()
+    with pytest.raises(ValueError, match="File too large"):
+        s.upload_file("bucket", str(large_file), "huge.bin", "application/octet-stream", "no-cache")
+
+
+def test_upload_file_passes_timeout_to_urlopen(tmp_path):
+    """upload_file should pass UPLOAD_TIMEOUT to urlopen."""
+    from backoffice.sync.providers.bunny import UPLOAD_TIMEOUT
+
+    local_file = tmp_path / "test.html"
+    local_file.write_bytes(b"<html></html>")
+
+    captured_kwargs = []
+
+    class FakeResponse:
+        status = 201
+        def read(self):
+            return b""
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            pass
+
+    def capturing_urlopen(req, **kwargs):
+        captured_kwargs.append(kwargs)
+        return FakeResponse()
+
+    import urllib.request
+    with patch.object(urllib.request, "urlopen", capturing_urlopen):
+        s = _make_storage()
+        s.upload_file("bucket", str(local_file), "test.html", "text/html", "no-cache")
+
+    assert captured_kwargs[0].get("timeout") == UPLOAD_TIMEOUT
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +375,7 @@ def test_upload_file_retries_on_failure(tmp_path):
         def __exit__(self, *a):
             pass
 
-    def flaky_urlopen(req):
+    def flaky_urlopen(req, **kwargs):
         attempt_count[0] += 1
         if attempt_count[0] < 3:
             raise OSError("connection reset")

@@ -44,6 +44,10 @@ def _retry(fn, *args, **kwargs):
     raise last_exc
 
 
+UPLOAD_TIMEOUT = 300  # seconds per file upload
+MAX_UPLOAD_SIZE = 500_000_000  # 500 MB
+
+
 class BunnyStorage(StorageProvider):
     """Upload files to a Bunny.net Storage Zone via HTTP PUT."""
 
@@ -72,6 +76,13 @@ class BunnyStorage(StorageProvider):
         """
         url = _storage_url(self._region, self._zone, remote_key.lstrip("/"))
 
+        file_size = Path(local_path).stat().st_size
+        if file_size > MAX_UPLOAD_SIZE:
+            raise ValueError(
+                f"File too large ({file_size} bytes): {local_path}. "
+                f"Maximum upload size is {MAX_UPLOAD_SIZE} bytes."
+            )
+
         def _do_upload():
             data = Path(local_path).read_bytes()
             req = urllib.request.Request(
@@ -83,7 +94,7 @@ class BunnyStorage(StorageProvider):
                     "Content-Type": content_type,
                 },
             )
-            with urllib.request.urlopen(req) as resp:
+            with urllib.request.urlopen(req, timeout=UPLOAD_TIMEOUT) as resp:
                 resp.read()
 
         _retry(_do_upload)
