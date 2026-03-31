@@ -151,8 +151,10 @@ class BunnyCDN(CDNProvider):
             return
         pull_zone_id = distribution_id
         cmd = [self._bin, "pz", "purge", pull_zone_id]
-        try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-            logger.info("Purged Pull Zone %s", pull_zone_id)
-        except Exception as exc:
-            logger.warning("Pull Zone purge failed for %s: %s", pull_zone_id, exc)
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            stderr = result.stderr.strip() or "unknown error"
+            raise RuntimeError(
+                f"CDN cache purge failed for zone {pull_zone_id}: {stderr}"
+            )
+        logger.info("Purged CDN zone %s", pull_zone_id)

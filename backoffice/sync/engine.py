@@ -198,7 +198,13 @@ class SyncEngine:
         if target.cdn_id:
             paths = self._invalidation_paths(prefix)
             if paths:
-                self.cdn.invalidate(target.cdn_id, paths)
+                try:
+                    self.cdn.invalidate(target.cdn_id, paths)
+                except Exception:
+                    logger.exception(
+                        "CDN cache purge failed for %s — dashboard may serve stale content",
+                        target.subdomain,
+                    )
 
         # Regression log sync (full sync only)
         if not quick:

@@ -415,6 +415,7 @@ def test_bunny_cdn_is_cdn_provider():
 @patch("backoffice.sync.providers.bunny.subprocess.run")
 def test_invalidate_calls_dustbunny_pz_purge(mock_run):
     """invalidate should shell out to dustbunny pz purge with the pull zone ID."""
+    mock_run.return_value.returncode = 0
     cdn = BunnyCDN(dustbunny_bin="/usr/local/bin/dustbunny")
     cdn.invalidate("123456", ["/*"])
 
@@ -426,6 +427,7 @@ def test_invalidate_calls_dustbunny_pz_purge(mock_run):
 @patch("backoffice.sync.providers.bunny.subprocess.run")
 def test_invalidate_ignores_paths(mock_run):
     """Bunny purge is zone-wide; paths param is accepted but ignored."""
+    mock_run.return_value.returncode = 0
     cdn = BunnyCDN(dustbunny_bin="dustbunny")
     cdn.invalidate("789", ["/foo/*", "/bar/*"])
 
@@ -445,6 +447,7 @@ def test_invalidate_skips_empty_distribution_id(mock_run):
 @patch("backoffice.sync.providers.bunny.subprocess.run")
 def test_invalidate_uses_default_dustbunny_path(mock_run):
     """When no dustbunny_bin is given, use the default path."""
+    mock_run.return_value.returncode = 0
     cdn = BunnyCDN()
     cdn.invalidate("999", ["/*"])
 
@@ -452,9 +455,19 @@ def test_invalidate_uses_default_dustbunny_path(mock_run):
     assert "dustbunny" in cmd[0]
 
 
-@patch("backoffice.sync.providers.bunny.subprocess.run",
-       side_effect=FileNotFoundError("dustbunny not found"))
-def test_invalidate_logs_warning_on_failure(mock_run, caplog):
-    """invalidate should log a warning (not raise) when purge fails."""
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_raises_on_nonzero_exit(mock_run):
+    """invalidate should raise RuntimeError when purge command fails."""
+    mock_run.return_value.returncode = 1
+    mock_run.return_value.stderr = "API error: zone not found"
+    cdn = BunnyCDN(dustbunny_bin="dustbunny")
+    with pytest.raises(RuntimeError, match="CDN cache purge failed"):
+        cdn.invalidate("123", ["/*"])
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_succeeds_on_zero_exit(mock_run):
+    """invalidate should not raise when purge command succeeds."""
+    mock_run.return_value.returncode = 0
     cdn = BunnyCDN(dustbunny_bin="dustbunny")
     cdn.invalidate("123", ["/*"])  # should not raise
