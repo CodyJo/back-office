@@ -17,7 +17,10 @@ def test_dept_data_map_has_all_departments():
     assert "qa" in DEPT_DATA_MAP
     assert "seo" in DEPT_DATA_MAP
     assert "self-audit" in DEPT_DATA_MAP
-    assert len(DEPT_DATA_MAP) == 8
+    # Every department must map to a (raw_file, dashboard_file) tuple
+    for dept, (raw, dashboard) in DEPT_DATA_MAP.items():
+        assert raw.endswith(".json"), f"{dept} raw file must be .json"
+        assert dashboard.endswith("-data.json"), f"{dept} dashboard file must be *-data.json"
 
 
 def test_content_type_for_html():
@@ -43,4 +46,9 @@ def test_content_type_for_markdown():
 def test_agg_data_map_has_departments():
     assert "data.json" in AGG_DATA_MAP
     assert AGG_DATA_MAP["data.json"] == "qa-data.json"
-    assert len(AGG_DATA_MAP) == 7
+    # Every agg source must map to a known department dashboard file
+    dept_dashboard_files = {v for _, v in DEPT_DATA_MAP.values()}
+    for source, target in AGG_DATA_MAP.items():
+        assert target in dept_dashboard_files, (
+            f"AGG_DATA_MAP[{source!r}] -> {target!r} not in DEPT_DATA_MAP dashboard files"
+        )
