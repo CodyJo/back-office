@@ -53,7 +53,7 @@ export async function runPipeline({ repo, sha, ref, isMain }) {
       execFileSync('python', ['-m', 'backoffice', 'sync'], {
         cwd: workdir,
         stdio: 'inherit',
-        env: { ...process.env, BUNNY_CI: '1' },
+        env: { ...process.env, DEPLOY_CI: '1' },
       });
     }
 

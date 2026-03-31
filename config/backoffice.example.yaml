@@ -25,10 +25,10 @@ deploy:
     storage_zone: "your-storage-zone"
     storage_region: "ny"
     # storage_key: set via BUNNY_STORAGE_KEY env var (preferred) or inline
-    # Each dashboard_target deploys dashboards to a Bunny Pull Zone.
+    # Each dashboard_target deploys dashboards to a CDN-backed storage target.
     # filter_repo: only show findings for this repo (null = show all).
     dashboard_targets:
-      - pull_zone_id: "123456"
+      - cdn_id: "123456"
         base_path: ""
         subdomain: "admin.yoursite.com"
         filter_repo: "yoursite"

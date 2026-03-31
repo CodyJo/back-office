@@ -18,4 +18,8 @@ def get_providers(config: "Config") -> tuple[StorageProvider, CDNProvider]:
             BunnyStorage(bunny.storage_zone, bunny.storage_region, bunny.storage_key),
             BunnyCDN(),
         )
-    raise ValueError(f"Unknown deploy provider: {provider}")
+    supported = ["bunny"]
+    raise ValueError(
+        f"Unknown deploy provider: {provider!r}. "
+        f"Supported providers: {', '.join(supported)}"
+    )

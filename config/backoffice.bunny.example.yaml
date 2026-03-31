@@ -20,12 +20,12 @@ deploy:
     storage_region: "ny"         # ny | la | sg | syd | uk | se | br | jh
     # storage_key: set via BUNNY_STORAGE_KEY env var (preferred) or inline
     dashboard_targets:
-      - pull_zone_id: "123456"
+      - cdn_id: "123456"
         base_path: ""
         subdomain: "admin.yoursite.com"
         filter_repo: null
         allow_public_read: false
-      - pull_zone_id: "789012"
+      - cdn_id: "789012"
         base_path: "back-office/dashboard"
         subdomain: "www.yoursite.com"
         filter_repo: null

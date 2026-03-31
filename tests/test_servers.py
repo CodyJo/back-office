@@ -818,7 +818,7 @@ class TestLocalSafetyGuards:
     def test_overnight_start_disabled_by_default(self, live_server, monkeypatch) -> None:
         monkeypatch.delenv("BACK_OFFICE_ENABLE_UNATTENDED", raising=False)
         monkeypatch.delenv("CI", raising=False)
-        monkeypatch.delenv("BUNNY_CI", raising=False)
+        monkeypatch.delenv("DEPLOY_CI", raising=False)
         host, port = live_server
         status, data = self._post(host, port, "/api/ops/overnight/start", {"interval": 60})
         assert status == 403

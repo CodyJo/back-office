@@ -13,12 +13,12 @@ deploy:
     storage_region: "ny"
     # storage_key: set via BUNNY_STORAGE_KEY env var
     dashboard_targets:
-      - pull_zone_id: ""
+      - cdn_id: ""
         base_path: ""
         subdomain: "admin.codyjo.com"
         filter_repo: null
         allow_public_read: false
-      - pull_zone_id: ""
+      - cdn_id: ""
         base_path: "back-office/dashboard"
         subdomain: "www.codyjo.com"
         filter_repo: null

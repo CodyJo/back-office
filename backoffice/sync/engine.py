@@ -32,9 +32,9 @@ CACHE_CONTROL = "no-cache, no-store, must-revalidate"
 def _remote_sync_allowed() -> bool:
     """Require explicit opt-in for remote sync during local use.
 
-    CI and Bunny CI remain allowed so the tracked delivery path still works.
+    CI containers set DEPLOY_CI=1. Local use requires explicit opt-in.
     """
-    if os.environ.get("CI") or os.environ.get("BUNNY_CI"):
+    if os.environ.get("CI") or os.environ.get("DEPLOY_CI"):
         return True
     return os.environ.get("BACK_OFFICE_ENABLE_REMOTE_SYNC", "").lower() in {"1", "true", "yes", "on"}
 
@@ -82,7 +82,7 @@ class SyncEngine:
             cdn=cdn,
             dashboard_dir=config.root / "dashboard",
             results_dir=config.root / "results",
-            dashboard_targets=config.deploy.bunny.dashboard_targets,
+            dashboard_targets=config.deploy.dashboard_targets,
             skip_gate=False,
         )
 
@@ -195,10 +195,10 @@ class SyncEngine:
         self.storage.upload_files(file_mappings)
 
         # CDN invalidation
-        if target.pull_zone_id:
+        if target.cdn_id:
             paths = self._invalidation_paths(prefix)
             if paths:
-                self.cdn.invalidate(target.pull_zone_id, paths)
+                self.cdn.invalidate(target.cdn_id, paths)
 
         # Regression log sync (full sync only)
         if not quick:

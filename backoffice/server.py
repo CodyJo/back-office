@@ -117,7 +117,7 @@ def _read_json(path: Path) -> dict | list | None:
 
 def _local_unattended_allowed() -> bool:
     """Require explicit opt-in for unattended local workflows."""
-    if os.environ.get("CI") or os.environ.get("BUNNY_CI"):
+    if os.environ.get("CI") or os.environ.get("DEPLOY_CI"):
         return True
     return os.environ.get("BACK_OFFICE_ENABLE_UNATTENDED", "").lower() in {"1", "true", "yes", "on"}
 

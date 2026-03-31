@@ -50,7 +50,7 @@ class ApiConfig:
 
 @dataclass(frozen=True)
 class DashboardTarget:
-    pull_zone_id: str = ""
+    cdn_id: str = ""
     base_path: str = ""
     subdomain: str = ""
     filter_repo: str | None = None
@@ -69,6 +69,13 @@ class BunnyConfig:
 class DeployConfig:
     provider: str = "bunny"
     bunny: BunnyConfig = field(default_factory=BunnyConfig)
+
+    @property
+    def dashboard_targets(self) -> list[DashboardTarget]:
+        """Return dashboard targets for the active provider."""
+        if self.provider == "bunny":
+            return self.bunny.dashboard_targets
+        return []
 
 
 @dataclass(frozen=True)
@@ -153,7 +160,7 @@ def _build_bunny_dashboard_targets(raw: list | None) -> list[DashboardTarget]:
         return []
     return [
         DashboardTarget(
-            pull_zone_id=str(t.get("pull_zone_id", "")),
+            cdn_id=str(t.get("cdn_id", t.get("pull_zone_id", ""))),
             base_path=str(t.get("base_path", "")),
             subdomain=str(t.get("subdomain", "")),
             filter_repo=t.get("filter_repo"),

@@ -70,7 +70,7 @@ def results_dir(tmp_path):
 def remote_sync_enabled(monkeypatch):
     monkeypatch.setenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", "1")
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("BUNNY_CI", raising=False)
+    monkeypatch.delenv("DEPLOY_CI", raising=False)
 
 
 def test_dry_run_does_not_upload(dashboard_dir, results_dir):
@@ -89,7 +89,7 @@ def test_dry_run_does_not_upload(dashboard_dir, results_dir):
 def test_local_sync_is_blocked_without_opt_in(dashboard_dir, results_dir, monkeypatch):
     monkeypatch.delenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", raising=False)
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("BUNNY_CI", raising=False)
+    monkeypatch.delenv("DEPLOY_CI", raising=False)
     target = DashboardTarget(subdomain="admin.test.com")
     storage = MemoryStorage()
     cdn = MemoryCDN()
@@ -106,7 +106,7 @@ def test_local_sync_is_blocked_without_opt_in(dashboard_dir, results_dir, monkey
 def test_local_sync_allowed_with_opt_in(dashboard_dir, results_dir, monkeypatch):
     monkeypatch.setenv("BACK_OFFICE_ENABLE_REMOTE_SYNC", "1")
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("BUNNY_CI", raising=False)
+    monkeypatch.delenv("DEPLOY_CI", raising=False)
     target = DashboardTarget(subdomain="admin.test.com")
     storage = MemoryStorage()
     cdn = MemoryCDN()
@@ -138,7 +138,7 @@ def test_allow_public_read_false_skips_public_target(dashboard_dir, results_dir)
 def test_admin_target_uploads_files(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
         subdomain="admin.example.com",
-        pull_zone_id="EADMIN123",
+        cdn_id="EADMIN123",
         filter_repo=None,
     )
     storage = MemoryStorage()
@@ -208,7 +208,7 @@ def test_base_path_prefix(dashboard_dir, results_dir, remote_sync_enabled):
     target = DashboardTarget(
         subdomain="admin.example.com",
         base_path="back-office/dashboard",
-        pull_zone_id="EDASH123",
+        cdn_id="EDASH123",
         filter_repo=None,
     )
     storage = MemoryStorage()
