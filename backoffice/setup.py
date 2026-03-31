@@ -300,7 +300,7 @@ def summarize_prereqs() -> bool:
     required = {
         "git": shutil.which("git"),
         "python3": shutil.which("python3"),
-        "aws": shutil.which("aws"),
+        "node": shutil.which("node"),
     }
     ok = True
     for name, location in required.items():

@@ -350,14 +350,14 @@ def test_summarize_prereqs_all_found(monkeypatch, capsys):
 
     assert "git: found" in captured
     assert "python3: found" in captured
-    assert "aws: found" in captured
+    assert "node: found" in captured
     assert "PyYAML: found" in captured
     assert result is True
 
 
 def test_summarize_prereqs_missing_binary(monkeypatch, capsys):
     def fake_which(name):
-        if name == "aws":
+        if name == "node":
             return None
         return f"/usr/bin/{name}"
 
@@ -366,7 +366,7 @@ def test_summarize_prereqs_missing_binary(monkeypatch, capsys):
     result = summarize_prereqs()
     captured = capsys.readouterr().out
 
-    assert "aws: missing" in captured
+    assert "node: missing" in captured
     assert result is False
 
 
@@ -378,7 +378,7 @@ def test_summarize_prereqs_all_missing(monkeypatch, capsys):
 
     assert "git: missing" in captured
     assert "python3: missing" in captured
-    assert "aws: missing" in captured
+    assert "node: missing" in captured
     assert result is False
 
 
