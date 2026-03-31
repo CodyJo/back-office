@@ -16,7 +16,14 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 BACKOFF_BASE = 1
 
-_BUNNY_STORAGE_BASE = "https://{region}.storage.bunnycdn.com/{zone}/{path}"
+def _storage_url(region: str, zone: str, path: str) -> str:
+    """Build the Bunny Storage upload URL.
+
+    The primary region (DE/Falkenstein) uses ``storage.bunnycdn.com``
+    without a region prefix.  Replica regions use ``{region}.storage.bunnycdn.com``.
+    """
+    host = "storage.bunnycdn.com" if region.lower() in ("de", "") else f"{region}.storage.bunnycdn.com"
+    return f"https://{host}/{zone}/{path}"
 
 
 def _retry(fn, *args, **kwargs):
@@ -63,11 +70,7 @@ class BunnyStorage(StorageProvider):
         The bucket parameter is accepted for interface compatibility but
         ignored — the storage zone is configured at construction time.
         """
-        url = _BUNNY_STORAGE_BASE.format(
-            region=self._region,
-            zone=self._zone,
-            path=remote_key.lstrip("/"),
-        )
+        url = _storage_url(self._region, self._zone, remote_key.lstrip("/"))
 
         def _do_upload():
             data = Path(local_path).read_bytes()

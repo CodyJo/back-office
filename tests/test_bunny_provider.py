@@ -71,6 +71,30 @@ def test_upload_file_sends_put_request(tmp_path):
     assert req.full_url == "https://la.storage.bunnycdn.com/myzone/subdir/index.html"
 
 
+def test_upload_file_uses_primary_region_hostname(tmp_path):
+    """DE (primary) region uses storage.bunnycdn.com without prefix."""
+    local_file = tmp_path / "test.html"
+    local_file.write_bytes(b"<html></html>")
+
+    captured = []
+
+    class FakeResponse:
+        status = 201
+        def read(self):
+            return b""
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            pass
+
+    import urllib.request
+    with patch.object(urllib.request, "urlopen", lambda req: (captured.append(req), FakeResponse())[1]):
+        s = _make_storage(zone="myzone", region="de", key="secret")
+        s.upload_file("bucket", str(local_file), "test.html", "text/html", "no-cache")
+
+    assert captured[0].full_url == "https://storage.bunnycdn.com/myzone/test.html"
+
+
 def test_upload_file_sets_access_key_header(tmp_path):
     """upload_file must include the AccessKey header with the configured key."""
     local_file = tmp_path / "style.css"
