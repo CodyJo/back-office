@@ -1,6 +1,8 @@
 .PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression og-remediate
 .PHONY: seo ada compliance monetization product cloud-ops audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
+.PHONY: monitoring-up monitoring-down monitoring-logs monitoring-status monitoring-restart
+.PHONY: forgejo-up forgejo-down forgejo-mirror
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
 .PHONY: overnight overnight-dry overnight-stop overnight-status overnight-rollback
 
@@ -220,15 +222,58 @@ cli: ## Run the Back Office CLI (make cli CMD="list-targets")
 jobs: ## Start dashboard server with scan API (make jobs TARGET=/path/to/repo)
 	python3 -m backoffice serve --port 8070
 
-grafana: ## Start Grafana monitoring dashboard
-	cd monitoring && docker compose up -d
-	@echo "Grafana running at http://localhost:3333 (set GRAFANA_ADMIN_PASSWORD env var)"
+grafana: ## Start Grafana monitoring dashboard (alias for monitoring-up)
+	$(MAKE) monitoring-up
 
-grafana-stop: ## Stop Grafana
-	cd monitoring && docker compose down
+grafana-stop: ## Stop Grafana (alias for monitoring-down)
+	$(MAKE) monitoring-down
 
 grafana-logs: ## Tail Grafana logs
 	cd monitoring && docker compose logs -f grafana
+
+# ── Monitoring Stack ─────────────────────────────────────────
+
+monitoring-up: ## Start full monitoring stack (Vector + TimescaleDB + Grafana)
+	cd monitoring && docker compose up -d
+	@echo "Monitoring stack starting..."
+	@echo "  Grafana:     http://localhost:3333"
+	@echo "  TimescaleDB: localhost:5433"
+	@echo "  Vector API:  http://localhost:8686"
+	@echo "  Ingest API:  http://localhost:8087"
+
+monitoring-down: ## Stop monitoring stack
+	cd monitoring && docker compose down
+
+monitoring-logs: ## Tail monitoring stack logs
+	cd monitoring && docker compose logs -f
+
+monitoring-status: ## Health check all monitoring services
+	@echo "=== Monitoring Stack Status ==="
+	@echo -n "TimescaleDB: " && (docker exec breakpoint-timescaledb pg_isready -U vector -d monitoring 2>/dev/null && echo "OK") || echo "DOWN"
+	@echo -n "Ingest:      " && (curl -sf http://localhost:8087/health | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null) || echo "DOWN"
+	@echo -n "Vector:      " && (curl -sf http://localhost:8686/health | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if d.get('ok') else 'DOWN')" 2>/dev/null) || echo "DOWN"
+	@echo -n "Grafana:     " && (curl -sf http://localhost:3333/api/health | python3 -c "import sys,json; print(json.load(sys.stdin).get('database','DOWN'))" 2>/dev/null) || echo "DOWN"
+
+monitoring-restart: ## Restart monitoring stack
+	cd monitoring && docker compose restart
+
+# ── Forgejo (Local Git Forge) ────────────────────────────────
+
+forgejo-up: ## Start Forgejo local git server
+	cd ops/forgejo-local && docker compose up -d
+	@echo "Forgejo running at http://borg.local:3300"
+
+forgejo-down: ## Stop Forgejo
+	cd ops/forgejo-local && docker compose down
+
+forgejo-mirror: ## Mirror a local repo to Forgejo (make forgejo-mirror REPO=selah)
+	@test -n "$(REPO)" || (echo "Usage: make forgejo-mirror REPO=<target-name>" && exit 1)
+	@REPO_PATH=$$(python3 -c "import yaml; ts=yaml.safe_load(open('config/targets.yaml')); t=[x for x in ts.get('targets',[]) if x['name']=='$(REPO)']; print(t[0]['path'] if t else '')" 2>/dev/null) && \
+	test -n "$$REPO_PATH" || (echo "Target '$(REPO)' not found in targets.yaml" && exit 1) && \
+	cd "$$REPO_PATH" && \
+	(git remote get-url forgejo 2>/dev/null || git remote add forgejo http://borg.local:3300/merm/$(REPO).git) && \
+	git push forgejo --all && \
+	echo "Pushed $$REPO_PATH to Forgejo"
 
 # ── Overnight Loop ───────────────────────────────────────────────────────────
 
