@@ -1,0 +1,305 @@
+# BreakPoint Labs — Vector Pipeline
+# Collects host metrics, GPU, system sensors, Ollama, Claude Code, logs
+# Sinks to ingest service → TimescaleDB
+
+# ── API ──────────────────────────────────────────────────────
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+
+# ── Sources ──────────────────────────────────────────────────
+sources:
+  host_metrics:
+    type: host_metrics
+    collectors:
+      - cpu
+      - memory
+      - disk
+      - filesystem
+      - network
+      - load
+    scrape_interval_secs: 15
+    namespace: host
+
+  gpu_metrics:
+    type: exec
+    command: ["/etc/vector/collectors/gpu_metrics.sh"]
+    mode: scheduled
+    scheduled:
+      exec_interval_secs: 15
+    decoding:
+      codec: json
+
+  system_sensors:
+    type: exec
+    command: ["/etc/vector/collectors/system_sensors.sh"]
+    mode: scheduled
+    scheduled:
+      exec_interval_secs: 15
+    decoding:
+      codec: json
+
+  ollama_metrics:
+    type: exec
+    command: ["/etc/vector/collectors/ollama_metrics.sh"]
+    mode: scheduled
+    scheduled:
+      exec_interval_secs: 30
+    decoding:
+      codec: json
+
+  claude_metrics:
+    type: exec
+    command: ["/etc/vector/collectors/claude_sessions.sh"]
+    mode: scheduled
+    scheduled:
+      exec_interval_secs: 60
+    decoding:
+      codec: json
+
+  ollama_journal:
+    type: journald
+    include_units:
+      - ollama
+
+  system_journal:
+    type: journald
+    include_units:
+      - kernel
+      - systemd-oomd
+      - com.system76.PowerDaemon
+
+  docker_logs:
+    type: docker_logs
+    include_containers:
+      - "forgejo*"
+      - "breakpoint-grafana"
+      - "breakpoint-timescaledb"
+
+# ── Transforms ───────────────────────────────────────────────
+transforms:
+  # -- Host metrics: Vector internal format → our schema --
+  host_normalize:
+    type: remap
+    inputs: ["host_metrics"]
+    source: |
+      .host = "borg"
+      .source = "host"
+      metric_name = string!(.name)
+      .metric = replace(metric_name, "host_", "")
+      .labels = .tags ?? {}
+      .value = to_float(.gauge.value ?? .counter.value ?? .distribution.avg ?? 0.0) ?? 0.0
+      .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+      del(.tags)
+      del(.name)
+      del(.gauge)
+      del(.counter)
+      del(.distribution)
+      del(.namespace)
+      del(.kind)
+      del(.timestamp)
+
+  # -- Exec sources already output our schema, just ensure host field --
+  gpu_passthrough:
+    type: remap
+    inputs: ["gpu_metrics"]
+    source: |
+      .host = "borg"
+
+  sensors_passthrough:
+    type: remap
+    inputs: ["system_sensors"]
+    source: |
+      .host = "borg"
+
+  ollama_passthrough:
+    type: remap
+    inputs: ["ollama_metrics"]
+    source: |
+      .host = "borg"
+
+  claude_passthrough:
+    type: remap
+    inputs: ["claude_metrics"]
+    source: |
+      .host = "borg"
+
+  # -- Journald → logs schema --
+  ollama_logs:
+    type: remap
+    inputs: ["ollama_journal"]
+    source: |
+      .host = "borg"
+      .source = "journald"
+      .service = "ollama"
+      .level = downcase(to_string(.PRIORITY) ?? "info")
+      # Map systemd priority numbers to level names
+      .level = if .level == "3" { "error" }
+               else if .level == "4" { "warning" }
+               else if .level == "6" { "info" }
+               else if .level == "7" { "debug" }
+               else { .level }
+      .message = to_string(.MESSAGE) ?? ""
+      .metadata = {}
+      .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+      del(.MESSAGE)
+      del(.PRIORITY)
+      del(.timestamp)
+      del(._SYSTEMD_UNIT)
+
+  # -- Ollama inference metrics from journald logs --
+  # Ollama logs inference timing per request. Parse eval_count, eval_duration, etc.
+  ollama_inference_parse:
+    type: remap
+    inputs: ["ollama_journal"]
+    drop_on_abort: true
+    source: |
+      msg = to_string(.MESSAGE) ?? ""
+      # Ollama logs lines like: "eval_count=42 eval_duration=1234567890 ..."
+      # Only process lines that contain eval timing data
+      if !contains(msg, "eval_duration") { abort }
+
+      .host = "borg"
+      .source = "ollama_inference"
+      now = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+
+      # Extract model name (Ollama logs it as the first field or in a model= tag)
+      model = "unknown"
+      model_match, err = parse_regex(msg, r'model=(?P<m>[^\s]+)')
+      if err == null { model = model_match.m }
+
+      # Extract numeric fields (nanoseconds in Ollama logs)
+      eval_count = 0
+      eval_dur_ns = 0
+      prompt_eval_count = 0
+      prompt_eval_dur_ns = 0
+      total_dur_ns = 0
+
+      ec, err = parse_regex(msg, r'eval_count=(?P<v>\d+)')
+      if err == null { eval_count = to_int!(ec.v) }
+      ed, err = parse_regex(msg, r'eval_duration=(?P<v>\d+)')
+      if err == null { eval_dur_ns = to_int!(ed.v) }
+      pec, err = parse_regex(msg, r'prompt_eval_count=(?P<v>\d+)')
+      if err == null { prompt_eval_count = to_int!(pec.v) }
+      ped, err = parse_regex(msg, r'prompt_eval_duration=(?P<v>\d+)')
+      if err == null { prompt_eval_dur_ns = to_int!(ped.v) }
+      td, err = parse_regex(msg, r'total_duration=(?P<v>\d+)')
+      if err == null { total_dur_ns = to_int!(td.v) }
+
+      labels = {"model": model}
+      eval_dur_ms = to_float(eval_dur_ns) / 1000000.0
+      prompt_eval_dur_ms = to_float(prompt_eval_dur_ns) / 1000000.0
+      total_dur_ms = to_float(total_dur_ns) / 1000000.0
+      eval_rate = if eval_dur_ns > 0 { to_float(eval_count) / (to_float(eval_dur_ns) / 1000000000.0) } else { 0.0 }
+      prompt_eval_rate = if prompt_eval_dur_ns > 0 { to_float(prompt_eval_count) / (to_float(prompt_eval_dur_ns) / 1000000000.0) } else { 0.0 }
+
+      . = [
+        {"time": now, "source": "ollama_inference", "metric": "ollama_eval_rate", "labels": labels, "value": eval_rate},
+        {"time": now, "source": "ollama_inference", "metric": "ollama_prompt_eval_rate", "labels": labels, "value": prompt_eval_rate},
+        {"time": now, "source": "ollama_inference", "metric": "ollama_time_to_first_token_ms", "labels": labels, "value": prompt_eval_dur_ms},
+        {"time": now, "source": "ollama_inference", "metric": "ollama_eval_duration_ms", "labels": labels, "value": eval_dur_ms},
+        {"time": now, "source": "ollama_inference", "metric": "ollama_prompt_eval_duration_ms", "labels": labels, "value": prompt_eval_dur_ms},
+        {"time": now, "source": "ollama_inference", "metric": "ollama_total_duration_ms", "labels": labels, "value": total_dur_ms},
+        {"time": now, "source": "ollama_inference", "metric": "ollama_tokens_generated", "labels": labels, "value": to_float(eval_count)}
+      ]
+
+  system_logs:
+    type: remap
+    inputs: ["system_journal"]
+    source: |
+      .host = "borg"
+      .source = "journald"
+      .service = to_string(._SYSTEMD_UNIT) ?? "kernel"
+      .level = downcase(to_string(.PRIORITY) ?? "info")
+      .level = if .level == "3" { "error" }
+               else if .level == "4" { "warning" }
+               else if .level == "6" { "info" }
+               else if .level == "7" { "debug" }
+               else { .level }
+      .message = to_string(.MESSAGE) ?? ""
+      .metadata = {}
+      .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+      del(.MESSAGE)
+      del(.PRIORITY)
+      del(.timestamp)
+      del(._SYSTEMD_UNIT)
+
+  # -- System events: detect OOM kills from kernel journal → metrics --
+  system_event_metrics:
+    type: remap
+    inputs: ["system_journal"]
+    drop_on_abort: true
+    source: |
+      msg = to_string(.MESSAGE) ?? ""
+      # Only process OOM and thermal events
+      if !contains(msg, "Out of memory") && !contains(msg, "oom_kill") && !contains(msg, "thermal") { abort }
+
+      .host = "borg"
+      .source = "sensors"
+      now = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+
+      if contains(msg, "Out of memory") || contains(msg, "oom_kill") {
+        .time = now
+        .metric = "oom_kills_total"
+        .labels = {}
+        .value = 1.0
+      } else {
+        abort
+      }
+
+  docker_normalize:
+    type: remap
+    inputs: ["docker_logs"]
+    source: |
+      .host = "borg"
+      .source = "docker"
+      .service = .container_name ?? "unknown"
+      .level = "info"
+      .message = to_string(.message) ?? ""
+      .metadata = {"container_id": to_string(.container_id) ?? ""}
+      .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+      del(.container_name)
+      del(.container_id)
+      del(.timestamp)
+
+# ── Sinks ────────────────────────────────────────────────────
+sinks:
+  ingest_metrics:
+    type: http
+    inputs:
+      - host_normalize
+      - gpu_passthrough
+      - sensors_passthrough
+      - ollama_passthrough
+      - claude_passthrough
+      - ollama_inference_parse
+      - system_event_metrics
+    uri: "http://localhost:8087/ingest/metrics"
+    method: post
+    encoding:
+      codec: json
+    batch:
+      max_events: 100
+      timeout_secs: 15
+    request:
+      retry_max_duration_secs: 30
+    healthcheck:
+      enabled: false
+
+  ingest_logs:
+    type: http
+    inputs:
+      - ollama_logs
+      - system_logs
+      - docker_normalize
+    uri: "http://localhost:8087/ingest/logs"
+    method: post
+    encoding:
+      codec: json
+    batch:
+      max_events: 50
+      timeout_secs: 30
+    request:
+      retry_max_duration_secs: 30
+    healthcheck:
+      enabled: false
