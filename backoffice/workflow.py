@@ -9,6 +9,7 @@ directly for aggregate, delivery, and task-queue operations.  Shell scripts
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import fcntl
 import json
 import logging
@@ -380,20 +381,31 @@ def run_target(
     departments: list[str],
     results_dir: str = RESULTS_DIR,
     refresh: bool = True,
+    use_job_status: bool = True,
 ) -> None:
     """Run all specified department audits for a target."""
     repo_path = target["path"]
-    run_job_status("init", repo_path, " ".join(departments))
+    if use_job_status:
+        run_job_status("init", repo_path, " ".join(departments))
     try:
         for department in departments:
             run_department(target, department)
     finally:
-        jobs_file = os.path.join(results_dir, ".jobs.json")
-        if os.path.exists(jobs_file):
-            try:
-                run_job_status("finalize")
-            except subprocess.CalledProcessError:
-                pass
+        if use_job_status:
+            jobs_file = os.path.join(results_dir, ".jobs.json")
+            if os.path.exists(jobs_file):
+                try:
+                    run_job_status("finalize")
+                except subprocess.CalledProcessError:
+                    pass
+
+
+def _run_target_for_run_all(target: dict, departments: list[str]) -> str:
+    """Run one target for the parallel run-all workflow."""
+    logger.info("Queueing %s: %s", target["name"], ", ".join(departments))
+    run_target(target, departments, use_job_status=False)
+    logger.info("Completed %s", target["name"])
+    return target["name"]
 
 
 def with_run_lock(fn):
@@ -453,10 +465,29 @@ def handle_run_all(args, config=None) -> int:
     if args.targets:
         wanted = {item.strip() for item in args.targets.split(",") if item.strip()}
         selected_targets = [target for target in targets if target["name"] in wanted]
-    for target in selected_targets:
-        departments = normalize_departments(args.departments, default_departments(target))
-        logger.info("==> %s: %s", target["name"], ", ".join(departments))
-        run_target(target, departments)
+    target_runs = [
+        (target, normalize_departments(args.departments, default_departments(target)))
+        for target in selected_targets
+    ]
+    failures: list[tuple[str, Exception]] = []
+    max_workers = min(len(target_runs), os.cpu_count() or 1) or 1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(_run_target_for_run_all, target, departments): target["name"]
+            for target, departments in target_runs
+        }
+        for future in concurrent.futures.as_completed(future_map):
+            target_name = future_map[future]
+            try:
+                future.result()
+            except Exception as exc:  # pragma: no cover - exercised via tests
+                logger.error("Failed %s: %s", target_name, exc)
+                failures.append((target_name, exc))
+
+    if failures:
+        failed_targets = ", ".join(name for name, _ in failures)
+        raise RuntimeError(f"Local audits failed for target(s): {failed_targets}")
+
     refresh_dashboard_artifacts(targets, config=config)
     logger.info("Completed local audits for %d target(s).", len(selected_targets))
     return 0

@@ -327,6 +327,45 @@ def create_product_suggestion_task(
     return task
 
 
+def create_mentor_plan_task(
+    context: TaskContext,
+    request: dict,
+    plan: dict,
+    actor: str = "mentor",
+) -> dict:
+    """Create a human-approval task for a mentorship plan."""
+    repo = (request.get("repo") or "back-office").strip() or "back-office"
+    title = (plan.get("title") or request.get("goal") or "Mentor plan").strip()
+    task = ensure_task_defaults(
+        {
+            "repo": repo,
+            "title": f"Mentor plan: {title}",
+            "category": "education",
+            "task_type": "mentor_plan",
+            "priority": "medium",
+            "status": "pending_approval",
+            "created_by": actor,
+            "notes": plan.get("summary", ""),
+            "product_key": infer_product_key(repo),
+            "approval": {
+                "mentor_request": request,
+                "mentor_plan": plan,
+            },
+            "acceptance_criteria": [
+                "human reviews the study scope and pace",
+                "first milestone is accepted as realistic for the operator",
+                "plan is turned into concrete weekly execution or queue items",
+            ],
+            "audits_required": [],
+            "handoff_required": False,
+        },
+        context.targets,
+    )
+    append_history(task, "pending_approval", actor, "Mentorship plan submitted for approval")
+    context.payload.setdefault("tasks", []).append(task)
+    return task
+
+
 def find_task(tasks: list[dict], task_id: str) -> dict:
     for task in tasks:
         if task.get("id") == task_id:

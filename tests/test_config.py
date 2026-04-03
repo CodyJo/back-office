@@ -20,8 +20,8 @@ def minimal_config(tmp_path):
     cfg = tmp_path / "backoffice.yaml"
     cfg.write_text(textwrap.dedent("""\
         runner:
-          command: "claude --model haiku"
-          mode: claude-print
+          command: "codex"
+          mode: stdin-text
         api:
           port: 8070
           api_key: ""
@@ -50,8 +50,8 @@ def minimal_config(tmp_path):
 def test_load_config_returns_frozen_config(minimal_config):
     cfg = load_config(minimal_config)
     assert isinstance(cfg, Config)
-    assert cfg.runner.command == "claude --model haiku"
-    assert cfg.runner.mode == "claude-print"
+    assert cfg.runner.command == "codex"
+    assert cfg.runner.mode == "stdin-text"
 
 
 def test_target_has_defaults(minimal_config):
@@ -104,8 +104,8 @@ def test_back_office_root_override(minimal_config, monkeypatch):
 def test_shell_export_runner_vars(minimal_config):
     cfg = load_config(minimal_config)
     output = shell_export(cfg)
-    assert 'BACK_OFFICE_AGENT_RUNNER="claude --model haiku"' in output
-    assert 'BACK_OFFICE_AGENT_MODE="claude-print"' in output
+    assert 'BACK_OFFICE_AGENT_RUNNER="codex"' in output
+    assert 'BACK_OFFICE_AGENT_MODE="stdin-text"' in output
 
 
 def test_shell_export_target_fields(minimal_config):

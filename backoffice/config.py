@@ -23,8 +23,8 @@ class ConfigError(Exception):
 
 @dataclass(frozen=True)
 class RunnerConfig:
-    command: str = "claude"
-    mode: str = "claude-print"
+    command: str = "codex"
+    mode: str = "stdin-text"
 
 
 @dataclass(frozen=True)
@@ -190,9 +190,9 @@ def _build_agent_backends(
         return backends
 
     # Backward compat: synthesize a single backend from legacy runner: section
-    runner_cmd = str(runner_raw.get("command", "claude"))
-    runner_mode = str(runner_raw.get("mode", "claude-print"))
-    runner_bin = runner_cmd.split()[0] if runner_cmd else "claude"
+    runner_cmd = str(runner_raw.get("command", "codex"))
+    runner_mode = str(runner_raw.get("mode", "stdin-text"))
+    runner_bin = runner_cmd.split()[0] if runner_cmd else "codex"
 
     # Detect which backend type from the runner binary name
     if runner_bin == "codex":

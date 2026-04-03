@@ -4,9 +4,9 @@
 
 runner:
   # Shell command used to invoke the AI coding agent
-  command: "claude --model haiku"
-  # Agent output mode: claude-print | claude-json | custom
-  mode: "claude-print"
+  command: "codex"
+  # Agent output mode: claude-print | stdin-text
+  mode: "stdin-text"
 
 api:
   # Port the local API server listens on

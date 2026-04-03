@@ -64,3 +64,9 @@ ops/forgejo-local/data/
 
 # Monitoring stack secrets
 monitoring/.env
+
+# Node
+node_modules/
+
+# Scan state
+results/*.state

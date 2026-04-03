@@ -159,6 +159,15 @@
   .trend-up { color: var(--success); }
   .trend-down { color: var(--critical); }
   .score-card-error { font-size: 0.78rem; color: var(--high); margin-top: 0.5rem; }
+  .score-card-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.45rem;
+    font-size: 0.68rem;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .score-card-link:hover { text-decoration: underline; }
   .sparkline { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
   .sparkline span {
     width: 4px;
@@ -530,12 +539,16 @@
 <!-- Top Bar (fixed) -->
 <div class="topbar">
   <div class="topbar-left">
-    <a class="logo" href="index-new.html">Back Office</a>
+    <a class="logo" href="index.html">Back Office</a>
     <select class="product-select" id="productSelect" aria-label="Select product">
     </select>
   </div>
   <div class="topbar-right">
-    <button class="topbar-btn" id="opsBtn" style="border-color:var(--accent);color:var(--accent);">Ops</button>
+    <button class="topbar-btn" id="opsBtn" style="border-color:var(--accent);color:var(--accent);">Operations</button>
+    <a class="topbar-btn" id="migrationBtn" href="migration.html" style="border-color:rgba(108,92,231,0.45);color:#b9acff;">Migration</a>
+    <a class="topbar-btn" id="deployBtn" href="deploy.html" style="border-color:rgba(46,213,115,0.35);color:#86efac;">Deploy</a>
+    <a class="topbar-btn" id="actionsArchiveBtn" href="actions-history.html" style="border-color:rgba(196,148,74,0.4);color:#f3c97a;">Actions Archive</a>
+    <a class="topbar-btn" id="forgejoBtn" href="http://127.0.0.1:3300/" target="_blank" rel="noreferrer" style="border-color:rgba(116,185,255,0.35);color:#9dd1ff;">Forgejo</a>
     <button class="topbar-btn" id="jobsBtn">Jobs</button>
     <button class="topbar-btn" id="docsBtn">Docs</button>
     <button class="topbar-btn" id="faqBtn">FAQ</button>
@@ -920,6 +933,42 @@
       }
       row.appendChild(card);
     });
+
+    var forgejo = (opsStatusCache && opsStatusCache.forgejo) || null;
+    if (forgejo) {
+      var forgejoCard = el('div', {className: 'score-card'});
+      forgejoCard.appendChild(
+        el('div', {className: 'score-card-header'}, [
+          el('span', {className: 'score-card-name', textContent: 'Forgejo'}),
+          el('span', {className: 'ops-badge ' + (forgejo.healthy ? 'ops-badge-healthy' : 'ops-badge-unavailable'), textContent: forgejo.healthy ? 'Healthy' : 'Offline'})
+        ])
+      );
+      forgejoCard.appendChild(
+        el('div', {
+          className: 'score-card-value',
+          style: 'color:' + (forgejo.healthy ? 'var(--success)' : 'var(--critical)'),
+          textContent: forgejo.repo_count != null ? String(forgejo.repo_count) : '--'
+        })
+      );
+      forgejoCard.appendChild(
+        el('div', {
+          className: 'score-card-trend',
+          textContent: 'Repos mirrored locally' + (forgejo.runner_count != null ? ' · runners ' + forgejo.runner_count : '')
+        })
+      );
+      if (forgejo.base_url) {
+        forgejoCard.appendChild(
+          el('a', {
+            className: 'score-card-link',
+            href: forgejo.base_url,
+            target: '_blank',
+            rel: 'noreferrer',
+            textContent: 'Open Forgejo'
+          })
+        );
+      }
+      row.appendChild(forgejoCard);
+    }
   }
 
   function renderMatrix() {
@@ -1525,12 +1574,16 @@
     var body = document.getElementById('detailBody');
     clearChildren(body);
     var findingTask = null;
+    var findingKey = finding.hash || findingHash(finding.department, finding.repo, finding.title, finding.file);
     if (taskQueueData && taskQueueData.tasks) {
       findingTask = taskQueueData.tasks.find(function(task) {
         var source = task.source_finding || {};
-        return task.repo === finding.repo &&
-          source.department === finding.department &&
-          (source.id && finding.id ? source.id === finding.id : source.file === finding.file && task.title === finding.title);
+        return task.repo === finding.repo && (
+          source.hash === findingKey ||
+          (source.department === finding.department &&
+            ((source.id && finding.id && source.id === finding.id) ||
+             (source.file === finding.file && task.title === finding.title)))
+        );
       }) || null;
     }
 
@@ -1844,6 +1897,7 @@
       var found = null;
       deptData[dept].repos.forEach(function(r) {
         if (found) return;
+        if (repo && r.name !== repo) return;
         if (r.findings) r.findings.forEach(function(f) {
           if (found) return;
           if (findingId && (f.id === findingId)) { found = f; found.repo = found.repo || r.name; found.department = found.department || dept; }
@@ -1856,6 +1910,7 @@
         var titleText = titleEl ? titleEl.textContent.replace('AI fixable', '').trim() : '';
         deptData[dept].repos.forEach(function(r) {
           if (found) return;
+          if (repo && r.name !== repo) return;
           if (r.findings) r.findings.forEach(function(f) {
             if (found) return;
             if (f.title === titleText) {
@@ -2296,6 +2351,8 @@
   var opsActiveTab = 'jobs';
   var opsPollingTimer = null;
   var opsStatusCache = null;
+  var migrationPlanData = null;
+  var remediationPlanData = null;
 
   /* ── Helpers ── */
 
@@ -2364,6 +2421,10 @@
     if (name === 'jobs') {
       opsRefreshLiveJobs();
       opsPollingTimer = setInterval(opsRefreshLiveJobs, 5000);
+    } else if (name === 'remediation') {
+      opsRenderRemediationTab();
+    } else if (name === 'migration') {
+      opsRenderMigrationTab();
     }
   }
 
@@ -2385,8 +2446,29 @@
       });
   }
 
+  function refreshMigrationPlanCache() {
+    return fetch('/api/migration-plan?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
+      .then(function(data) {
+        migrationPlanData = data;
+        return data;
+      });
+  }
+
+  function refreshRemediationPlanCache() {
+    return fetch('/api/remediation-plan?t=' + Date.now())
+      .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
+      .then(function(data) {
+        remediationPlanData = data;
+        return data;
+      });
+  }
+
   function queueFindingForApproval(finding, btn) {
     if (!finding || !finding.title || !finding.repo) return;
+    var findingPayload = Object.assign({}, finding, {
+      hash: finding.hash || findingHash(finding.department, finding.repo, finding.title, finding.file)
+    });
     if (btn) {
       btn.disabled = true;
       btn.textContent = 'Queueing…';
@@ -2394,23 +2476,33 @@
     fetch('/api/tasks/queue-finding', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({finding: finding, by: 'dashboard'})
+      body: JSON.stringify({finding: findingPayload, by: 'dashboard'})
     })
     .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
     .then(function(res) {
       return refreshTaskQueueCache()
         .catch(function() { return null; })
         .then(function() {
+          if (currentFinding && currentFinding.repo === finding.repo && currentFinding.title === finding.title && currentFinding.file === finding.file) {
+            currentFinding = findingPayload;
+            renderFindingDetail(currentFinding);
+          }
           if (btn) {
             btn.disabled = res.ok || res.data.created === false;
             btn.textContent = res.ok ? 'Queued' : (res.data.created === false ? 'Already Queued' : 'Queue for Approval');
           }
         });
     })
-    .catch(function() {
+    .catch(function(err) {
       if (btn) {
         btn.disabled = false;
         btn.textContent = 'Queue for Approval';
+      }
+      if (currentFinding && currentFinding.repo === finding.repo && currentFinding.title === finding.title && currentFinding.file === finding.file) {
+        var body = document.getElementById('detailBody');
+        if (body) {
+          body.insertBefore(el('div', {className: 'detail-text', style: 'color:var(--critical);margin-bottom:0.75rem;', textContent: 'Failed to queue for approval: ' + err}), body.firstChild);
+        }
       }
     });
   }
@@ -2745,7 +2837,7 @@
 
     var intro = el('div', {className: 'ops-card'});
     intro.appendChild(el('div', {className: 'ops-card-title', textContent: 'Human-Centered Approval'}));
-    intro.appendChild(el('div', {className: 'ops-card-subtitle', textContent: 'Nothing runs unattended. Findings, fixes, product suggestions, and PRs move only after explicit approval.'}));
+    intro.appendChild(el('div', {className: 'ops-card-subtitle', textContent: 'Nothing runs unattended. Findings, fixes, product suggestions, mentorship plans, and PRs move only after explicit approval.'}));
     container.appendChild(intro);
 
     var productKeys = Object.keys(productSummary);
@@ -2767,7 +2859,7 @@
     }
 
     if (tasks.length === 0) {
-      container.appendChild(el('div', {className: 'empty-state', textContent: 'No queued work yet. Use a finding detail or the Suggest Product tab to create approval items.'}));
+      container.appendChild(el('div', {className: 'empty-state', textContent: 'No queued work yet. Use a finding detail or the product/mentor operator tools to create approval items.'}));
       return;
     }
 
@@ -2839,7 +2931,625 @@
   }
 
   /* ════════════════════════════════════════════════
-     TAB 4: BACKENDS
+     TAB 4: MIGRATION PLAN
+  ════════════════════════════════════════════════ */
+
+  function opsTargetLabel(value) {
+    return {
+      'gcp': 'GCP',
+      'aws-new': 'AWS 404166437757',
+      'hybrid': 'Hybrid',
+      'defer': 'Defer'
+    }[value] || value || 'Unset';
+  }
+
+  function opsRenderMigrationSummary(container, summary) {
+    var grid = el('div', {className: 'ops-overnight-status'});
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Completion'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.completion_pct || 0) + '%'})
+    ]));
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'GCP Targets'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.gcp_targets || 0)})
+    ]));
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'AWS Targets'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.aws_targets || 0)})
+    ]));
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Updated'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: timeAgo(summary.updated_at)})
+    ]));
+    container.appendChild(grid);
+  }
+
+  function opsMigrationSaveItem(collection, item, statusSelect, targetSelect, notesInput, nextInput, saveBtn, container) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+    fetch('/api/migration-plan/item/update', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        collection: collection,
+        id: item.id,
+        status: statusSelect ? statusSelect.value : item.status,
+        target: targetSelect ? targetSelect.value : item.target,
+        notes: notesInput ? notesInput.value : item.notes,
+        next_step: nextInput ? nextInput.value : item.next_step
+      })
+    })
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+      if (res.ok) {
+        migrationPlanData = res.data.plan;
+        opsFeedback(container, 'Migration plan updated.', false);
+        opsRenderMigrationTab();
+      } else {
+        opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
+      }
+    })
+    .catch(function(err) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+      opsFeedback(container, 'Network error: ' + err, true);
+    });
+  }
+
+  function opsRenderMigrationCollection(container, title, collection, items, options) {
+    var card = el('div', {className: 'ops-card'});
+    card.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: title}));
+    if (!items || items.length === 0) {
+      card.appendChild(el('div', {className: 'empty-state', textContent: 'No items yet.'}));
+      container.appendChild(card);
+      return;
+    }
+
+    items.forEach(function(item) {
+      var row = el('div', {className: 'ops-job-row', style: 'grid-template-columns: 1.2fr 0.7fr 0.8fr auto; align-items:start;'});
+      var left = el('div');
+      left.appendChild(el('div', {className: 'ops-job-target', textContent: item.label || item.title || item.id}));
+      var metaBits = [];
+      if (item.phase) metaBits.push('phase ' + item.phase);
+      if (item.priority) metaBits.push('priority ' + item.priority);
+      if (item.domain) metaBits.push(item.domain);
+      if (item.dns_target) metaBits.push('DNS → ' + opsTargetLabel(item.dns_target));
+      if (item.registration_target) metaBits.push('Registrar → ' + opsTargetLabel(item.registration_target));
+      if (metaBits.length > 0) {
+        left.appendChild(el('div', {style: 'font-size:0.72rem;color:var(--text-dim);margin-top:0.25rem;', textContent: metaBits.join(' · ')}));
+      }
+      if (item.summary) {
+        left.appendChild(el('div', {style: 'font-size:0.76rem;color:var(--text);margin-top:0.35rem;', textContent: item.summary}));
+      }
+      if (item.blockers && item.blockers.length > 0) {
+        left.appendChild(el('div', {style: 'font-size:0.72rem;color:var(--high);margin-top:0.35rem;', textContent: 'Blockers: ' + item.blockers.join(' | ')}));
+      }
+      row.appendChild(left);
+
+      var statusSelect = el('select', {className: 'ops-form-select', style: 'min-width:125px;'});
+      ['planned', 'in_progress', 'blocked', 'complete'].forEach(function(status) {
+        var opt = el('option', {value: status, textContent: status.replace(/_/g, ' ')});
+        if (item.status === status) opt.selected = true;
+        statusSelect.appendChild(opt);
+      });
+      row.appendChild(statusSelect);
+
+      var targetNode;
+      if (options.showTarget) {
+        targetNode = el('select', {className: 'ops-form-select', style: 'min-width:140px;'});
+        var targets = options.domainTargets ? ['gcp', 'aws-new'] : ['gcp', 'aws-new', 'hybrid', 'defer'];
+        targets.forEach(function(target) {
+          var opt = el('option', {value: target, textContent: opsTargetLabel(target)});
+          var selectedValue = options.domainTargets ? item[options.domainTargetKey] : item.target;
+          if (selectedValue === target) opt.selected = true;
+          targetNode.appendChild(opt);
+        });
+      } else {
+        targetNode = el('span', null, [el('span', {className: opsBadgeClass(item.status), textContent: item.status.replace(/_/g, ' ')})]);
+      }
+      row.appendChild(targetNode);
+
+      var saveBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Save'});
+      row.appendChild(saveBtn);
+      card.appendChild(row);
+
+      var notesRow = el('div', {style: 'display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:0 0 1rem 0;'});
+      var notesInput = el('input', {className: 'ops-form-input', value: item.notes || '', placeholder: 'Notes'});
+      var nextInput = el('input', {className: 'ops-form-input', value: item.next_step || '', placeholder: 'Next step'});
+      notesRow.appendChild(notesInput);
+      notesRow.appendChild(nextInput);
+      card.appendChild(notesRow);
+
+      saveBtn.addEventListener('click', function() {
+        if (options.domainTargets) {
+          var planAfterFirst = {
+            collection: collection,
+            id: item.id,
+            status: statusSelect.value,
+            notes: notesInput.value,
+            next_step: nextInput.value
+          };
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving…';
+          fetch('/api/migration-plan/item/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(planAfterFirst)
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            if (!res.ok) throw new Error(res.data.error || 'Unknown error');
+            migrationPlanData = res.data.plan;
+            var patch = {};
+            patch[options.domainTargetKey] = targetNode.value;
+            var found = migrationPlanData.domains.find(function(domain) { return domain.id === item.id; });
+            if (found) {
+              found[options.domainTargetKey] = targetNode.value;
+            }
+            return fetch('/api/migration-plan/item/update', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                collection: collection,
+                id: item.id,
+                status: statusSelect.value,
+                notes: notesInput.value,
+                next_step: nextInput.value
+              })
+            });
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function() {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+            opsFeedback(container, 'Migration plan updated.', false);
+            opsRenderMigrationTab();
+          })
+          .catch(function(err) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+            opsFeedback(container, 'Error: ' + err.message, true);
+          });
+          return;
+        }
+        opsMigrationSaveItem(collection, item, statusSelect, options.showTarget ? targetNode : null, notesInput, nextInput, saveBtn, container);
+      });
+    });
+    container.appendChild(card);
+  }
+
+  function opsRenderMigrationDomains(container, domains) {
+    var card = el('div', {className: 'ops-card'});
+    card.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: 'Domains'}));
+    if (!domains || domains.length === 0) {
+      card.appendChild(el('div', {className: 'empty-state', textContent: 'No domains yet.'}));
+      container.appendChild(card);
+      return;
+    }
+    domains.forEach(function(item) {
+      var row = el('div', {className: 'ops-job-row', style: 'grid-template-columns: 1.1fr 0.8fr 0.8fr 0.7fr auto; align-items:start;'});
+      var left = el('div');
+      left.appendChild(el('div', {className: 'ops-job-target', textContent: item.label}));
+      if (item.notes) left.appendChild(el('div', {style: 'font-size:0.72rem;color:var(--text-dim);margin-top:0.25rem;', textContent: item.notes}));
+      row.appendChild(left);
+
+      var dnsSelect = el('select', {className: 'ops-form-select', style: 'min-width:125px;'});
+      ['gcp', 'aws-new'].forEach(function(target) {
+        var opt = el('option', {value: target, textContent: target === 'gcp' ? 'DNS → GCP' : 'DNS → AWS'});
+        if (item.dns_target === target) opt.selected = true;
+        dnsSelect.appendChild(opt);
+      });
+      row.appendChild(dnsSelect);
+
+      var regSelect = el('select', {className: 'ops-form-select', style: 'min-width:150px;'});
+      ['gcp', 'aws-new'].forEach(function(target) {
+        var opt = el('option', {value: target, textContent: target === 'gcp' ? 'Registrar → GCP' : 'Registrar → AWS'});
+        if (item.registration_target === target) opt.selected = true;
+        regSelect.appendChild(opt);
+      });
+      row.appendChild(regSelect);
+
+      var statusSelect = el('select', {className: 'ops-form-select', style: 'min-width:120px;'});
+      ['planned', 'in_progress', 'blocked', 'complete'].forEach(function(status) {
+        var opt = el('option', {value: status, textContent: status.replace(/_/g, ' ')});
+        if (item.status === status) opt.selected = true;
+        statusSelect.appendChild(opt);
+      });
+      row.appendChild(statusSelect);
+
+      var saveBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Save'});
+      row.appendChild(saveBtn);
+      card.appendChild(row);
+
+      var notesRow = el('div', {style: 'display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:0 0 1rem 0;'});
+      var notesInput = el('input', {className: 'ops-form-input', value: item.notes || '', placeholder: 'Notes'});
+      var nextInput = el('input', {className: 'ops-form-input', value: item.next_step || '', placeholder: 'Next step'});
+      notesRow.appendChild(notesInput);
+      notesRow.appendChild(nextInput);
+      card.appendChild(notesRow);
+
+      saveBtn.addEventListener('click', function() {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        fetch('/api/migration-plan/item/update', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            collection: 'domains',
+            id: item.id,
+            status: statusSelect.value,
+            dns_target: dnsSelect.value,
+            registration_target: regSelect.value,
+            notes: notesInput.value,
+            next_step: nextInput.value
+          })
+        })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            if (!res.ok) throw new Error(res.data.error || 'Unknown error');
+            migrationPlanData = res.data.plan;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+            opsFeedback(container, 'Domain plan updated locally.', false);
+            opsRenderMigrationTab();
+          })
+          .catch(function(err) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+            opsFeedback(container, 'Error: ' + err, true);
+          });
+      });
+    });
+    container.appendChild(card);
+  }
+
+  function opsRenderMigrationUpdates(container, plan) {
+    var card = el('div', {className: 'ops-card'});
+    card.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: 'Update Log'}));
+
+    var actionRow = el('div', {style: 'display:grid;grid-template-columns:1fr auto;gap:0.75rem;margin-bottom:1rem;'});
+    var updateInput = el('input', {className: 'ops-form-input', placeholder: 'Add a migration update that should appear in the dashboard'});
+    var addBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Add Update'});
+    actionRow.appendChild(updateInput);
+    actionRow.appendChild(addBtn);
+    card.appendChild(actionRow);
+
+    addBtn.addEventListener('click', function() {
+      if (!updateInput.value.trim()) {
+        opsFeedback(container, 'Update message is required.', true);
+        return;
+      }
+      addBtn.disabled = true;
+      addBtn.textContent = 'Adding…';
+      fetch('/api/migration-plan/updates/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({actor: 'dashboard', kind: 'note', message: updateInput.value.trim()})
+      })
+      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+      .then(function(res) {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add Update';
+        if (res.ok) {
+          migrationPlanData = res.data.plan;
+          updateInput.value = '';
+          opsFeedback(container, 'Migration update added.', false);
+          opsRenderMigrationTab();
+        } else {
+          opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
+        }
+      })
+      .catch(function(err) {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add Update';
+        opsFeedback(container, 'Network error: ' + err, true);
+      });
+    });
+
+    var updates = (plan.updates || []).slice(0, 12);
+    if (updates.length === 0) {
+      card.appendChild(el('div', {className: 'empty-state', textContent: 'No updates yet.'}));
+    } else {
+      updates.forEach(function(update) {
+        card.appendChild(el('div', {className: 'ops-cycle-row'}, [
+          el('span', {className: 'ops-cycle-id', textContent: timeAgo(update.at)}),
+          el('span', {textContent: update.actor || 'operator'}),
+          el('span', {textContent: update.kind || 'note'}),
+          el('span', {style: 'grid-column: span 2;', textContent: update.message || ''})
+        ]));
+      });
+    }
+    container.appendChild(card);
+  }
+
+  function opsRenderMigrationTab() {
+    var container = document.getElementById('ops-migration');
+    if (!container) return;
+    clearChildren(container);
+    if (!migrationPlanData) {
+      container.appendChild(el('div', {style: 'padding:2rem;text-align:center;color:var(--text-dim);font-size:0.85rem;', textContent: 'Loading migration plan…'}));
+      refreshMigrationPlanCache()
+        .then(function() { opsRenderMigrationTab(); })
+        .catch(function(err) {
+          clearChildren(container);
+          container.appendChild(el('div', {className: 'empty-state', textContent: 'Could not load migration plan: ' + err}));
+        });
+      return;
+    }
+
+    var intro = el('div', {className: 'ops-card'});
+    intro.appendChild(el('div', {className: 'ops-card-title', textContent: 'Cloud Exit Control Plane'}));
+    intro.appendChild(el('div', {className: 'ops-card-subtitle', textContent: migrationPlanData.goal || ''}));
+    if ((migrationPlanData.principles || []).length > 0) {
+      var principleList = el('div', {style: 'margin-top:0.75rem;font-size:0.78rem;color:var(--text-dim);'});
+      migrationPlanData.principles.forEach(function(line) {
+        principleList.appendChild(el('div', {textContent: '• ' + line}));
+      });
+      intro.appendChild(principleList);
+    }
+    container.appendChild(intro);
+
+    opsRenderMigrationSummary(container, migrationPlanData.summary || {});
+    opsRenderMigrationCollection(container, 'Phases', 'phases', migrationPlanData.phases || [], {showTarget: true});
+    opsRenderMigrationCollection(container, 'Repositories', 'repositories', migrationPlanData.repositories || [], {showTarget: true});
+    opsRenderMigrationDomains(container, migrationPlanData.domains || []);
+    opsRenderMigrationUpdates(container, migrationPlanData);
+  }
+
+  /* ════════════════════════════════════════════════
+     TAB 5: REMEDIATION PLAN
+  ════════════════════════════════════════════════ */
+
+  function opsRenderRemediationSummary(container, summary) {
+    var grid = el('div', {className: 'ops-overnight-status'});
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Waves'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.wave_count || 0)})
+    ]));
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Repos In Plan'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.repository_count || 0)})
+    ]));
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Must Fix Now'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String((summary.by_disposition || {}).must_fix_now || 0)})
+    ]));
+    grid.appendChild(el('div', {className: 'ops-overnight-stat'}, [
+      el('div', {className: 'ops-overnight-stat-label', textContent: 'Deferred Findings'}),
+      el('div', {className: 'ops-overnight-stat-value', textContent: String(summary.deferred_findings || 0)})
+    ]));
+    container.appendChild(grid);
+  }
+
+  function opsRemediationSaveItem(collection, itemId, statusValue, notesValue, button, container) {
+    button.disabled = true;
+    button.textContent = 'Saving…';
+    fetch('/api/remediation-plan/item/update', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        collection: collection,
+        id: itemId,
+        status: statusValue,
+        notes: notesValue
+      })
+    })
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+      button.disabled = false;
+      button.textContent = 'Save';
+      if (res.ok) {
+        remediationPlanData = res.data.plan;
+        opsFeedback(container, 'Remediation plan updated.', false);
+        opsRenderRemediationTab();
+      } else {
+        opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
+      }
+    })
+    .catch(function(err) {
+      button.disabled = false;
+      button.textContent = 'Save';
+      opsFeedback(container, 'Network error: ' + err, true);
+    });
+  }
+
+  function opsRenderRemediationWave(container, wave) {
+    var card = el('div', {className: 'ops-card'});
+    var header = el('div', {className: 'ops-card-header'}, [
+      el('div', null, [
+        el('div', {className: 'ops-card-title', textContent: wave.title || wave.id}),
+        el('div', {className: 'ops-card-subtitle', textContent: (wave.summary || '') + (wave.approval_checkpoint ? (' · ' + wave.approval_checkpoint) : '')})
+      ])
+    ]);
+    var waveControls = el('div', {style: 'display:flex;gap:0.5rem;align-items:center;'});
+    var waveStatus = el('select', {className: 'ops-form-select', style: 'min-width:130px;'});
+    ['planned', 'in_progress', 'blocked', 'complete'].forEach(function(status) {
+      var opt = el('option', {value: status, textContent: status.replace(/_/g, ' ')});
+      if ((wave.status || 'planned') === status) opt.selected = true;
+      waveStatus.appendChild(opt);
+    });
+    var waveSave = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Save'});
+    waveControls.appendChild(waveStatus);
+    waveControls.appendChild(waveSave);
+    header.appendChild(waveControls);
+    card.appendChild(header);
+
+    var waveNotes = el('input', {className: 'ops-form-input', value: wave.notes || '', placeholder: 'Wave notes', style: 'margin-bottom:0.85rem;'});
+    card.appendChild(waveNotes);
+    waveSave.addEventListener('click', function() {
+      opsRemediationSaveItem('waves', wave.id, waveStatus.value, waveNotes.value, waveSave, container);
+    });
+
+    (wave.repositories || []).forEach(function(repoPlan) {
+      var row = el('div', {className: 'ops-job-row', style: 'grid-template-columns: 1.1fr 0.8fr 1.2fr auto;align-items:start;'});
+      var left = el('div');
+      left.appendChild(el('div', {className: 'ops-job-target', textContent: repoPlan.repo || 'unknown repo'}));
+      left.appendChild(el('div', {style: 'font-size:0.72rem;color:var(--text-dim);margin-top:0.25rem;', textContent: repoPlan.summary || ''}));
+      row.appendChild(left);
+      var repoStatusWrap = el('div');
+      repoStatusWrap.appendChild(el('div', {style: 'font-size:0.7rem;color:var(--text-dim);margin-bottom:0.25rem;', textContent: (repoPlan.disposition || 'fix_this_wave').replace(/_/g, ' ')}));
+      var repoStatus = el('select', {className: 'ops-form-select', style: 'min-width:130px;'});
+      ['planned', 'in_progress', 'blocked', 'complete'].forEach(function(status) {
+        var opt = el('option', {value: status, textContent: status.replace(/_/g, ' ')});
+        if ((repoPlan.status || 'planned') === status) opt.selected = true;
+        repoStatus.appendChild(opt);
+      });
+      repoStatusWrap.appendChild(repoStatus);
+      row.appendChild(repoStatusWrap);
+
+      var findingsWrap = el('div');
+      (repoPlan.findings || []).slice(0, 6).forEach(function(finding) {
+        var line = finding.severity + ' · ' + (finding.title || '');
+        if (finding.deferred) line += ' (deferred)';
+        findingsWrap.appendChild(el('div', {style: 'font-size:0.72rem;color:' + (finding.deferred ? 'var(--text-dim)' : 'var(--text)') + ';margin-bottom:0.2rem;', textContent: line}));
+      });
+      if ((repoPlan.findings || []).length > 6) {
+        findingsWrap.appendChild(el('div', {style: 'font-size:0.7rem;color:var(--text-dim);', textContent: '+' + ((repoPlan.findings || []).length - 6) + ' more'}));
+      }
+      row.appendChild(findingsWrap);
+
+      var repoAction = el('div', {style: 'display:flex;flex-direction:column;gap:0.45rem;align-items:flex-end;'});
+      repoAction.appendChild(el('div', {style: 'font-size:0.7rem;color:var(--text-dim);text-align:right;', textContent: (repoPlan.verification || []).join(' | ') || 'No verification command'}));
+      var repoSave = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Save'});
+      repoAction.appendChild(repoSave);
+      row.appendChild(repoAction);
+      card.appendChild(row);
+
+      var repoNotes = el('input', {className: 'ops-form-input', value: repoPlan.notes || '', placeholder: 'Repo notes', style: 'margin:0 0 0.9rem 0;'});
+      card.appendChild(repoNotes);
+      repoSave.addEventListener('click', function() {
+        opsRemediationSaveItem('repositories', repoPlan.repo, repoStatus.value, repoNotes.value, repoSave, container);
+      });
+    });
+
+    container.appendChild(card);
+  }
+
+  function opsRenderRemediationTab() {
+    var container = document.getElementById('ops-remediation');
+    if (!container) return;
+    clearChildren(container);
+    if (!remediationPlanData) {
+      container.appendChild(el('div', {style: 'padding:2rem;text-align:center;color:var(--text-dim);font-size:0.85rem;', textContent: 'Loading remediation plan…'}));
+      refreshRemediationPlanCache()
+        .then(function() { opsRenderRemediationTab(); })
+        .catch(function(err) {
+          clearChildren(container);
+          container.appendChild(el('div', {className: 'empty-state', textContent: 'Could not load remediation plan: ' + err}));
+        });
+      return;
+    }
+
+    var intro = el('div', {className: 'ops-card'});
+    intro.appendChild(el('div', {className: 'ops-card-title', textContent: 'Portfolio QA Remediation Plan'}));
+    intro.appendChild(el('div', {className: 'ops-card-subtitle', textContent: remediationPlanData.goal || ''}));
+    if ((remediationPlanData.principles || []).length > 0) {
+      var principleList = el('div', {style: 'margin-top:0.75rem;font-size:0.78rem;color:var(--text-dim);'});
+      remediationPlanData.principles.forEach(function(line) {
+        principleList.appendChild(el('div', {textContent: '• ' + line}));
+      });
+      intro.appendChild(principleList);
+    }
+
+    var seedRow = el('div', {style: 'display:flex;gap:0.75rem;align-items:center;margin-top:1rem;flex-wrap:wrap;'});
+    var seedBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Seed Wave 1 To Queue'});
+    seedBtn.addEventListener('click', function() {
+      seedBtn.disabled = true;
+      seedBtn.textContent = 'Seeding…';
+      fetch('/api/remediation-plan/seed-wave-one', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+      })
+      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+      .then(function(res) {
+        seedBtn.disabled = false;
+        seedBtn.textContent = 'Seed Wave 1 To Queue';
+        if (res.ok) {
+          refreshTaskQueueCache().catch(function() { return null; }).then(function() {
+            opsFeedback(container, 'Wave 1 tasks seeded: ' + ((res.data.created_task_ids || []).length), false);
+            opsRenderApprovalTab();
+          });
+        } else {
+          opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
+        }
+      })
+      .catch(function(err) {
+        seedBtn.disabled = false;
+        seedBtn.textContent = 'Seed Wave 1 To Queue';
+        opsFeedback(container, 'Network error: ' + err, true);
+      });
+    });
+    seedRow.appendChild(seedBtn);
+    seedRow.appendChild(el('span', {style: 'font-size:0.72rem;color:var(--text-dim);', textContent: 'Creates approval-queue tasks for the Wave 1 repo passes.'}));
+    intro.appendChild(seedRow);
+    container.appendChild(intro);
+
+    opsRenderRemediationSummary(container, remediationPlanData.summary || {});
+    (remediationPlanData.waves || []).forEach(function(wave) {
+      opsRenderRemediationWave(container, wave);
+    });
+
+    var updatesCard = el('div', {className: 'ops-card'});
+    updatesCard.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.75rem;', textContent: 'Remediation Updates'}));
+    var actionRow = el('div', {style: 'display:grid;grid-template-columns:1fr auto;gap:0.75rem;margin-bottom:1rem;'});
+    var updateInput = el('input', {className: 'ops-form-input', placeholder: 'Add a remediation update'});
+    var addBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Add Update'});
+    actionRow.appendChild(updateInput);
+    actionRow.appendChild(addBtn);
+    updatesCard.appendChild(actionRow);
+    addBtn.addEventListener('click', function() {
+      if (!updateInput.value.trim()) {
+        opsFeedback(container, 'Update message is required.', true);
+        return;
+      }
+      addBtn.disabled = true;
+      addBtn.textContent = 'Adding…';
+      fetch('/api/remediation-plan/updates/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({actor: 'dashboard', kind: 'note', message: updateInput.value.trim()})
+      })
+      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+      .then(function(res) {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add Update';
+        if (res.ok) {
+          remediationPlanData = res.data.plan;
+          updateInput.value = '';
+          opsFeedback(container, 'Remediation update added.', false);
+          opsRenderRemediationTab();
+        } else {
+          opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
+        }
+      })
+      .catch(function(err) {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add Update';
+        opsFeedback(container, 'Network error: ' + err, true);
+      });
+    });
+
+    var updates = (remediationPlanData.updates || []).slice(0, 12);
+    if (updates.length === 0) {
+      updatesCard.appendChild(el('div', {className: 'empty-state', textContent: 'No remediation updates yet.'}));
+    } else {
+      updates.forEach(function(update) {
+        updatesCard.appendChild(el('div', {className: 'ops-cycle-row'}, [
+          el('span', {className: 'ops-cycle-id', textContent: timeAgo(update.at)}),
+          el('span', {textContent: update.actor || 'operator'}),
+          el('span', {textContent: update.kind || 'note'}),
+          el('span', {style: 'grid-column: span 2;', textContent: update.message || ''})
+        ]));
+      });
+    }
+    container.appendChild(updatesCard);
+  }
+
+  /* ════════════════════════════════════════════════
+     TAB 6: BACKENDS
   ════════════════════════════════════════════════ */
 
   function opsRenderBackendsTab() {
@@ -2945,7 +3655,7 @@
   }
 
   /* ════════════════════════════════════════════════
-     TAB 5: ADD PRODUCT
+     TAB 6: ADD PRODUCT
   ════════════════════════════════════════════════ */
 
   var opsSelectedSource = 'github';
@@ -3073,6 +3783,7 @@
     card.appendChild(cmdBox);
 
     container.appendChild(card);
+    opsRenderMentorCard(container);
 
     // Update preview on input changes
     function updateProductPreview() {
@@ -3168,6 +3879,131 @@
     });
   }
 
+
+  function opsRenderMentorCard(container) {
+    var card = el('div', {className: 'ops-card'});
+    card.appendChild(el('div', {className: 'ops-card-title', style: 'margin-bottom:0.35rem;', textContent: 'Mentor Me'}));
+    card.appendChild(el('div', {className: 'ops-card-subtitle', textContent: 'Turn a learning goal into an approval-gated study plan tied to your real environment.'}));
+
+    var goalGroup = el('div', {className: 'ops-form-group', style: 'margin-top:1rem;'});
+    goalGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Goal'}));
+    var goalInput = el('input', {className: 'ops-form-input', id: 'opsMentorGoal', value: 'Renew Google Cloud Associate Cloud Engineer'});
+    goalGroup.appendChild(goalInput);
+    card.appendChild(goalGroup);
+
+    var currentGroup = el('div', {className: 'ops-form-group'});
+    currentGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Current State'}));
+    var currentInput = el('textarea', {className: 'ops-form-input', id: 'opsMentorCurrent', rows: '3'});
+    currentInput.value = 'Expired GCP Cloud Associate. Expired AWS SA, but not renewing AWS right now.';
+    currentGroup.appendChild(currentInput);
+    card.appendChild(currentGroup);
+
+    var row = el('div', {className: 'ops-form-row'});
+    var cloudGroup = el('div', {className: 'ops-form-group'});
+    cloudGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Target Cloud'}));
+    var cloudSelect = el('select', {className: 'ops-form-select', id: 'opsMentorCloud'});
+    [['gcp', 'GCP'], ['aws', 'AWS']].forEach(function(opt) { cloudSelect.appendChild(el('option', {value: opt[0], textContent: opt[1]})); });
+    cloudGroup.appendChild(cloudSelect);
+    row.appendChild(cloudGroup);
+
+    var hoursGroup = el('div', {className: 'ops-form-group'});
+    hoursGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Hours / Week'}));
+    var hoursInput = el('input', {className: 'ops-form-input', id: 'opsMentorHours', type: 'number', min: '2', max: '20', value: '6'});
+    hoursGroup.appendChild(hoursInput);
+    row.appendChild(hoursGroup);
+
+    var weeksGroup = el('div', {className: 'ops-form-group'});
+    weeksGroup.appendChild(el('label', {className: 'ops-form-label', textContent: 'Weeks'}));
+    var weeksInput = el('input', {className: 'ops-form-input', id: 'opsMentorWeeks', type: 'number', min: '2', max: '16', value: '8'});
+    weeksGroup.appendChild(weeksInput);
+    row.appendChild(weeksGroup);
+    card.appendChild(row);
+
+    var portfolioWrap = el('label', {className: 'ops-form-check', style: 'margin-top:0.25rem;display:inline-flex;align-items:center;gap:0.4rem;'});
+    var portfolioCb = el('input', {type: 'checkbox', id: 'opsMentorPortfolio'});
+    portfolioCb.checked = true;
+    portfolioWrap.appendChild(portfolioCb);
+    portfolioWrap.appendChild(document.createTextNode(' Use portfolio repos as labs'));
+    card.appendChild(portfolioWrap);
+
+    var preview = el('div', {className: 'ops-cmd-box', style: 'margin-top:0.9rem;white-space:normal;line-height:1.5;', id: 'opsMentorPreview'});
+    card.appendChild(preview);
+
+    var actions = el('div', {style: 'display:flex;gap:0.75rem;align-items:center;margin-top:1rem;'});
+    var submitBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Queue Mentor Plan'});
+    actions.appendChild(submitBtn);
+    card.appendChild(actions);
+    container.appendChild(card);
+
+    function updatePreview(plan) {
+      var goal = goalInput.value.trim() || 'Mentorship plan';
+      var hours = Number(hoursInput.value) || 6;
+      var weeks = Number(weeksInput.value) || 8;
+      var cloud = cloudSelect.value === 'aws' ? 'AWS' : 'GCP';
+      clearChildren(preview);
+      preview.appendChild(el('div', {textContent: 'Plan focus: ' + goal}));
+      preview.appendChild(el('div', {style: 'margin-top:0.35rem;color:var(--text-dim);', textContent: cloud + ' · ' + hours + ' hrs/week · ' + weeks + ' weeks'}));
+      if (plan && plan.summary) {
+        preview.appendChild(el('div', {style: 'margin-top:0.6rem;', textContent: plan.summary}));
+        if (plan.milestones && plan.milestones.length) {
+          var ul = el('ul', {style: 'margin:0.6rem 0 0 1rem;padding:0;'});
+          plan.milestones.slice(0, 3).forEach(function(item) {
+            ul.appendChild(el('li', {textContent: 'Week ' + item.week + ': ' + item.title}));
+          });
+          preview.appendChild(ul);
+        }
+      } else {
+        preview.appendChild(el('div', {style: 'margin-top:0.6rem;', textContent: 'Queue a plan to get milestone guidance tied to your environment and certification goal.'}));
+      }
+    }
+
+    [goalInput, currentInput, cloudSelect, hoursInput, weeksInput, portfolioCb].forEach(function(node) {
+      node.addEventListener('input', function() { updatePreview(null); });
+      node.addEventListener('change', function() { updatePreview(null); });
+    });
+    updatePreview(null);
+
+    submitBtn.addEventListener('click', function() {
+      var goal = goalInput.value.trim();
+      if (!goal) {
+        opsFeedback(container, 'Mentor goal is required.', true);
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Planning…';
+      var payload = {
+        goal: goal,
+        target_cloud: cloudSelect.value,
+        current_state: currentInput.value.trim(),
+        weekly_hours: Number(hoursInput.value) || 6,
+        horizon_weeks: Number(weeksInput.value) || 8,
+        use_portfolio_context: portfolioCb.checked
+      };
+      fetch('/api/ops/mentor/plan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      })
+      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+      .then(function(res) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Queue Mentor Plan';
+        if (res.ok) {
+          opsFeedback(container, 'Mentor plan queued for approval.', false);
+          updatePreview(res.data.plan || null);
+          refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
+        } else {
+          opsFeedback(container, 'Error: ' + (res.data.error || 'Unknown error'), true);
+        }
+      })
+      .catch(function(err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Queue Mentor Plan';
+        opsFeedback(container, 'Network error: ' + err, true);
+      });
+    });
+  }
+
   /* ════════════════════════════════════════════════
      OPS PANEL MAIN RENDERER
   ════════════════════════════════════════════════ */
@@ -3187,6 +4023,8 @@
     var tabDefs = [
       {key: 'jobs', label: 'Live Jobs'},
       {key: 'audit', label: 'Run Audit'},
+      {key: 'remediation', label: 'Remediation'},
+      {key: 'migration', label: 'Migration'},
       {key: 'approval', label: 'Approval Queue'},
       {key: 'backends', label: 'Backends'},
       {key: 'products', label: 'Suggest Product'}
@@ -3204,6 +4042,12 @@
     ]));
     wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'audit' ? ' active' : ''), id: 'ops-sec-audit'}, [
       el('div', {id: 'ops-run-audit'})
+    ]));
+    wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'remediation' ? ' active' : ''), id: 'ops-sec-remediation'}, [
+      el('div', {id: 'ops-remediation'})
+    ]));
+    wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'migration' ? ' active' : ''), id: 'ops-sec-migration'}, [
+      el('div', {id: 'ops-migration'})
     ]));
     wrap.appendChild(el('div', {className: 'ops-section' + (opsActiveTab === 'approval' ? ' active' : ''), id: 'ops-sec-approval'}, [
       el('div', {id: 'ops-approval'})
@@ -3225,6 +4069,12 @@
         opsStatusCache = data;
         opsRenderLiveJobs(data);
         opsRenderAuditTab();
+        refreshRemediationPlanCache()
+          .catch(function() { return null; })
+          .then(function() { opsRenderRemediationTab(); });
+        refreshMigrationPlanCache()
+          .catch(function() { return null; })
+          .then(function() { opsRenderMigrationTab(); });
         opsRenderApprovalTab();
         opsRenderBackendsTab();
         opsRenderAddProductTab();

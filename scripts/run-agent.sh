@@ -61,8 +61,8 @@ if [ -n "$BACKEND" ]; then
   exit $?
 fi
 
-RUNNER_MODE="${BACK_OFFICE_AGENT_MODE:-claude-print}"
-RUNNER_CMD="${BACK_OFFICE_AGENT_RUNNER:-claude}"
+RUNNER_MODE="${BACK_OFFICE_AGENT_MODE:-stdin-text}"
+RUNNER_CMD="${BACK_OFFICE_AGENT_RUNNER:-codex}"
 
 run_claude_print() {
   local runner_parts runner_bin

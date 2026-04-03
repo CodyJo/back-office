@@ -20,6 +20,8 @@ import re
 import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,6 +59,7 @@ _allowed_origins: set[str] = {"http://localhost:8070", "http://127.0.0.1:8070"}
 # Track running processes to prevent double-starts
 running_jobs: set[str] = set()
 running_lock = threading.Lock()
+GITHUB_ACTIONS_ARCHIVE_JOB = "github-actions-archive"
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +166,54 @@ def _load_yaml_mapping(path: Path) -> dict:
     if not isinstance(payload, dict):
         raise ValueError(f"config file is malformed: {path}")
     return payload
+
+
+def _fetch_json(url: str, *, headers: dict[str, str] | None = None, timeout: int = 5) -> dict | list | None:
+    request = urllib.request.Request(url, headers=headers or {})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, OSError):
+        return None
+
+
+def _collect_forgejo_status() -> dict:
+    base_url = os.environ.get("FORGEJO_BASE_URL", "http://127.0.0.1:3300").rstrip("/")
+    status = {
+        "base_url": base_url,
+        "healthy": False,
+        "description": None,
+        "user": None,
+        "repo_count": None,
+        "runner_count": None,
+    }
+
+    health = _fetch_json(f"{base_url}/api/healthz")
+    if isinstance(health, dict):
+        status["healthy"] = health.get("status") == "pass"
+        status["description"] = health.get("description")
+
+    token = os.environ.get("FORGEJO_TOKEN")
+    if not token:
+        return status
+
+    headers = {"Authorization": f"token {token}", "Accept": "application/json"}
+    user = _fetch_json(f"{base_url}/api/v1/user", headers=headers)
+    if isinstance(user, dict):
+        status["user"] = user.get("login")
+
+    repos = _fetch_json(f"{base_url}/api/v1/user/repos?limit=100", headers=headers)
+    if isinstance(repos, list):
+        status["repo_count"] = len(repos)
+
+    runners = _fetch_json(f"{base_url}/api/v1/admin/runners", headers=headers)
+    if isinstance(runners, dict):
+        if isinstance(runners.get("runners"), list):
+            status["runner_count"] = len(runners["runners"])
+        elif isinstance(runners.get("data"), list):
+            status["runner_count"] = len(runners["data"])
+
+    return status
 
 
 # ---------------------------------------------------------------------------
@@ -306,6 +357,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_migration_plan_comparison_get()
         elif path == "/api/tasks":
             self._handle_tasks_get()
+        elif path == "/api/deploy/control":
+            self._handle_deploy_control_get()
+        elif path == "/api/github-actions/history":
+            self._handle_github_actions_history_get()
         else:
             # Fall through to SimpleHTTPRequestHandler for static files
             super().do_GET()
@@ -355,6 +410,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_migration_plan_update_add()
         elif path == "/api/migration-plan/seed-wave-one":
             self._handle_migration_plan_seed_wave_one()
+        elif path == "/api/deploy/dispatch":
+            self._handle_deploy_dispatch()
+        elif path == "/api/github-actions/archive":
+            self._handle_github_actions_archive()
         else:
             self.send_error(404, "Not found")
 
@@ -566,6 +625,38 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         self._json_response(200, remediation_plan.load(self._root))
 
+    def _handle_deploy_control_get(self) -> None:
+        """GET /api/deploy/control — live deploy inventory and recent run status."""
+        from backoffice import deploy_control  # noqa: PLC0415
+
+        try:
+            payload = deploy_control.build_deploy_control_payload(self._root)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to build deploy control payload")
+            self._json_response(500, {"error": f"Failed to build deploy control payload: {exc}"})
+            return
+
+        self._json_response(200, payload)
+
+    def _handle_github_actions_history_get(self) -> None:
+        """GET /api/github-actions/history — archived GitHub Actions metadata."""
+        from backoffice import github_actions_history  # noqa: PLC0415
+
+        try:
+            payload = github_actions_history.build_history_payload(self._root)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to build GitHub Actions history payload")
+            self._json_response(500, {"error": f"Failed to build GitHub Actions history payload: {exc}"})
+            return
+
+        with running_lock:
+            payload["archive_job"] = {
+                "running": GITHUB_ACTIONS_ARCHIVE_JOB in running_jobs,
+                "job": GITHUB_ACTIONS_ARCHIVE_JOB,
+            }
+
+        self._json_response(200, payload)
+
     def _handle_ops_status(self) -> None:
         """GET /api/ops/status — current operational status."""
         r = self._root
@@ -682,6 +773,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             },
             "task_queue": task_queue,
             "backends": backends,
+            "forgejo": _collect_forgejo_status(),
             "targets": targets,
         })
 
@@ -1361,6 +1453,60 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 f"Run initial audit: make audit-all-parallel TARGET={result['path']}",
                 "Refresh dashboard: python -m backoffice refresh",
             ],
+        })
+
+    def _handle_deploy_dispatch(self) -> None:
+        """POST /api/deploy/dispatch — trigger a repo deploy workflow via GitHub Actions."""
+        from backoffice import deploy_control  # noqa: PLC0415
+
+        body = self._read_body()
+        target_key = str(body.get("target") or "").strip()
+        ref = str(body.get("ref") or "").strip() or None
+
+        if not target_key:
+            self._json_response(400, {"error": "target is required"})
+            return
+
+        try:
+            payload = deploy_control.dispatch_deploy_workflow(target_key, ref=ref)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to dispatch deploy workflow")
+            self._json_response(500, {"error": str(exc), "target": target_key})
+            return
+
+        self._json_response(200, payload)
+
+    def _handle_github_actions_archive(self) -> None:
+        """POST /api/github-actions/archive — refresh the local GitHub Actions archive."""
+        with running_lock:
+            if GITHUB_ACTIONS_ARCHIVE_JOB in running_jobs:
+                self._json_response(409, {
+                    "error": "GitHub Actions archive is already running",
+                    "status": "running",
+                })
+                return
+            running_jobs.add(GITHUB_ACTIONS_ARCHIVE_JOB)
+
+        root_snapshot = self._root
+
+        def _run_archive() -> None:
+            try:
+                from backoffice import github_actions_history  # noqa: PLC0415
+
+                result = github_actions_history.archive_history(root_snapshot)
+                if result["ok"]:
+                    logger.info("GitHub Actions archive completed")
+                else:
+                    logger.warning("GitHub Actions archive failed: %s", result["stderr"] or result["stdout"])
+            finally:
+                with running_lock:
+                    running_jobs.discard(GITHUB_ACTIONS_ARCHIVE_JOB)
+
+        thread = threading.Thread(target=_run_archive, daemon=True)
+        thread.start()
+        self._json_response(202, {
+            "status": "started",
+            "job": GITHUB_ACTIONS_ARCHIVE_JOB,
         })
 
     # ------------------------------------------------------------------

@@ -7,6 +7,7 @@ sync-dashboard.sh and quick-sync.sh file lists.
 
 DASHBOARD_FILES: list[str] = [
     "index.html",
+    "migration.html",
     "faq-content.html",
     "docs-content.html",
     "site-branding.js", "department-context.js", "favicon.svg",
@@ -43,6 +44,10 @@ SHARED_META_FILES: list[str] = [
     "regression-data.json",
     "backlog.json",
     "score-history.json",
+    "migration-plan.json",
+    "cloud-cost-comparison.json",
+    "remediation-plan.json",
+    "task-queue.json",
 ]
 
 JOB_STATUS_FILES: list[str] = [".jobs.json", ".jobs-history.json"]

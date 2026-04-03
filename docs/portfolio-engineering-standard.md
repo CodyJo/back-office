@@ -46,6 +46,19 @@ Every production app should have:
 - shared app-shell primitives unless a documented exception exists
 - consistent auth, theme, and settings conventions where the workflow is structurally the same
 
+## Required Auth And Legal Baseline
+
+Every production app with account signup must:
+
+- require privacy-policy acknowledgement during registration
+- require an explicit 16+ confirmation during registration unless a documented product-specific exception exists
+- enforce both checks on the server, not only in the UI
+- store an acknowledgement timestamp and privacy policy version with the account record
+- avoid collecting birth dates at signup unless there is a documented business or legal requirement
+- keep privacy and accessibility pages aligned with the app's current hosting, data processors, and support contact details
+
+Apps that process sensitive user data should also use product-specific consent wording that matches the actual data being processed.
+
 ## Required Test Baseline
 
 Every production app must pass:
@@ -102,6 +115,8 @@ Back Office should treat the following as portfolio drift signals:
 - missing skip link
 - missing privacy page
 - missing accessibility statement page
+- signup consent enforced only in UI
+- signup missing stored consent timestamp or policy version
 - missing Playwright smoke coverage
 - reimplementation of shared shell components where a shared package exists
 

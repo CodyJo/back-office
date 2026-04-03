@@ -1,0 +1,15 @@
+[Unit]
+Description=Forgejo Local Stack
+After=default.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/merm/projects/back-office/ops/forgejo-local
+ExecStart=/home/merm/projects/back-office/scripts/start-forgejo-local.sh
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=120
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

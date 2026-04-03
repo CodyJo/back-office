@@ -112,11 +112,11 @@ def detect_runner_status() -> tuple[str, str, list[str], dict[str, str]]:
     file_values = load_runner_config_file()
     runner_cmd = os.environ.get(
         "BACK_OFFICE_AGENT_RUNNER",
-        file_values.get("BACK_OFFICE_AGENT_RUNNER", "claude"),
+        file_values.get("BACK_OFFICE_AGENT_RUNNER", "codex"),
     )
     runner_mode = os.environ.get(
         "BACK_OFFICE_AGENT_MODE",
-        file_values.get("BACK_OFFICE_AGENT_MODE", "claude-print"),
+        file_values.get("BACK_OFFICE_AGENT_MODE", "stdin-text"),
     )
     available = [name for name in KNOWN_RUNNERS if shutil.which(name)]
     return runner_cmd, runner_mode, available, file_values

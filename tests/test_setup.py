@@ -193,14 +193,14 @@ def test_detect_runner_status_falls_back_to_file(monkeypatch, tmp_path):
 
 
 def test_detect_runner_status_defaults_when_no_config(monkeypatch):
-    """When no config file and no env vars exist, defaults to claude/claude-print."""
+    """When no config file and no env vars exist, defaults to codex/stdin-text."""
     monkeypatch.setattr(setup_mod, "RUNNER_CONFIG", Path("/nonexistent/backoffice.yaml"))
     monkeypatch.delenv("BACK_OFFICE_AGENT_RUNNER", raising=False)
     monkeypatch.delenv("BACK_OFFICE_AGENT_MODE", raising=False)
 
     runner_cmd, runner_mode, _available, file_values = detect_runner_status()
-    assert runner_cmd == "claude"
-    assert runner_mode == "claude-print"
+    assert runner_cmd == "codex"
+    assert runner_mode == "stdin-text"
     assert file_values == {}
 
 
@@ -467,8 +467,8 @@ def test_persist_runner_config_uses_example_when_no_config(monkeypatch, tmp_path
     example_path = tmp_path / "backoffice.example.yaml"
     example_path.write_text(textwrap.dedent("""\
         runner:
-          command: "claude --model haiku"
-          mode: "claude-print"
+          command: "codex"
+          mode: "stdin-text"
         api:
           port: 8070
     """))

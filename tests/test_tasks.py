@@ -15,6 +15,7 @@ from backoffice.tasks import (
     build_parser,
     create_finding_task,
     create_product_suggestion_task,
+    create_mentor_plan_task,
     ensure_task_defaults,
     find_task,
     generate_task_id,
@@ -497,6 +498,19 @@ class TestTaskCreationHelpers:
         assert task["task_type"] == "product_suggestion"
         assert task["status"] == "pending_approval"
         assert task["approval"]["suggested_product"]["name"] == "puppet-demo"
+    def test_create_mentor_plan_task_is_pending_approval(self, tmp_dirs):
+        config_path, targets_path, results, dashboard = tmp_dirs
+        write_yaml(config_path, {"version": 1, "tasks": []})
+        ctx = load_context(config_path, targets_path, results, dashboard)
+        plan = {
+            "title": "Renew Google Cloud Associate Cloud Engineer",
+            "summary": "Use the portfolio as a practical lab and keep AWS as contrast only.",
+        }
+        task = create_mentor_plan_task(ctx, {"goal": plan["title"], "target_cloud": "gcp"}, plan)
+        assert task["task_type"] == "mentor_plan"
+        assert task["status"] == "pending_approval"
+        assert task["approval"]["mentor_plan"]["title"] == plan["title"]
+
 
 
 # ---------------------------------------------------------------------------

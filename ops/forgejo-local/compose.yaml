@@ -1,0 +1,62 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:13-rootless
+    container_name: forgejo-local
+    user: "1000:1000"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      FORGEJO____APP_NAME: ${FORGEJO_APP_NAME}
+      FORGEJO__server__DOMAIN: ${FORGEJO_DOMAIN}
+      FORGEJO__server__ROOT_URL: http://${FORGEJO_DOMAIN}:${FORGEJO_HTTP_PORT}/
+      FORGEJO__server__SSH_DOMAIN: ${FORGEJO_DOMAIN}
+      FORGEJO__server__SSH_PORT: ${FORGEJO_SSH_PORT}
+      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: postgres:5432
+      FORGEJO__database__NAME: ${POSTGRES_DB}
+      FORGEJO__database__USER: ${POSTGRES_USER}
+      FORGEJO__database__PASSWD: ${POSTGRES_PASSWORD}
+      FORGEJO__actions__ENABLED: "true"
+      FORGEJO__repository__ENABLE_PUSH_CREATE_USER: "false"
+    ports:
+      - "${FORGEJO_HTTP_PORT}:3000"
+      - "${FORGEJO_SSH_PORT}:2222"
+    volumes:
+      - ./data/forgejo:/var/lib/gitea
+      - ./data/conf:/etc/gitea
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: forgejo-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+
+  runner:
+    image: data.forgejo.org/forgejo/runner:11
+    container_name: forgejo-runner
+    user: "0:0"
+    restart: unless-stopped
+    depends_on:
+      - forgejo
+    volumes:
+      - ./data/runner:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: forgejo-runner daemon -c /data/config.yml
+
+  # Optional local reverse proxy slot if you later want nicer hostnames or TLS.
+  # Keep it out of the first setup so the forge itself stays easy to reason about.

@@ -21,6 +21,7 @@ from backoffice.workflow import (
     default_departments,
     extract_score,
     extract_scanned_at,
+    handle_run_all,
     handle_list_targets,
     iso_now,
     load_targets,
@@ -473,6 +474,30 @@ class TestCollectTargetSnapshot:
 # write_audit_log
 # ---------------------------------------------------------------------------
 
+class TestDashboardFindingIdentity:
+    def test_duplicate_finding_ids_across_repos_require_repo_scoped_identity(self):
+        """Finding IDs are only unique within a repo; UI lookups must include repo context."""
+        findings = [
+            {"repo": "cordivent", "id": "FIND-001", "title": "Cordivent bug"},
+            {"repo": "selah", "id": "FIND-001", "title": "Selah bug"},
+        ]
+
+        selected_repo = "selah"
+        selected_id = "FIND-001"
+
+        found = None
+        for finding in findings:
+            if selected_repo and finding["repo"] != selected_repo:
+                continue
+            if selected_id and finding["id"] == selected_id:
+                found = finding
+                break
+
+        assert found is not None
+        assert found["repo"] == selected_repo
+        assert found["title"] == "Selah bug"
+
+
 class TestWriteAuditLog:
     def test_writes_json_and_md_files(self, tmp_path):
         results_dir = str(tmp_path / "results")
@@ -827,6 +852,115 @@ class TestHandleListTargets:
         messages = " ".join(r.message for r in caplog.records)
         assert "alpha" in messages
         assert "beta" in messages
+
+
+# ---------------------------------------------------------------------------
+# handle_run_all
+# ---------------------------------------------------------------------------
+
+class TestHandleRunAll:
+    def test_runs_selected_targets_and_refreshes_once(self, tmp_path):
+        config_path = str(tmp_path / "targets.yaml")
+        results_dir = str(tmp_path / "results")
+        os.makedirs(results_dir, exist_ok=True)
+        _make_targets_yaml(
+            config_path,
+            [
+                _make_target("alpha", "/tmp/alpha", ["qa", "seo"]),
+                _make_target("beta", "/tmp/beta", ["product"]),
+                _make_target("gamma", "/tmp/gamma", ["ada"]),
+            ],
+        )
+
+        args = argparse.Namespace(
+            config=config_path,
+            targets="alpha,beta",
+            departments=None,
+            results_dir=results_dir,
+        )
+        calls = []
+
+        def fake_run_target(target, departments, results_dir=None, refresh=True, use_job_status=True):
+            calls.append((target["name"], departments, use_job_status))
+
+        with patch("backoffice.workflow.run_target", side_effect=fake_run_target) as run_target_mock, patch(
+            "backoffice.workflow.refresh_dashboard_artifacts"
+        ) as refresh_mock:
+            result = handle_run_all(args)
+
+        assert result == 0
+        assert run_target_mock.call_count == 2
+        assert sorted(calls) == [
+            ("alpha", ["qa", "seo"], False),
+            ("beta", ["product"], False),
+        ]
+        refresh_mock.assert_called_once()
+        refreshed_targets = refresh_mock.call_args.args[0]
+        assert [target["name"] for target in refreshed_targets] == ["alpha", "beta", "gamma"]
+
+    def test_departments_override_applies_to_all_selected_targets(self, tmp_path):
+        config_path = str(tmp_path / "targets.yaml")
+        results_dir = str(tmp_path / "results")
+        os.makedirs(results_dir, exist_ok=True)
+        _make_targets_yaml(
+            config_path,
+            [
+                _make_target("alpha", "/tmp/alpha", ["qa"]),
+                _make_target("beta", "/tmp/beta", ["product"]),
+            ],
+        )
+
+        args = argparse.Namespace(
+            config=config_path,
+            targets=None,
+            departments="qa,product",
+            results_dir=results_dir,
+        )
+        calls = []
+
+        def fake_run_target(target, departments, results_dir=None, refresh=True, use_job_status=True):
+            calls.append((target["name"], departments, use_job_status))
+
+        with patch("backoffice.workflow.run_target", side_effect=fake_run_target), patch(
+            "backoffice.workflow.refresh_dashboard_artifacts"
+        ):
+            result = handle_run_all(args)
+
+        assert result == 0
+        assert sorted(calls) == [
+            ("alpha", ["qa", "product"], False),
+            ("beta", ["qa", "product"], False),
+        ]
+
+    def test_failure_blocks_refresh_and_raises(self, tmp_path):
+        config_path = str(tmp_path / "targets.yaml")
+        results_dir = str(tmp_path / "results")
+        os.makedirs(results_dir, exist_ok=True)
+        _make_targets_yaml(
+            config_path,
+            [
+                _make_target("alpha", "/tmp/alpha", ["qa"]),
+                _make_target("beta", "/tmp/beta", ["product"]),
+            ],
+        )
+
+        args = argparse.Namespace(
+            config=config_path,
+            targets=None,
+            departments=None,
+            results_dir=results_dir,
+        )
+
+        def fake_run_target(target, departments, results_dir=None, refresh=True, use_job_status=True):
+            if target["name"] == "beta":
+                raise RuntimeError("boom")
+
+        with patch("backoffice.workflow.run_target", side_effect=fake_run_target), patch(
+            "backoffice.workflow.refresh_dashboard_artifacts"
+        ) as refresh_mock, pytest.raises(RuntimeError, match="beta"):
+            handle_run_all(args)
+
+        refresh_mock.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

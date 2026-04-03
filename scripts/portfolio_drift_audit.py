@@ -42,6 +42,10 @@ class AppAudit:
     has_skip_link: bool
     has_accessibility_page: bool
     has_privacy_page: bool
+    has_registration_flow: bool
+    has_registration_ui_consent: bool
+    has_registration_server_consent: bool
+    stores_registration_consent_metadata: bool
     has_playwright: bool
     mirror_dirs: list[str]
     app_shell_files: list[str]
@@ -95,6 +99,17 @@ def detect_skip_link(layout_path: Path) -> bool:
     )
 
 
+def file_contains(path: Path, *patterns: str) -> bool:
+    if not path.exists():
+        return False
+    text = path.read_text()
+    return all(pattern in text for pattern in patterns)
+
+
+def any_file_contains(paths: Iterable[Path], *patterns: str) -> bool:
+    return any(file_contains(path, *patterns) for path in paths)
+
+
 def audit_app(root: Path) -> AppAudit:
     package_json = load_json(root / "package.json")
     deps = package_json.get("dependencies", {})
@@ -104,6 +119,20 @@ def audit_app(root: Path) -> AppAudit:
         for name, value in deps.items()
         if name.startswith("@codyjo/")
     }
+
+    registration_ui_files = [
+        root / "src/app/register/page.tsx",
+        root / "src/components/AuthPageClient.tsx",
+        root / "src/components/LoginPageClient.tsx",
+    ]
+    registration_server_files = [
+        root / "server/routes/auth.mjs",
+        root / "lambda/api/index.mjs",
+    ]
+    has_registration_flow = any(path.exists() for path in registration_ui_files) or any(
+        file_contains(path, "/auth/register") or file_contains(path, "handleRegister")
+        for path in registration_server_files
+    )
 
     return AppAudit(
         name=root.name,
@@ -115,6 +144,31 @@ def audit_app(root: Path) -> AppAudit:
         has_skip_link=detect_skip_link(root / "src/app/layout.tsx"),
         has_accessibility_page=(root / "src/app/accessibility/page.tsx").exists(),
         has_privacy_page=(root / "src/app/privacy/page.tsx").exists(),
+        has_registration_flow=has_registration_flow,
+        has_registration_ui_consent=(
+            not has_registration_flow
+            or (
+                any_file_contains(registration_ui_files, "Privacy Policy")
+                and (
+                    any_file_contains(registration_ui_files, "at least 16")
+                    or any_file_contains(registration_ui_files, "minimumAge")
+                    or any_file_contains(registration_ui_files, "ageConfirmed16Plus")
+                )
+            )
+            or (
+                any_file_contains(registration_ui_files, "consentChecked")
+                and any_file_contains(registration_ui_files, "minimumAge")
+            )
+        ),
+        has_registration_server_consent=(
+            not has_registration_flow
+            or any_file_contains(registration_server_files, "consent", "ageConfirmed16Plus")
+        ),
+        stores_registration_consent_metadata=(
+            not has_registration_flow
+            or file_contains(root / "server/routes/auth.mjs", "privacy_policy_version", "consented_at")
+            or file_contains(root / "lambda/api/index.mjs", "privacyPolicyVersion", "consentedAt")
+        ),
         has_playwright=(root / "playwright.config.ts").exists() or (root / "playwright.config.mjs").exists(),
         mirror_dirs=find_mirror_dirs(root),
         app_shell_files=find_app_shell_files(root),
@@ -170,16 +224,20 @@ def render_markdown(audits: list[AppAudit]) -> str:
 
     lines.append("## Standards Checklist")
     lines.append("")
-    lines.append("| App | Missing scripts | Skip link | Accessibility page | Privacy page | Playwright | Mirror dirs | App-shell files |")
-    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    lines.append("| App | Missing scripts | Skip link | Accessibility page | Privacy page | Signup flow | Signup UI consent | Signup server consent | Consent metadata | Playwright | Mirror dirs | App-shell files |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for audit in audits:
         lines.append(
-            "| {name} | {missing} | {skip} | {accessibility} | {privacy} | {playwright} | {mirror_dirs} | {shell_count} |".format(
+            "| {name} | {missing} | {skip} | {accessibility} | {privacy} | {signup_flow} | {ui_consent} | {server_consent} | {consent_metadata} | {playwright} | {mirror_dirs} | {shell_count} |".format(
                 name=audit.name,
                 missing=", ".join(audit.missing_scripts) or "none",
                 skip="yes" if audit.has_skip_link else "no",
                 accessibility="yes" if audit.has_accessibility_page else "no",
                 privacy="yes" if audit.has_privacy_page else "no",
+                signup_flow="yes" if audit.has_registration_flow else "no",
+                ui_consent="yes" if audit.has_registration_ui_consent else "no",
+                server_consent="yes" if audit.has_registration_server_consent else "no",
+                consent_metadata="yes" if audit.stores_registration_consent_metadata else "no",
                 playwright="yes" if audit.has_playwright else "no",
                 mirror_dirs=", ".join(audit.mirror_dirs) or "none",
                 shell_count=len(audit.app_shell_files),
@@ -202,6 +260,9 @@ def render_markdown(audits: list[AppAudit]) -> str:
     no_skip = [audit.name for audit in audits if not audit.has_skip_link]
     no_accessibility = [audit.name for audit in audits if not audit.has_accessibility_page]
     no_privacy = [audit.name for audit in audits if not audit.has_privacy_page]
+    no_signup_ui_consent = [audit.name for audit in audits if audit.has_registration_flow and not audit.has_registration_ui_consent]
+    no_signup_server_consent = [audit.name for audit in audits if audit.has_registration_flow and not audit.has_registration_server_consent]
+    no_consent_metadata = [audit.name for audit in audits if audit.has_registration_flow and not audit.stores_registration_consent_metadata]
     if vendor_apps:
         lines.append(f"- Move vendored shared packages to `/shared/packages`: {', '.join(vendor_apps)}")
     if local_mirror_apps:
@@ -216,6 +277,12 @@ def render_markdown(audits: list[AppAudit]) -> str:
         lines.append(f"- Add accessibility statement baseline: {', '.join(no_accessibility)}")
     if no_privacy:
         lines.append(f"- Add privacy page baseline: {', '.join(no_privacy)}")
+    if no_signup_ui_consent:
+        lines.append(f"- Add signup privacy + 16+ UI baseline: {', '.join(no_signup_ui_consent)}")
+    if no_signup_server_consent:
+        lines.append(f"- Enforce signup privacy + 16+ checks server-side: {', '.join(no_signup_server_consent)}")
+    if no_consent_metadata:
+        lines.append(f"- Store signup consent timestamp + policy version: {', '.join(no_consent_metadata)}")
     if lines[-1] == "":
         lines.append("- None")
 

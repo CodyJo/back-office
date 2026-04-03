@@ -1,0 +1,14 @@
+[Unit]
+Description=Back Office Dashboard In Forgejo Mode
+After=forgejo-local.service
+Wants=forgejo-local.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/merm/projects/back-office
+ExecStart=/home/merm/projects/back-office/scripts/run-back-office-forgejo.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -2,6 +2,45 @@
 
 Last updated: April 2, 2026
 
+## 2026-04-02 Parallel Local Run-All Scan
+
+- Current direction:
+  - local `audit-all` / `run-all` now executes configured targets in parallel at the target level, while preserving each target's own `default_departments`
+  - this was done to support a full local portfolio scan that includes `pattern`, reports only to the local dashboard, and does not auto-fix
+- Completed work:
+  - updated [backoffice/workflow.py](/home/merm/projects/back-office/backoffice/workflow.py) so `handle_run_all(...)` submits one worker per selected target via `ThreadPoolExecutor`
+  - updated [backoffice/workflow.py](/home/merm/projects/back-office/backoffice/workflow.py) so the parallel `run-all` path skips shared `.jobs.json` tracking, avoiding cross-target contention during concurrent runs
+  - added focused regression coverage in [tests/test_workflow.py](/home/merm/projects/back-office/tests/test_workflow.py) for:
+    - selected-target execution under `run-all`
+    - department override behavior across all selected targets
+    - refresh-on-success / no-refresh-on-failure behavior
+  - verified with `python3 -m pytest tests/test_workflow.py -q` (`91 passed`)
+  - launched `python3 -m backoffice audit-all`, which queued all configured targets including `pattern`
+- Pending work:
+  - because the local audit workflow lock remained held during the active scan, `python3 -m backoffice refresh` could not be run concurrently
+  - after all audit child processes fully exit, rerun `python3 -m backoffice refresh` to rebuild local dashboard artifacts from whatever results were produced
+  - if a future operator wants AWS Postal back in local scans, they will need to re-add it explicitly to [targets.yaml](/home/merm/projects/back-office/config/targets.yaml)
+- Constraints:
+  - the repo worktree already contained many unrelated modified and untracked files; they were left untouched
+  - no auto-fix path was enabled or used
+  - no remote sync or deploy step was added
+- Key files:
+  - [backoffice/workflow.py](/home/merm/projects/back-office/backoffice/workflow.py)
+  - [tests/test_workflow.py](/home/merm/projects/back-office/tests/test_workflow.py)
+  - [docs/superpowers/specs/2026-04-02-parallel-run-all-scan-design.md](/home/merm/projects/back-office/docs/superpowers/specs/2026-04-02-parallel-run-all-scan-design.md)
+  - [config/targets.yaml](/home/merm/projects/back-office/config/targets.yaml)
+  - [results/](/home/merm/projects/back-office/results)
+- Integrations and assumptions:
+  - `pattern` was already present in `config/targets.yaml`; no target-config change was required to include it
+  - the local reporting path is still `results/<repo>/...` followed by `python3 -m backoffice refresh`, which writes refreshed artifacts into [dashboard/](/home/merm/projects/back-office/dashboard)
+  - parallel `run-all` intentionally avoids shared job-status tracking because the current `scripts/job-status.sh` state is global rather than per target
+  - `postal-aws` has now been removed from local target configuration because it is not used on this machine
+  - `postal-gcp`, `search`, and `shared` have also now been removed from the local target configuration and explicit local repo-scan helper lists on this machine
+- Verification state:
+  - `python3 -m pytest tests/test_workflow.py -q` passed
+  - `python3 -m backoffice audit-all` started successfully and logged queued targets including `pattern`
+  - `python3 -m backoffice refresh` was blocked during the active run with: `Another local audit workflow is already running. Wait for it to finish before starting a new target.`
+
 ## 2026-04-02 Local Infrastructure Monitoring Chunks 6-8 Tasks 19-22
 
 - Current direction:

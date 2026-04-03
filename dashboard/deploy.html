@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Office — Deploy Control</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --ink: #e4e4ef;
+    --muted: #8f8fa6;
+    --line: #2a2a3a;
+    --panel: #12121a;
+    --panel-2: #1a1a26;
+    --accent: #c4944a;
+    --accent-soft: rgba(196, 148, 74, 0.16);
+    --success: #34d399;
+    --success-soft: rgba(52, 211, 153, 0.14);
+    --warn: #ffd166;
+    --warn-soft: rgba(255, 209, 102, 0.14);
+    --danger: #ff5d73;
+    --danger-soft: rgba(255, 93, 115, 0.14);
+    --shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Instrument Sans", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(196, 148, 74, 0.14), transparent 22%),
+      radial-gradient(circle at bottom right, rgba(108, 92, 231, 0.12), transparent 20%),
+      var(--bg);
+    color: var(--ink);
+  }
+  a { color: inherit; }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: rgba(18, 18, 26, 0.92);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+  .logo {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: var(--accent);
+  }
+  .topbar-link, .topbar-btn {
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.85rem;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .topbar-btn.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #0a0a0f;
+  }
+  .container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.4fr 0.8fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .hero-panel, .summary-card, .repo-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .hero-panel {
+    padding: 1.4rem;
+  }
+  .hero-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-size: 0.73rem;
+    margin-bottom: 0.6rem;
+  }
+  .hero h1 {
+    margin: 0 0 0.75rem;
+    font-size: clamp(2rem, 4vw, 3.3rem);
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+  }
+  .hero p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+  }
+  .summary-card {
+    padding: 1rem;
+  }
+  .summary-label {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .summary-value {
+    margin-top: 0.4rem;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+  }
+  .summary-note {
+    margin-top: 0.2rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 1rem 0 1.25rem;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .filter-chip {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.45rem 0.75rem;
+    background: rgba(255,255,255,0.02);
+    color: var(--ink);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .filter-chip.active {
+    background: var(--accent);
+    color: #0a0a0f;
+    border-color: var(--accent);
+  }
+  .meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .repos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1rem;
+  }
+  .repo-card {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .repo-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .repo-title {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+  .repo-subtitle {
+    margin-top: 0.25rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .ready { background: var(--success-soft); color: var(--success); }
+  .blocked { background: var(--danger-soft); color: var(--danger); }
+  .deferred { background: var(--warn-soft); color: var(--warn); }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+  .metric {
+    background: var(--panel-2);
+    border-radius: 14px;
+    padding: 0.75rem;
+  }
+  .metric-label {
+    color: var(--muted);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .metric-value {
+    margin-top: 0.3rem;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .run-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .run-row {
+    display: grid;
+    grid-template-columns: 82px 1fr 70px;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.55rem 0.65rem;
+  }
+  .run-workflow {
+    font-size: 0.74rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .run-title {
+    font-size: 0.86rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .run-state {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: right;
+  }
+  .actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.55rem 0.9rem;
+    background: var(--panel-2);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 0.86rem;
+  }
+  .action-btn.primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    border-color: var(--accent);
+  }
+  .notes {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+  .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.78rem;
+  }
+  .empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.02);
+  }
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .summary-grid, .grid { grid-template-columns: 1fr; }
+    .run-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="logo" href="index.html">Back Office</a>
+      <a class="topbar-link" href="index.html">HQ</a>
+      <a class="topbar-link" href="migration.html">Migration</a>
+      <a class="topbar-link" href="actions-history.html">Actions Archive</a>
+      <a class="topbar-link" href="http://127.0.0.1:3300/" target="_blank" rel="noreferrer">Forgejo</a>
+    </div>
+    <div class="topbar-left">
+      <button class="topbar-btn" id="refreshBtn">Refresh</button>
+      <button class="topbar-btn primary" id="refreshHardBtn">Refresh Live</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-panel">
+        <div class="hero-kicker">Deploy Control</div>
+        <h1>Portfolio releases with live source control and Bunny state.</h1>
+        <p>
+          This view is the operator surface for portfolio deploys across the stack.
+          It shows which repos are actually deployable right now, what your forge can see,
+          what Bunny is running, and gives you one-click dispatch without losing the
+          portfolio view.
+        </p>
+      </div>
+      <div class="summary-grid" id="summaryGrid"></div>
+    </section>
+
+    <section class="toolbar">
+      <div class="filters" id="filters"></div>
+      <div class="meta" id="meta">Loading deploy control data…</div>
+    </section>
+
+    <section class="repos" id="repos"></section>
+  </main>
+
+<script>
+const state = {
+  filter: 'all',
+  payload: null,
+};
+
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'ready', label: 'Ready' },
+  { key: 'blocked', label: 'Blocked' },
+  { key: 'bunny', label: 'Bunny' },
+  { key: 'gcp', label: 'GCP' },
+  { key: 'deferred', label: 'Deferred' },
+];
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  Object.entries(attrs).forEach(([key, value]) => {
+    if (key === 'className') node.className = value;
+    else if (key === 'textContent') node.textContent = value;
+    else if (key === 'html') node.innerHTML = value;
+    else node.setAttribute(key, value);
+  });
+  children.forEach((child) => node.appendChild(child));
+  return node;
+}
+
+function formatTime(value) {
+  if (!value) return 'unknown';
+  try { return new Date(value).toLocaleString(); } catch { return value; }
+}
+
+function formatRunState(run) {
+  if (!run) return 'unknown';
+  if (run.status === 'in_progress') return 'running';
+  if (run.conclusion) return run.conclusion;
+  return run.status || 'queued';
+}
+
+function summaryCards(summary) {
+  const grid = document.getElementById('summaryGrid');
+  grid.innerHTML = '';
+  [
+    ['Ready', summary.ready, 'Targets that can dispatch from this view now'],
+    ['Blocked', summary.blocked, 'Missing runners, secrets, workflow, or repo mapping'],
+    ['Bunny', summary.bunny, 'Targets with Bunny runtimes or delivery surfaces'],
+    ['GCP', summary.gcp, 'Intentional non-Bunny exceptions'],
+    ['Deferred', summary.deferred, 'Not in the current deploy wave'],
+    ['Total', summary.total, 'Portfolio targets in deploy control'],
+  ].forEach(([label, value, note]) => {
+    grid.appendChild(el('article', { className: 'summary-card' }, [
+      el('div', { className: 'summary-label', textContent: label }),
+      el('div', { className: 'summary-value', textContent: String(value) }),
+      el('div', { className: 'summary-note', textContent: note }),
+    ]));
+  });
+}
+
+function renderFilters() {
+  const root = document.getElementById('filters');
+  root.innerHTML = '';
+  FILTERS.forEach((filter) => {
+    const btn = el('button', {
+      className: `filter-chip ${state.filter === filter.key ? 'active' : ''}`,
+      textContent: filter.label,
+    });
+    btn.addEventListener('click', () => {
+      state.filter = filter.key;
+      renderFilters();
+      renderRepos();
+    });
+    root.appendChild(btn);
+  });
+}
+
+function matchesFilter(target) {
+  if (state.filter === 'all') return true;
+  if (state.filter === 'ready') return target.deploy_ready;
+  if (state.filter === 'blocked') return !target.deploy_ready;
+  if (state.filter === 'bunny') return target.runtime.startsWith('bunny');
+  if (state.filter === 'gcp') return target.runtime.startsWith('gcp');
+  if (state.filter === 'deferred') return target.environment === 'deferred';
+  return true;
+}
+
+async function dispatchDeploy(target) {
+  const control = target.source_control || target.github || {};
+  const ref = control.default_branch || '';
+  const response = await fetch('/api/deploy/dispatch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target: target.key, ref }),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || 'Dispatch failed');
+  await loadData();
+}
+
+function repoCard(target) {
+  const control = target.source_control || target.github || {};
+  const bunny = target.bunny || {};
+  const provider = (control.provider || 'github').toLowerCase();
+  const providerLabel = provider === 'forgejo' ? 'Forgejo' : 'GitHub';
+  const latestRun = (control.recent_runs || [])[0];
+  const statusClass = target.environment === 'deferred'
+    ? 'deferred'
+    : target.deploy_ready
+      ? 'ready'
+      : 'blocked';
+  const statusText = target.environment === 'deferred'
+    ? 'Deferred'
+    : target.deploy_ready
+      ? 'Deploy Ready'
+      : 'Blocked';
+
+  const runs = (control.recent_runs || []).slice(0, 4);
+  const runList = el('div', { className: 'run-list' });
+  if (runs.length === 0) {
+    runList.appendChild(el('div', { className: 'empty', textContent: `No recent ${providerLabel} workflow runs visible.` }));
+  } else {
+    runs.forEach((run) => {
+      const link = el('a', { href: run.url || '#', target: '_blank', rel: 'noreferrer', className: 'run-row' }, [
+        el('div', { className: 'run-workflow', textContent: run.workflowName || 'workflow' }),
+        el('div', { className: 'run-title', textContent: run.displayTitle || run.headSha || 'run' }),
+        el('div', { className: 'run-state', textContent: formatRunState(run) }),
+      ]);
+      runList.appendChild(link);
+    });
+  }
+
+  const actions = el('div', { className: 'actions' });
+  if (control.html_url) {
+    actions.appendChild(el('a', {
+      className: 'action-btn',
+      href: control.html_url,
+      target: '_blank',
+      rel: 'noreferrer',
+      textContent: `Open ${providerLabel}`,
+    }));
+  }
+  if (target.deploy_workflow && (target.github_repo || target.forgejo_repo)) {
+    const deployBtn = el('button', {
+      className: `action-btn primary${target.deploy_ready ? '' : ''}`,
+      textContent: target.environment === 'deferred' ? 'Deferred' : 'Dispatch Deploy',
+    });
+    deployBtn.disabled = target.environment === 'deferred' || !target.deploy_ready;
+    deployBtn.addEventListener('click', async () => {
+      deployBtn.disabled = true;
+      deployBtn.textContent = 'Dispatching…';
+      try {
+        await dispatchDeploy(target);
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        deployBtn.textContent = 'Dispatch Deploy';
+        deployBtn.disabled = target.environment === 'deferred' || !target.deploy_ready;
+      }
+    });
+    actions.appendChild(deployBtn);
+  }
+
+  return el('article', { className: 'repo-card' }, [
+    el('div', { className: 'repo-head' }, [
+      el('div', {}, [
+        el('h2', { className: 'repo-title', textContent: target.label }),
+        el('div', { className: 'repo-subtitle', textContent: `${target.runtime} · ${target.environment}` }),
+      ]),
+      el('div', { className: `status-pill ${statusClass}`, textContent: statusText }),
+    ]),
+    el('div', { className: 'grid' }, [
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: providerLabel }),
+        el('div', { className: 'metric-value', textContent: control.default_branch || 'not configured' }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Deploy Workflow' }),
+        el('div', { className: 'metric-value', textContent: target.deploy_workflow || 'n/a' }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Secrets / Runners' }),
+        el('div', { className: 'metric-value', textContent: `${control.secrets_count ?? 'n/a'} / ${control.runner_count ?? 'n/a'}` }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Bunny' }),
+        el('div', { className: 'metric-value', textContent: bunny.status || target.notes || 'not configured' }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Latest Run' }),
+        el('div', { className: 'metric-value', textContent: latestRun ? formatRunState(latestRun) : 'none' }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Health' }),
+        el('div', { className: 'metric-value', textContent: (target.health || {}).status || 'unknown' }),
+      ]),
+    ]),
+    el('div', { className: 'notes mono', textContent: `provider=${provider} · forgejo=${target.forgejo_repo || 'unmapped'} · github=${target.github_repo || 'unmapped'} · app=${target.bunny_app_id || 'n/a'} · pullzone=${target.bunny_pull_zone_id || 'n/a'}` }),
+    el('div', { className: 'notes', textContent: target.notes || 'No additional notes.' }),
+    runList,
+    actions,
+  ]);
+}
+
+function renderRepos() {
+  const root = document.getElementById('repos');
+  root.innerHTML = '';
+  const targets = (state.payload.targets || []).filter(matchesFilter);
+  if (targets.length === 0) {
+    root.appendChild(el('div', { className: 'empty', textContent: 'No targets match the current filter.' }));
+    return;
+  }
+  targets.forEach((target) => root.appendChild(repoCard(target)));
+}
+
+async function loadData() {
+  document.getElementById('meta').textContent = 'Refreshing deploy control data…';
+  const response = await fetch('/api/deploy/control');
+  const payload = await response.json();
+  if (!response.ok) {
+    document.getElementById('repos').innerHTML = '';
+    document.getElementById('repos').appendChild(el('div', { className: 'empty', textContent: payload.error || 'Failed to load deploy control data.' }));
+    return;
+  }
+  state.payload = payload;
+  document.getElementById('meta').textContent = `Generated ${formatTime(payload.generated_at)} · ${payload.summary.ready} ready · ${payload.summary.blocked} blocked`;
+  summaryCards(payload.summary);
+  renderFilters();
+  renderRepos();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+document.getElementById('refreshHardBtn').addEventListener('click', loadData);
+loadData();
+</script>
+</body>
+</html>

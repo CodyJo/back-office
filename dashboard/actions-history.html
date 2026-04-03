@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Office — GitHub Actions Archive</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --surface-3: #22222e;
+    --border: #2a2a3a;
+    --text: #e4e4ef;
+    --text-dim: #8f8fa6;
+    --accent: #c4944a;
+    --accent-soft: rgba(196, 148, 74, 0.16);
+    --critical: #ff5d73;
+    --critical-soft: rgba(255, 93, 115, 0.14);
+    --success: #34d399;
+    --success-soft: rgba(52, 211, 153, 0.14);
+    --info: #74b9ff;
+    --info-soft: rgba(116, 185, 255, 0.14);
+    --radius: 14px;
+    --shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(196, 148, 74, 0.14), transparent 22%),
+      radial-gradient(circle at right, rgba(108, 92, 231, 0.12), transparent 18%),
+      var(--bg);
+  }
+  a { color: inherit; }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(18, 18, 26, 0.92);
+    backdrop-filter: blur(14px);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+  .logo {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .topbar-link, .topbar-btn {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.82rem;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .topbar-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0f;
+    font-weight: 700;
+  }
+  .container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .panel {
+    background: linear-gradient(180deg, rgba(26,26,38,0.98), rgba(18,18,26,0.98));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .hero-panel {
+    padding: 1.3rem;
+  }
+  .kicker {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    margin-bottom: 0.65rem;
+  }
+  h1 {
+    margin: 0 0 0.7rem;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+  }
+  .hero p {
+    margin: 0;
+    color: var(--text-dim);
+    line-height: 1.55;
+    max-width: 62ch;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+  .summary-card {
+    padding: 1rem;
+  }
+  .summary-label {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+  }
+  .summary-value {
+    margin-top: 0.35rem;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+  }
+  .summary-note {
+    margin-top: 0.2rem;
+    font-size: 0.84rem;
+    color: var(--text-dim);
+  }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .filter-chip.active {
+    background: var(--accent);
+    color: #0a0a0f;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  .meta {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+  .recent-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .recent-panel {
+    padding: 1rem;
+  }
+  .recent-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.75rem;
+  }
+  .recent-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    padding: 0.8rem;
+    text-decoration: none;
+  }
+  .recent-repo {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .recent-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .recent-meta {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .repos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1rem;
+  }
+  .repo-card {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .repo-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+  .repo-title {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+  .repo-subtitle {
+    margin-top: 0.25rem;
+    color: var(--text-dim);
+    font-size: 0.86rem;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .has-runs { background: var(--success-soft); color: var(--success); }
+  .no-runs { background: var(--critical-soft); color: var(--critical); }
+  .capped { background: var(--accent-soft); color: var(--accent); }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+  .metric {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: 12px;
+    padding: 0.75rem;
+  }
+  .metric-label {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+  }
+  .metric-value {
+    margin-top: 0.3rem;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .run-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .run-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.65rem;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    padding: 0.65rem 0.75rem;
+    text-decoration: none;
+  }
+  .run-label {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .run-title {
+    font-size: 0.87rem;
+    margin-top: 0.2rem;
+    line-height: 1.35;
+  }
+  .run-side {
+    text-align: right;
+    font-size: 0.78rem;
+  }
+  .notes {
+    font-size: 0.84rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.76rem;
+  }
+  .empty {
+    padding: 1.5rem;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    color: var(--text-dim);
+    text-align: center;
+    background: rgba(255,255,255,0.02);
+  }
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .summary-grid, .grid, .repos, .recent-list { grid-template-columns: 1fr; }
+    .run-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="logo" href="index.html">Back Office</a>
+      <a class="topbar-link" href="index.html">HQ</a>
+      <a class="topbar-link" href="deploy.html">Deploy</a>
+      <a class="topbar-link" href="migration.html">Migration</a>
+      <a class="topbar-link" href="http://127.0.0.1:3300/" target="_blank" rel="noreferrer">Forgejo</a>
+    </div>
+    <div class="topbar-left">
+      <button class="topbar-btn" id="refreshBtn">Refresh</button>
+      <button class="topbar-btn primary" id="archiveBtn">Archive From GitHub</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <article class="panel hero-panel">
+        <div class="kicker">GitHub Actions Archive</div>
+        <h1>Historical workflow visibility, kept local.</h1>
+        <p>
+          Forgejo is your forward path for private git and local Actions. This surface keeps the
+          old GitHub Actions record visible inside Back Office so you can compare what used to run,
+          what was archived locally, and where the portfolio still has historical CI/CD signal.
+        </p>
+      </article>
+      <section class="summary-grid" id="summaryGrid"></section>
+    </section>
+
+    <section class="toolbar">
+      <div class="filters" id="filters"></div>
+      <div class="meta" id="meta">Loading archived GitHub Actions history…</div>
+    </section>
+
+    <section class="recent-grid">
+      <article class="panel recent-panel">
+        <div class="kicker">Recent Archived Runs</div>
+        <div class="recent-list" id="recentRuns"></div>
+      </article>
+    </section>
+
+    <section class="repos" id="repos"></section>
+  </main>
+
+<script>
+const state = {
+  filter: 'all',
+  payload: null,
+};
+
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'has-runs', label: 'Has Runs' },
+  { key: 'no-runs', label: 'No Runs' },
+  { key: 'workflows', label: 'Has Workflows' },
+  { key: 'capped', label: 'Capped' },
+];
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  Object.entries(attrs).forEach(([key, value]) => {
+    if (key === 'className') node.className = value;
+    else if (key === 'textContent') node.textContent = value;
+    else node.setAttribute(key, value);
+  });
+  children.forEach((child) => node.appendChild(child));
+  return node;
+}
+
+function formatTime(value) {
+  if (!value) return 'unknown';
+  try { return new Date(value).toLocaleString(); } catch { return value; }
+}
+
+function formatRunState(run) {
+  if (!run) return 'unknown';
+  if (run.status === 'in_progress') return 'running';
+  return run.conclusion || run.status || 'unknown';
+}
+
+function summaryCards(summary) {
+  const root = document.getElementById('summaryGrid');
+  root.innerHTML = '';
+  [
+    ['Repos', summary.repos, 'Archived repo records in local Back Office'],
+    ['With Runs', summary.repos_with_runs, 'Repos with historical GitHub workflow runs'],
+    ['With Workflows', summary.repos_with_workflows, 'Repos where GitHub still reported workflow definitions'],
+    ['Archived Runs', summary.archived_runs, 'Workflow runs currently stored locally'],
+    ['Capped', summary.capped_repos, 'Repos truncated by the current per-repo archive cap'],
+  ].forEach(([label, value, note]) => {
+    root.appendChild(el('article', { className: 'panel summary-card' }, [
+      el('div', { className: 'summary-label', textContent: label }),
+      el('div', { className: 'summary-value', textContent: String(value) }),
+      el('div', { className: 'summary-note', textContent: note }),
+    ]));
+  });
+}
+
+function renderFilters() {
+  const root = document.getElementById('filters');
+  root.innerHTML = '';
+  FILTERS.forEach((filter) => {
+    const chip = el('button', {
+      className: `filter-chip ${state.filter === filter.key ? 'active' : ''}`,
+      textContent: filter.label,
+    });
+    chip.addEventListener('click', () => {
+      state.filter = filter.key;
+      renderFilters();
+      renderRepos();
+    });
+    root.appendChild(chip);
+  });
+}
+
+function matchesFilter(repo) {
+  if (state.filter === 'all') return true;
+  if (state.filter === 'has-runs') return repo.has_runs;
+  if (state.filter === 'no-runs') return !repo.has_runs;
+  if (state.filter === 'workflows') return repo.has_workflows;
+  if (state.filter === 'capped') return repo.archive_capped;
+  return true;
+}
+
+function renderRecentRuns(runs) {
+  const root = document.getElementById('recentRuns');
+  root.innerHTML = '';
+  if (!runs.length) {
+    root.appendChild(el('div', { className: 'empty', textContent: 'No archived workflow runs available yet.' }));
+    return;
+  }
+  runs.slice(0, 8).forEach((item) => {
+    const run = item.run || {};
+    root.appendChild(el('a', {
+      className: 'recent-item',
+      href: run.html_url || item.html_url || '#',
+      target: '_blank',
+      rel: 'noreferrer',
+    }, [
+      el('div', { className: 'recent-repo', textContent: item.repo }),
+      el('div', { className: 'recent-title', textContent: run.display_title || run.name || run.head_sha || 'workflow run' }),
+      el('div', { className: 'recent-meta', textContent: `${run.name || 'workflow'} · ${formatRunState(run)} · ${formatTime(run.created_at)}` }),
+    ]));
+  });
+}
+
+async function triggerArchive() {
+  const btn = document.getElementById('archiveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Archiving…';
+  try {
+    const response = await fetch('/api/github-actions/archive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Archive failed to start');
+    document.getElementById('meta').textContent = 'Archive started. Refresh in a few moments for updated history.';
+    window.setTimeout(loadData, 4000);
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Archive From GitHub';
+  }
+}
+
+function repoCard(repo) {
+  const badgeClass = repo.has_runs ? (repo.archive_capped ? 'capped' : 'has-runs') : 'no-runs';
+  const badgeText = repo.has_runs
+    ? (repo.archive_capped ? 'Archive Capped' : 'Runs Archived')
+    : 'No Run History';
+  const runs = (repo.recent_runs || []).slice(0, 4);
+
+  const runList = el('div', { className: 'run-list' });
+  if (!runs.length) {
+    runList.appendChild(el('div', { className: 'empty', textContent: 'No archived runs for this repo.' }));
+  } else {
+    runs.forEach((run) => {
+      runList.appendChild(el('a', {
+        className: 'run-row',
+        href: run.html_url || '#',
+        target: '_blank',
+        rel: 'noreferrer',
+      }, [
+        el('div', {}, [
+          el('div', { className: 'run-label', textContent: run.name || 'workflow' }),
+          el('div', { className: 'run-title', textContent: run.display_title || run.head_sha || 'run' }),
+        ]),
+        el('div', { className: 'run-side', textContent: `${formatRunState(run)} · ${formatTime(run.created_at)}` }),
+      ]));
+    });
+  }
+
+  return el('article', { className: 'panel repo-card' }, [
+    el('div', { className: 'repo-head' }, [
+      el('div', {}, [
+        el('h2', { className: 'repo-title', textContent: repo.repo }),
+        el('div', { className: 'repo-subtitle', textContent: `${repo.default_branch || 'unknown branch'} · ${repo.language || 'unknown language'}` }),
+      ]),
+      el('div', { className: `status-pill ${badgeClass}`, textContent: badgeText }),
+    ]),
+    el('div', { className: 'grid' }, [
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Archived Runs' }),
+        el('div', { className: 'metric-value', textContent: `${repo.archived_runs} / ${repo.total_runs}` }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Workflows' }),
+        el('div', { className: 'metric-value', textContent: String(repo.workflow_count) }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Runner Snapshot' }),
+        el('div', { className: 'metric-value', textContent: repo.runner_count == null ? 'n/a' : String(repo.runner_count) }),
+      ]),
+      el('div', { className: 'metric' }, [
+        el('div', { className: 'metric-label', textContent: 'Archive Updated' }),
+        el('div', { className: 'metric-value', textContent: formatTime(repo.archive_updated_at) }),
+      ]),
+    ]),
+    el('div', { className: 'notes mono', textContent: `events=${(repo.events || []).join(', ') || 'none'} · html=${repo.html_url || 'n/a'}` }),
+    el('div', { className: 'notes', textContent: repo.archive_capped ? 'This repo hit the current per-repo archive cap. Raise MAX_RUNS_PER_REPO to keep more historical runs locally.' : 'This repo is fully represented under the current archive cap.' }),
+    runList,
+  ]);
+}
+
+function renderRepos() {
+  const root = document.getElementById('repos');
+  root.innerHTML = '';
+  const repos = (state.payload.repos || []).filter(matchesFilter);
+  if (!repos.length) {
+    root.appendChild(el('div', { className: 'empty', textContent: 'No archived repos match this filter.' }));
+    return;
+  }
+  repos.forEach((repo) => root.appendChild(repoCard(repo)));
+}
+
+async function loadData() {
+  document.getElementById('meta').textContent = 'Refreshing archived GitHub Actions history…';
+  const response = await fetch('/api/github-actions/history');
+  const payload = await response.json();
+  if (!response.ok) {
+    document.getElementById('repos').innerHTML = '';
+    document.getElementById('repos').appendChild(el('div', { className: 'empty', textContent: payload.error || 'Failed to load archived GitHub Actions history.' }));
+    return;
+  }
+  state.payload = payload;
+  const archiveState = payload.archive_job && payload.archive_job.running ? 'Archive running' : 'Archive idle';
+  document.getElementById('meta').textContent = `Archive snapshot ${formatTime(payload.archive_generated_at)} · ${archiveState} · ${payload.summary.archived_runs} runs stored locally`;
+  summaryCards(payload.summary);
+  renderFilters();
+  renderRecentRuns(payload.recent_runs || []);
+  renderRepos();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+document.getElementById('archiveBtn').addEventListener('click', triggerArchive);
+loadData();
+</script>
+</body>
+</html>

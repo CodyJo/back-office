@@ -3,8 +3,8 @@
 # DO NOT commit backoffice.yaml — it contains secrets and local paths.
 
 runner:
-  command: "claude --model haiku"
-  mode: "claude-print"
+  command: "codex"
+  mode: "stdin-text"
 
 api:
   port: 8070

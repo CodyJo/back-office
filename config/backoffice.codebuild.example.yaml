@@ -3,8 +3,8 @@
 # untracked local config/backoffice.yaml.
 
 runner:
-  command: "claude --model haiku"
-  mode: "claude-print"
+  command: "codex"
+  mode: "stdin-text"
 
 deploy:
   provider: bunny
