@@ -2,6 +2,50 @@
 
 Last updated: April 2, 2026
 
+## 2026-04-02 Local Infrastructure Monitoring Chunk 2
+
+- Current direction:
+  - local infrastructure monitoring plan implementation is in progress from [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+  - Chunk 2 Tasks 7-10 are complete; Chunk 3 and later plan tasks are still pending
+- Completed work:
+  - created [monitoring/vector/collectors/gpu_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/gpu_metrics.sh)
+  - created [monitoring/vector/collectors/system_sensors.sh](/home/merm/projects/back-office/monitoring/vector/collectors/system_sensors.sh)
+  - created [monitoring/vector/collectors/ollama_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/ollama_metrics.sh)
+  - created [monitoring/vector/collectors/claude_sessions.sh](/home/merm/projects/back-office/monitoring/vector/collectors/claude_sessions.sh)
+  - marked all four scripts executable
+  - committed each script separately:
+    - `ea82e58` `feat(monitoring): add GPU metrics collector (nvidia-smi)`
+    - `76d9c45` `feat(monitoring): add system sensors collector (temp, freq, vmstat)`
+    - `9964fca` `feat(monitoring): add Ollama metrics collector (model status, VRAM ratio)`
+    - `6a00baf` `feat(monitoring): add Claude Code sessions collector`
+- Pending work:
+  - implement Chunk 3 Vector pipeline configuration and later monitoring stack tasks
+  - validate the collectors again inside the eventual containerized `/host` mount layout
+- Constraints:
+  - followed the plan code exactly for the four collector scripts
+  - did not start any Docker containers
+  - the repository has substantial unrelated pre-existing modified and untracked files; they were left untouched
+- Key files:
+  - [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+  - [monitoring/vector/collectors/gpu_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/gpu_metrics.sh)
+  - [monitoring/vector/collectors/system_sensors.sh](/home/merm/projects/back-office/monitoring/vector/collectors/system_sensors.sh)
+  - [monitoring/vector/collectors/ollama_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/ollama_metrics.sh)
+  - [monitoring/vector/collectors/claude_sessions.sh](/home/merm/projects/back-office/monitoring/vector/collectors/claude_sessions.sh)
+- Integrations and assumptions:
+  - `gpu_metrics.sh` uses `NVIDIA_SMI` for testability and returns `[]` if `nvidia-smi` is unavailable
+  - `system_sensors.sh` expects container mount paths under `/host/sys` and `/host/proc`
+  - `ollama_metrics.sh` polls `OLLAMA_HOST` or `http://localhost:11434`
+  - `claude_sessions.sh` inspects `ps` output for `claude` and counts extra git worktrees under `/home/merm/projects` unless `PROJECTS_DIR` overrides it
+- Verification state:
+  - `./monitoring/vector/collectors/gpu_metrics.sh | python3 -m json.tool` passed and returned `[]` because `nvidia-smi` was not available in this environment
+  - `HOST_SYS=/sys HOST_PROC=/proc sed 's|/host/sys|/sys|g; s|/host/proc|/proc|g' ./monitoring/vector/collectors/system_sensors.sh | bash | python3 -m json.tool` passed with valid JSON including `cpu_temp_celsius`, `cpu_freq_mhz`, `memory_page_faults_major`, `oom_kills_total`, `swap_io_in_pages`, and `swap_io_out_pages`
+  - `./monitoring/vector/collectors/ollama_metrics.sh | python3 -m json.tool` passed with valid JSON and `ollama_running: 0`
+  - `./monitoring/vector/collectors/claude_sessions.sh | python3 -m json.tool` passed with valid JSON; this environment reported `claude_active_sessions: 682` and `claude_worktrees_active: 33`
+- Recommended next steps:
+  - wire these collectors into the upcoming Vector `exec` sources exactly as specified in Chunk 3
+  - verify whether the very high Claude process count is expected before treating it as a stable operational signal
+  - when Docker mounts exist, re-run the collectors in-container to confirm `/host` path behavior
+
 ## 2026-04-02 Product Roadmap Audit Of Back Office
 
 - Completed a repo-level product audit focused on actual operator flows, roadmap gaps, UX friction, and technical debt in Back Office itself.
