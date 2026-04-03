@@ -55,3 +55,12 @@ dashboard/local-audit-log.md
 
 # Project docs
 TODO.md
+
+# Local Forgejo stack
+ops/forgejo-local/.env
+ops/forgejo-local/back-office.env
+ops/forgejo-local/admin-credentials.txt
+ops/forgejo-local/data/
+
+# Monitoring stack secrets
+monitoring/.env
