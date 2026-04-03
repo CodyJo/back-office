@@ -1,13 +1,650 @@
 # Back Office Handoff
 
-Last updated: March 25, 2026
+Last updated: April 2, 2026
+
+## 2026-04-02 Product Roadmap Audit Of Back Office
+
+- Completed a repo-level product audit focused on actual operator flows, roadmap gaps, UX friction, and technical debt in Back Office itself.
+- Wrote the refreshed artifacts to:
+  - [results/back-office/product-findings.json](/home/merm/projects/back-office/results/back-office/product-findings.json)
+  - [results/back-office/product-roadmap.md](/home/merm/projects/back-office/results/back-office/product-roadmap.md)
+- Audit scope:
+  - context reviewed: [CLAUDE.md](/home/merm/projects/back-office/CLAUDE.md), [MASTER-PROMPT.md](/home/merm/projects/back-office/MASTER-PROMPT.md), [README.md](/home/merm/projects/back-office/README.md), [package.json](/home/merm/projects/back-office/package.json), [pyproject.toml](/home/merm/projects/back-office/pyproject.toml), [AGENTS.md](/home/merm/projects/back-office/AGENTS.md)
+  - product/runtime files reviewed: [backoffice/__main__.py](/home/merm/projects/back-office/backoffice/__main__.py), [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py), [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py), [backoffice/workflow.py](/home/merm/projects/back-office/backoffice/workflow.py), [backoffice/tasks.py](/home/merm/projects/back-office/backoffice/tasks.py), [backoffice/config.py](/home/merm/projects/back-office/backoffice/config.py), [backoffice/backlog.py](/home/merm/projects/back-office/backoffice/backlog.py), [backoffice/deploy_control.py](/home/merm/projects/back-office/backoffice/deploy_control.py), [backoffice/github_actions_history.py](/home/merm/projects/back-office/backoffice/github_actions_history.py)
+  - dashboard/config files reviewed: [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html), [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html), [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html), [dashboard/actions-history.html](/home/merm/projects/back-office/dashboard/actions-history.html), [config/backoffice.yaml](/home/merm/projects/back-office/config/backoffice.yaml), [config/targets.yaml](/home/merm/projects/back-office/config/targets.yaml), [Makefile](/home/merm/projects/back-office/Makefile)
+- Result summary:
+  - product readiness score: `74`
+  - findings: `9 total`
+  - severity split: `1 critical`, `4 high`, `2 medium`, `1 low`, `1 info`
+- Highest-signal findings:
+  - [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) posts repo paths from the ops audit launcher while [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) resolves audits by target name, so the HQ audit launcher can fail on valid selections
+  - [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) validates selected audit departments but then ignores them and always runs `audit-all*`
+  - [config/backoffice.yaml](/home/merm/projects/back-office/config/backoffice.yaml) and [config/targets.yaml](/home/merm/projects/back-office/config/targets.yaml) still drift and both point at removed legacy scripts
+  - [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) saves new products with blank lint/test/coverage/deploy commands, so onboarding is incomplete
+  - [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) eagerly loads the full [dashboard/backlog.json](/home/merm/projects/back-office/dashboard/backlog.json), which is currently about `38.7 MB`
+- Current direction:
+  - fix the broken HQ audit-launch path first, because that is a core control-plane promise and the only critical roadmap blocker in this pass
+  - then make selective scans real and collapse target configuration toward one source of truth
+  - defer growth work like notifications/webhooks until the core operator flows are reliable
+- Constraints:
+  - this was a static source audit plus file-size/config inspection; no browser automation or live API interaction was performed in the sandbox
+  - `scan_duration_seconds` remains `0` in the JSON output because this pass was not instrumented as a timed pipeline run
+- Verification:
+  - validated file existence and structure for the output artifacts
+  - used direct code evidence and current checked-in file sizes for each roadmap item
+  - did not run the full test suite during this pass
+- Recommended next steps:
+  - fix the `ops audit` target payload mismatch between [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) and [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py)
+  - thread selected departments through the actual audit command path
+  - choose one canonical target config and remove the stale command references
+  - make new-product onboarding require or scaffold real repo commands before saving
+  - paginate or lazy-load backlog data so the dashboard no longer downloads the full backlog up front
+
+## 2026-04-02 Monetization Audit Of Back Office
+
+- Completed a repo and live-surface monetization audit focused on Back Office itself as a B2B control-plane product.
+- Wrote the refreshed artifacts to:
+  - [results/back-office/monetization-findings.json](/home/merm/projects/back-office/results/back-office/monetization-findings.json)
+  - [results/back-office/monetization-strategy.md](/home/merm/projects/back-office/results/back-office/monetization-strategy.md)
+- Audit scope:
+  - repo context reviewed: [CLAUDE.md](/home/merm/projects/back-office/CLAUDE.md), [MASTER-PROMPT.md](/home/merm/projects/back-office/MASTER-PROMPT.md), [README.md](/home/merm/projects/back-office/README.md), [package.json](/home/merm/projects/back-office/package.json), [pyproject.toml](/home/merm/projects/back-office/pyproject.toml), [config/targets.yaml](/home/merm/projects/back-office/config/targets.yaml), [config/backoffice.yaml](/home/merm/projects/back-office/config/backoffice.yaml)
+  - product surfaces reviewed: [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html), [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html), [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html), [dashboard/actions-history.html](/home/merm/projects/back-office/dashboard/actions-history.html), [dashboard/docs-content.html](/home/merm/projects/back-office/dashboard/docs-content.html), [dashboard/faq-content.html](/home/merm/projects/back-office/dashboard/faq-content.html), [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py), [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py), [backoffice/tasks.py](/home/merm/projects/back-office/backoffice/tasks.py), [backoffice/aggregate.py](/home/merm/projects/back-office/backoffice/aggregate.py)
+  - latest gating audits incorporated: [results/back-office/findings.json](/home/merm/projects/back-office/results/back-office/findings.json), [results/back-office/ada-findings.json](/home/merm/projects/back-office/results/back-office/ada-findings.json), [results/back-office/compliance-findings.json](/home/merm/projects/back-office/results/back-office/compliance-findings.json)
+- Result summary:
+  - monetization readiness score: `49`
+  - total opportunities: `11`
+  - value split: `4 high`, `5 medium`, `2 low`
+  - quick wins: `4`
+  - realistic revenue range: `$2.5k-$12k/month` if phased correctly
+- Current direction:
+  - treat Back Office as a high-trust B2B control-plane product, not an ad-supported property
+  - prioritize paid services and managed private deployment first
+  - defer hosted self-serve SaaS until auth, retention, accessibility, and tenant boundaries are materially stronger
+- Highest-signal recommendations:
+  - launch a paid baseline audit plus quarterly operating review service using current findings/reporting artifacts
+  - offer managed private deployment before attempting multi-tenant hosted SaaS
+  - package advanced reporting, exports, custom departments, and integrations as future premium tiers
+  - avoid display ads and keep affiliate/sponsorship activity out of dashboard workflows
+- Constraints:
+  - this was a static repo audit plus official-web pricing/reference verification; no browser-authenticated live-session review of `admin.codyjo.com` was possible in the sandbox
+  - revenue estimates are intentionally conservative and assume a low-volume, high-intent B2B audience rather than broad traffic
+  - the prior monetization artifact in this repo was more optimistic; this pass intentionally re-based the numbers against the current implementation state
+- Verification:
+  - JSON structure was rewritten to the requested schema for this pass
+  - the strategy memo includes current official reference links for pricing and integration docs
+- Recommended next steps:
+  - if monetization work continues, start in the marketing/public-site repo with service packaging and demand-capture pages
+  - in Back Office itself, fix the auth, retention, and ADA blockers before exposing premium automation or customer-facing integrations
+  - if a future agent revisits pricing, re-check official vendor pricing pages because those numbers are time-sensitive
+
+## 2026-04-02 Compliance Audit Of Back Office
+
+- Completed a static GDPR / ISO 27001 / age-verification applicability audit of the Back Office repo itself.
+- Wrote the artifacts to:
+  - [results/back-office/compliance-findings.json](/home/merm/projects/back-office/results/back-office/compliance-findings.json)
+  - [results/back-office/compliance-summary.md](/home/merm/projects/back-office/results/back-office/compliance-summary.md)
+- Audit scope:
+  - repo context reviewed: [CLAUDE.md](/home/merm/projects/back-office/CLAUDE.md), [MASTER-PROMPT.md](/home/merm/projects/back-office/MASTER-PROMPT.md), [README.md](/home/merm/projects/back-office/README.md), [pyproject.toml](/home/merm/projects/back-office/pyproject.toml), [package.json](/home/merm/projects/back-office/package.json)
+  - control surfaces reviewed: [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py), [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py), [backoffice/backlog.py](/home/merm/projects/back-office/backoffice/backlog.py), [backoffice/tasks.py](/home/merm/projects/back-office/backoffice/tasks.py), [config/backoffice.yaml](/home/merm/projects/back-office/config/backoffice.yaml), [config/api-config.yaml](/home/merm/projects/back-office/config/api-config.yaml), [docs/COMPLIANCE-CONTROLS.md](/home/merm/projects/back-office/docs/COMPLIANCE-CONTROLS.md)
+- Result summary:
+  - compliance score: `48`
+  - findings: `5 total`
+  - severity split: `1 critical`, `1 high`, `3 medium`
+  - GDPR: `62` (`partial`)
+  - ISO 27001: `34` (`non-compliant`)
+  - age verification: `not-applicable`
+- Highest-signal blockers:
+  - [config/backoffice.yaml](/home/merm/projects/back-office/config/backoffice.yaml) and [config/api-config.yaml](/home/merm/projects/back-office/config/api-config.yaml) contain a committed API key despite the repo’s own controls saying secrets should not live in tracked config
+  - [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py) protects privileged POST actions with one shared static API key and no per-user authorization
+  - [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py) exposes `/api/status` and `/api/jobs` without authentication
+  - [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py) and [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) accept request bodies with no size cap
+  - [backoffice/backlog.py](/home/merm/projects/back-office/backoffice/backlog.py), [backoffice/tasks.py](/home/merm/projects/back-office/backoffice/tasks.py), and [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) retain and mirror sensitive findings/task history without enforced expiry
+- Constraints:
+  - this was a static source audit only; no live infrastructure checks, third-party contract review, or deployed endpoint verification was performed
+  - the report intentionally treats age verification as not applicable because Back Office is an internal control-plane tool with no minor onboarding or restricted-content surface
+- Recommended next steps:
+  - rotate the committed API key immediately and move runtime auth secrets to environment or secret-manager injection
+  - redesign the production API access model around authenticated operator identity plus role-based authorization
+  - require auth for all non-health API endpoints and add request-size limits
+  - define a real retention schedule for findings, task history, and mirrored dashboard artifacts, then enforce it in code
+
+## 2026-04-02 ADA Audit Of Back Office
+
+- Completed a static WCAG 2.1 / ADA / Section 508 audit of the shipped Back Office dashboard surfaces.
+- Wrote the artifacts to:
+  - [results/back-office/ada-findings.json](/home/merm/projects/back-office/results/back-office/ada-findings.json)
+  - [results/back-office/ada-summary.md](/home/merm/projects/back-office/results/back-office/ada-summary.md)
+- Audit scope:
+  - shipped UI files reviewed: `dashboard/index.html`, `dashboard/deploy.html`, `dashboard/migration.html`, `dashboard/docs-content.html`, `dashboard/faq-content.html`, `dashboard/department-context.js`, `dashboard/site-branding.js`
+  - serving path reviewed: [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py)
+- Result summary:
+  - compliance grade: `non-compliant`
+  - compliance score: `57`
+  - findings: `11 total`
+  - severity split: `1 critical`, `1 high`, `6 medium`, `2 low`, `1 info`
+- Highest-signal blockers:
+  - [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) uses mouse-only custom controls for core HQ navigation into department findings and filters
+  - [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) opens slide-over/detail overlays without dialog semantics or focus management
+  - [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) auto-refreshes every `15s` without a pause control while also exposing editable fields
+  - [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) update form fields lack persistent visible labels
+  - [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html) and [dashboard/site-branding.js](/home/merm/projects/back-office/dashboard/site-branding.js) contain confirmed contrast failures (`2.63:1` deferred status pill, `2.78:1` FAQ trigger)
+- Constraints:
+  - this was a static code audit only; no browser automation or screen-reader runtime verification was performed in the sandbox
+  - `scan_duration_seconds` was left at `0` in the JSON artifact because the audit was not instrumented as a timed pipeline run
+- Recommended next steps:
+  - first fix [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) keyboard access and modal semantics, because those are the only critical/high findings
+  - then fix the migration page pause control + visible labels
+  - then clean up the docs tab ARIA wiring, tooltip focus behavior, and small contrast/touch-target issues
+  - after remediation, verify with an actual browser accessibility pass (`axe`, keyboard traversal, dialog focus checks, and a screen reader smoke test)
+
+## 2026-04-02 QA Scan Of Back Office
+
+- Completed a repo QA scan and wrote the artifacts to:
+  - [results/back-office/findings.json](/home/merm/projects/back-office/results/back-office/findings.json)
+  - [results/back-office/scan-summary.md](/home/merm/projects/back-office/results/back-office/scan-summary.md)
+  - [results/back-office/dashboard.json](/home/merm/projects/back-office/results/back-office/dashboard.json)
+- Scan summary:
+  - total findings: `72`
+  - high: `1`
+  - medium: `3`
+  - low: `7`
+  - info: `61`
+- Highest-signal issues:
+  - [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py) accepts arbitrary existing directories as scan targets and disables auth when no API key is configured
+  - [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) and [backoffice/api_server.py](/home/merm/projects/back-office/backoffice/api_server.py) read request bodies solely from `Content-Length` with no size cap
+  - [backoffice/workflow.py](/home/merm/projects/back-office/backoffice/workflow.py) wraps `list-targets` in the exclusive workflow lock, which reproduces the failing regression in `tests/test_workflow.py::TestMain::test_argv_defaults_to_none`
+  - [tests/test_bunny_provider.py](/home/merm/projects/back-office/tests/test_bunny_provider.py) contains seven Ruff failures from unused imports and locals
+- Automated verification:
+  - `ruff check .` failed with `7` errors
+  - `pytest` failed with `2` failed tests and `60` errors
+  - `node --test ci/server.test.mjs` passed
+- Verification constraint in this environment:
+  - [tests/test_servers.py](/home/merm/projects/back-office/tests/test_servers.py) uses real `HTTPServer` socket binding on `127.0.0.1`
+  - this sandbox rejects that with `PermissionError: [Errno 1] Operation not permitted`
+  - the report records each of those `61` server-test failures separately as environment-limited verification findings, not reproduced product defects
+- Recommended next steps:
+  - tighten API target resolution and fail closed when no API key is configured outside explicit local-dev mode
+  - add bounded JSON-body parsing shared by the dashboard server and production API server
+  - remove or relax the exclusive lock for read-only workflow commands like `list-targets`
+  - clean `tests/test_bunny_provider.py` so Ruff is green
+  - re-run `tests/test_servers.py` in an environment that permits local socket binding
+
+## 2026-04-02 Forgejo History Backfill And GitHub Actions Archive
+
+- All top-level git repos under [/home/merm/projects](/home/merm/projects) were backfilled into local Forgejo under `CodyJo/*`.
+- Verified live Forgejo repo inventory count: `18`.
+- Verified imported repo set:
+  - `analogify`
+  - `auth-service`
+  - `back-office`
+  - `certstudy`
+  - `codyjo.com`
+  - `continuum`
+  - `cordivent`
+  - `dustbunny`
+  - `fuel`
+  - `openclaude`
+  - `pattern`
+  - `pe-bootstrap`
+  - `pe-dashboards`
+  - `postal-gcp`
+  - `search`
+  - `selah`
+  - `shared`
+  - `thenewbeautifulme`
+- Bulk backfill was performed with [scripts/backfill-forgejo-history.sh](/home/merm/projects/back-office/scripts/backfill-forgejo-history.sh).
+- That script now:
+  - creates missing Forgejo repos on demand
+  - repoints local `origin` to Forgejo SSH
+  - preserves GitHub remotes as `github-public` when they existed
+  - force-pushes all branches and tags for initial import
+- Important distinction:
+  - git commit/branch/tag history is now backfilled into Forgejo
+  - historical GitHub Actions run history is not part of git history and does not appear in Forgejo automatically
+- Added a local archive path for that CI history:
+  - [scripts/archive-github-actions-history.sh](/home/merm/projects/back-office/scripts/archive-github-actions-history.sh)
+  - [docs/GITHUB_ACTIONS_HISTORY_ARCHIVE.md](/home/merm/projects/back-office/docs/GITHUB_ACTIONS_HISTORY_ARCHIVE.md)
+- Added a first-class Back Office product surface for that archive:
+  - [backoffice/github_actions_history.py](/home/merm/projects/back-office/backoffice/github_actions_history.py)
+  - [dashboard/actions-history.html](/home/merm/projects/back-office/dashboard/actions-history.html)
+  - API routes in [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py):
+    - `GET /api/github-actions/history`
+    - `POST /api/github-actions/archive`
+- Navigation now exposes the new archive page from:
+  - [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html)
+  - [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html)
+- The archive script stores GitHub workflow/run metadata under ignored local results:
+  - `/home/merm/projects/back-office/results/github-actions-history/`
+- Archive run completed successfully on April 2, 2026.
+- Current archive summary highlights:
+  - `analogify`: `144` runs archived
+  - `back-office`: `46` runs archived
+  - `certstudy`: `34` runs archived
+  - `codyjo.com`: `138` runs archived
+  - `cordivent`: `89` runs archived
+  - `fuel`: `90` runs archived
+  - `openclaude`: `200` of `280` runs archived due the current per-repo cap
+  - `pattern`: `5` runs archived
+  - `pe-bootstrap`: `1` run archived
+  - `selah`: `96` runs archived
+  - `thenewbeautifulme`: `188` runs archived
+- Repos with `0` archived GitHub runs currently appear to have no GitHub Actions run history in the API snapshot:
+  - `auth-service`
+  - `continuum`
+  - `DustBunny`
+  - `pe-dashboards`
+  - `postal-gcp`
+  - `search`
+  - `shared`
+- Current local server/UI endpoints remain:
+  - Forgejo: `http://localhost:3300`
+  - Back Office Forgejo mode: `http://localhost:8070`
+  - Back Office archive view: `http://localhost:8070/actions-history.html`
+- HQ now includes Forgejo as a first-class local status signal:
+  - `GET /api/ops/status` now returns a `forgejo` block with base URL, health, description, user, and repo count
+  - [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) now shows:
+    - a topbar Forgejo link
+    - a Forgejo score card in the main score row
+- Navigation updates:
+  - [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html) now uses the dark Back Office palette and includes a Forgejo nav link
+  - [dashboard/actions-history.html](/home/merm/projects/back-office/dashboard/actions-history.html) includes a Forgejo nav link
+  - [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) now includes Deploy, Actions Archive, and Forgejo nav links
+- Added a short operator routine doc:
+  - [docs/DAILY_USE.md](/home/merm/projects/back-office/docs/DAILY_USE.md)
+- Current remaining gap:
+  - local Forgejo shows the repos and will show future runs
+  - old GitHub Actions runs must be archived locally if you want to keep them visible outside GitHub
+
+## 2026-03-31 Resend Domain Cutover
+
+- Added the live Resend sending domains for:
+  - `fuel.codyjo.com`
+  - `study.codyjo.com`
+  - `selahscripture.com`
+  - `cordivent.com`
+  - `thenewbeautifulme.com`
+- Created the required Bunny DNS records without changing Proton mailbox routing:
+  - apex Proton `MX` records were left in place for `codyjo.com` and `thenewbeautifulme.com`
+  - only Resend DKIM plus `send.*` SPF/MX records were added
+- Bunny DNS zones used:
+  - `codyjo.com` -> `759174`
+  - `thenewbeautifulme.com` -> `759175`
+  - `cordivent.com` -> `759176`
+  - `selahscripture.com` -> `759178`
+- Resend domain ids:
+  - `fuel.codyjo.com` -> `37d69bd9-37cb-4db2-a641-9971e3c64803`
+  - `study.codyjo.com` -> `3c0e36a2-48a9-4398-82ca-520e2b54fa91`
+  - `selahscripture.com` -> `e41b3dbb-cc53-46bf-8576-efb699b4891f`
+  - `cordivent.com` -> `8a31ba07-5485-4882-b17f-7baa6d691dfd`
+  - `thenewbeautifulme.com` -> `04d1e200-b9b3-43e4-b393-398e3870ea54`
+- Public DNS is already resolving correctly for all new records. Verified externally for:
+  - `resend._domainkey.fuel.codyjo.com`
+  - `send.fuel.codyjo.com`
+  - `resend._domainkey.study.codyjo.com`
+  - `send.study.codyjo.com`
+  - `resend._domainkey.selahscripture.com`
+  - `send.selahscripture.com`
+  - `resend._domainkey.cordivent.com`
+  - `send.cordivent.com`
+  - `resend._domainkey.thenewbeautifulme.com`
+  - `send.thenewbeautifulme.com`
+- Current blocker:
+  - Resend still reports all five domains as `pending` because DKIM verification has not completed on the Resend side yet.
+  - `send` SPF/MX records are already `verified` for all except `fuel.codyjo.com`, which still shows `pending` even though the public DNS is visible.
+  - branded smoke sends still return `403 domain is not verified`.
+- Known successful Resend smoke send still on the already-verified shared domain:
+  - `Account Services <no-reply@codyjo.com>` -> message id `506bd5d0-abf8-480f-90ca-806ad5a3e74e`
+- Next step when resuming:
+  - rerun `POST /domains/:id/verify` for the five pending domains
+  - once they flip to `verified`, resend one smoke email from each branded sender and capture the message ids
+
+## 2026-03-31 Bunny Production Recovery
+
+- Resolved the Bunny production outage affecting `admin.codyjo.com` and `www.codyjo.com`.
+- `admin.codyjo.com` was fixed by updating pull zone `5603475` from a self-referential CDN origin to storage-backed mode using storage zone `1445163`.
+- `www.codyjo.com` was fixed by rerunning the gated Bunny release from `/home/merm/projects/codyjo.com`, which restored the missing root `index.html` in storage zone `1440489`.
+- Read [docs/HANDOFF-BUNNY-PROD-FIX.md](/home/merm/projects/back-office/docs/HANDOFF-BUNNY-PROD-FIX.md) first if you need the exact Bunny API payload, verification commands, and current resource state.
+
+## 2026-03-30 Deploy Control Product Surface
+
+- Added a first deploy-control product surface to Back Office so portfolio deployment can live inside the existing control plane instead of becoming a separate tool.
+- New backend module: [backoffice/deploy_control.py](/home/merm/projects/back-office/backoffice/deploy_control.py)
+  - tracks deploy targets across Bunny, GCP, and deferred repos
+  - pulls live GitHub repo metadata, secret counts, runner counts, and recent workflow runs through `gh`
+  - pulls live Bunny app state through [scripts/bunny-cli-next.mjs](/home/merm/projects/back-office/scripts/bunny-cli-next.mjs)
+  - computes a per-target `deploy_ready` flag for the dashboard
+  - supports workflow dispatch through `gh workflow run`
+- New dashboard page: [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html)
+  - portfolio deploy overview
+  - repo cards with GitHub status, Bunny status, health, and recent runs
+  - filter chips for ready/blocked/Bunny/GCP/deferred
+  - deploy dispatch button for repos with a configured workflow
+- Updated [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) with:
+  - `GET /api/deploy/control`
+  - `POST /api/deploy/dispatch`
+- Linked the new deploy page from the HQ dashboard top bar in [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html).
+
+### Current limitations
+
+- This is an MVP control plane, not a finished release manager yet.
+- Rollback is not wired yet. The UI can dispatch deploy workflows, but it does not yet dispatch a previous image tag or cancel a running workflow.
+- Repo visibility is hard-coded in `deploy_control.py` for now. If the portfolio target list changes frequently, move that inventory into a typed config source next.
+- GitHub runner visibility currently reports `0` across the confirmed repos, so the dashboard intentionally shows the whole portfolio as blocked until runners and secrets are seeded.
+- `pattern` remains unresolved at the GitHub slug level; the dashboard marks it as mapped to Bunny but without a confirmed GitHub repo.
+
+### Files to read first for continuation
+
+- [backoffice/deploy_control.py](/home/merm/projects/back-office/backoffice/deploy_control.py)
+- [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py)
+- [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html)
+- [BUNNY_ROLLOUT_PLAN.md](/home/merm/projects/BUNNY_ROLLOUT_PLAN.md)
+- [GITHUB_SECRETS_MANIFEST.md](/home/merm/projects/GITHUB_SECRETS_MANIFEST.md)
+- [DEPLOY_CONTROL_PLANE_PLAN.md](/home/merm/projects/DEPLOY_CONTROL_PLANE_PLAN.md)
+
+### Recommended next steps
+
+1. Add one visible self-hosted GitHub runner and verify the dashboard flips at least one repo from blocked to ready.
+2. Seed GitHub deploy secrets with [bootstrap-github-actions-secrets.sh](/home/merm/projects/bootstrap-github-actions-secrets.sh).
+3. Add rollback support:
+   - manual image tag input
+   - workflow dispatch with override input
+   - previous successful SHA surfaced from GitHub run history
+4. Add workflow-run detail panels and live polling for in-progress deploys.
+5. Add a first-class Back Office route or nav treatment if `deploy.html` becomes a core operator surface rather than a linked page.
+
+## 2026-04-01 Local Forgejo Platform Direction
+
+- Added a concrete local-first platform direction for private development, review, and workflow execution:
+  - [docs/LOCAL_PLATFORM_ARCHITECTURE.md](/home/merm/projects/back-office/docs/LOCAL_PLATFORM_ARCHITECTURE.md)
+  - [ops/forgejo-local/README.md](/home/merm/projects/back-office/ops/forgejo-local/README.md)
+  - [ops/forgejo-local/compose.yaml](/home/merm/projects/back-office/ops/forgejo-local/compose.yaml)
+  - [ops/forgejo-local/.env.example](/home/merm/projects/back-office/ops/forgejo-local/.env.example)
+  - workspace file at [/home/merm/projects/codyjo-local-platform.code-workspace](/home/merm/projects/codyjo-local-platform.code-workspace)
+- Recommended operating model:
+  - Forgejo becomes the private git remote and review surface
+  - Forgejo Actions becomes the private/local workflow engine
+  - Back Office remains the portfolio dashboard and deploy controller
+  - Bunny remains the runtime
+  - GitHub becomes an optional public mirror only
+- Extended the deploy-control backend toward that model in [backoffice/deploy_control.py](/home/merm/projects/back-office/backoffice/deploy_control.py):
+  - source control provider now resolves as `forgejo` or `github`
+  - Forgejo repo metadata and workflow runs can be read through `FORGEJO_BASE_URL` + `FORGEJO_TOKEN`
+  - deploy dispatch now supports Forgejo workflow dispatch as well as `gh workflow run`
+- Updated [dashboard/deploy.html](/home/merm/projects/back-office/dashboard/deploy.html) so the deploy dashboard renders source-control state generically instead of assuming GitHub-only control.
+- Added local-forge operator helpers:
+  - [scripts/bootstrap-forgejo-repos.sh](/home/merm/projects/back-office/scripts/bootstrap-forgejo-repos.sh)
+  - [scripts/set-forgejo-remotes.sh](/home/merm/projects/back-office/scripts/set-forgejo-remotes.sh)
+  - [scripts/mirror-public-repo.sh](/home/merm/projects/back-office/scripts/mirror-public-repo.sh)
+  - [scripts/bootstrap-forgejo-runner.sh](/home/merm/projects/back-office/scripts/bootstrap-forgejo-runner.sh)
+  - [scripts/run-back-office-forgejo.sh](/home/merm/projects/back-office/scripts/run-back-office-forgejo.sh)
+  - [docs/LOCAL_REVIEW_WORKFLOW.md](/home/merm/projects/back-office/docs/LOCAL_REVIEW_WORKFLOW.md)
+- Added a focused resume packet for another agent at [docs/HANDOFF-OPEN-CLAUDE-LOCAL-FORGE.md](/home/merm/projects/back-office/docs/HANDOFF-OPEN-CLAUDE-LOCAL-FORGE.md).
+- Updated the VSCodium workspace in [/home/merm/projects/codyjo-local-platform.code-workspace](/home/merm/projects/codyjo-local-platform.code-workspace) with a Forgejo bootstrap task.
+- Completed the first live local-forge bootstrap:
+  - Forgejo is installed and locked at `http://localhost:3300`
+  - SSH is exposed at `localhost:2223`
+  - admin user `CodyJo` exists
+  - local credentials and token are stored in ignored files under `ops/forgejo-local/`
+  - all top-level git repos were imported into Forgejo
+  - local `origin` remotes were repointed to Forgejo across the imported repos
+  - GitHub remotes were preserved as `github-public` where they existed
+  - `selah` was pushed to Forgejo successfully and now tracks `origin/main`
+  - local runner `codyjo-local-runner` is registered and running
+  - a real Forgejo Actions run now exists for `CodyJo/selah` `deploy.yml` on push to `main`
+  - that first run ended in `failure`, so the next task is run debugging rather than bootstrap
+- Important current limitation:
+  - the first observed `selah` workflow run failed and needs inspection before this can be called fully validated CI/CD.
+
+### Immediate next steps
+
+1. Run [scripts/archive-github-actions-history.sh](/home/merm/projects/back-office/scripts/archive-github-actions-history.sh) to capture old GitHub workflow metadata locally.
+2. Open the local Forgejo UI and verify web login with the ignored credentials file.
+3. Run Back Office through [scripts/run-back-office-forgejo.sh](/home/merm/projects/back-office/scripts/run-back-office-forgejo.sh).
+4. Inspect why the first `selah` Forgejo Actions run failed.
+5. Add runner and PR visibility from Forgejo if the API surface exposes them cleanly enough for dashboard use.
+6. Validate one full reviewed branch -> workflow -> Bunny deploy path.
 
 ## Current Direction
 
 Back Office is centered on a human-centered approval model. The immediate product direction is: findings can be queued from the dashboard for approval, product additions are suggested instead of auto-added, draft GitHub PRs are opened only after explicit approval, and backlog visibility is isolated by product so queue counts do not bleed across repos.
 
+For Bunny migration tooling, the active path is now [scripts/bunny-cli-next.mjs](/home/merm/projects/back-office/scripts/bunny-cli-next.mjs). Keep it self-contained and do not add new migration work to the old Bunny CLI. The old script may be removed after the remaining wrappers are cleaned up.
+
+## 2026-03-27 Portfolio Auth/Legal Baseline
+
+- Updated [docs/portfolio-engineering-standard.md](/home/merm/projects/back-office/docs/portfolio-engineering-standard.md) to make the portfolio auth/legal baseline explicit for Cordivent and future apps:
+  - signup must require privacy-policy acknowledgement
+  - signup must require explicit 16+ confirmation unless a documented exception exists
+  - both checks must be enforced server-side, not only in UI
+  - apps must store consent timestamp plus privacy policy version
+  - signup should avoid birth-date collection unless there is a documented need
+  - privacy/accessibility pages must reflect current hosting/processors rather than legacy infrastructure
+- Updated [scripts/portfolio_drift_audit.py](/home/merm/projects/back-office/scripts/portfolio_drift_audit.py) so the audit now flags signup-flow apps that are missing:
+  - UI privacy + 16+ acknowledgement
+  - server-side privacy + 16+ enforcement
+  - stored consent timestamp + policy version
+- Current audit result after the change:
+  - `pattern` is the remaining signup-flow app missing server-side enforcement and stored consent metadata
+
+## 2026-03-28 Production Auth Smoke
+
+- Added a portfolio-wide live auth smoke runner at [scripts/live-auth-smoke.mjs](/home/merm/projects/back-office/scripts/live-auth-smoke.mjs).
+- The script exercises production:
+  - `GET /health`
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/auth/forgot-password`
+  - full `reset-password -> login` where the reset code can be recovered from the live Bunny DB safely
+- Live result on March 28, 2026:
+  - initial full end-to-end pass: `certstudy`, `thenewbeautifulme`, `cordivent`
+  - initial full end-to-end pass with deployment-drift note: `fuel`
+    - production still required legacy DOB input during registration even though the repo had already been moved to the 16+ confirmation model
+  - after deploying `ghcr.io/codyjo/fuel:authfix-20260328-1` to Bunny app `F8cKya950t3vhvH`, Fuel also passed full end to end with no DOB note
+  - partial live pass: `selah`
+    - register/login/forgot-password all passed
+    - reset could not be completed automatically because Selah hashes reset codes before storage; full automation there needs inbox or Postal message retrieval
+- The script retries transient network failures and exits non-zero only on real failures unless you disable partial allowances with `--no-allow-partial`.
+
 ## Completed
 
+- Advanced [scripts/bunny-cli-next.mjs](/home/merm/projects/back-office/scripts/bunny-cli-next.mjs) into the actual migration CLI on March 27, 2026:
+  - removed the dependency on the old Bunny CLI for unsupported commands; unsupported commands now fail explicitly instead of delegating
+  - removed official `bunny` CLI passthrough so account state now comes from one code path instead of mixed tooling
+  - added missing deploy/cutover commands that were previously only in the old script:
+    - `app create`
+    - `app delete`
+    - `dns zones`
+    - `dns zone`
+    - `dns records`
+    - `dns set`
+    - `dns pullzone`
+    - `dns delete`
+    - `pz list`
+    - `pz create`
+    - `pz origin`
+    - `pz hostname`
+    - `pz ssl`
+    - `pz purge`
+    - `health`
+  - carried forward the SSL ordering fix in `pz ssl`:
+    - request the free certificate first
+    - then enable force SSL
+  - added DB operator helpers that were missing from the successor CLI:
+    - `db group`
+    - `db mirror`
+  - updated `db create` so the primary-region argument can be a CSV list instead of only a single region code
+  - live-validated with the new CLI:
+    - `apps`
+    - `db list`
+    - `db group fuel`
+    - `db create cordivent ...`
+    - `db token cordivent`
+  - important live DB control-plane finding:
+    - Bunny rejects changing primary regions on an already-running DB group with `HTTP 409 Cannot change primary region while database is running`
+    - the practical fix is to create the DB with the full desired primary-region list up front instead of creating single-region then mirroring later
+  - used the new CLI to create Cordivent’s Bunny DB directly:
+    - id: `db_01KMRP14VKC0G94G2VD2Q2CMFZ`
+    - group: `group_01KMRP14S23A72T3CEQS159Z75`
+    - URL: `libsql://01KMRP14S23A72T3CEQS159Z75-cordivent.lite.bunnydb.net/`
+    - storage region: `us-east-1`
+    - primary regions: `ASB, BO, CA, DEN, GA, IL, LA, MI, NY, SIL, TX, WA`
+    - replica regions: `ASB, BO, CA, DEN, GA, IL, LA, MI, NY, SIL, TX, WA`
+  - then used that DB for the live Cordivent DynamoDB-to-Bunny migration via `/home/merm/projects/fuel/scripts/migrate-to-bunny/cordivent/migrate.mjs`, which completed with `PASS`
+
+- Added a safe Bunny CLI successor without touching the live migration script:
+  - restored the live script at [scripts/bunny-cli.mjs](/home/merm/projects/back-office/scripts/bunny-cli.mjs) after an interrupted in-place refactor so the active migration path remains stable
+  - created [scripts/bunny-cli-next.mjs](/home/merm/projects/back-office/scripts/bunny-cli-next.mjs) as the new work surface with explicit Magic Container management commands that the legacy/private Bunny workflows were missing:
+    - `app spec`
+    - `app image`
+    - `app scale`
+    - `app apply`
+    - `env sync`
+    - `env merge`
+    - `env unset`
+    - `endpoint list`
+    - `endpoint remove`
+    - `wait`
+    - experimental database controls:
+      - `db spec`
+      - `db regions set`
+      - `db replica add`
+      - `db replica remove`
+      - `db sql`
+  - the new copy is structured as a testable module with exported helpers for env parsing, image parsing, endpoint normalization, patch payload generation, and app readiness polling
+  - database notes:
+    - `db sql` uses the documented Bunny Database SQL pipeline shape over the database URL with a bearer token
+    - `db spec`, `db regions set`, and replica mutation commands use the same preview/private database control-plane endpoints the older script already depended on (`/database/v1/groups`, `/database/v1/databases`, `/database/v2/databases`)
+    - the CLI prints an explicit experimental warning before those control-plane mutations because Bunny said the API may change
+    - live validation on March 27, 2026:
+      - `db list` works against the live account and enumerates `fuel`, `tnbm`, `certstudy`, and `selah`
+      - `db spec fuel` works and returns both `/database/v2/databases/:id` and `/database/v1/groups/:id` data
+      - `db token fuel read-only|full-access` works
+      - SQL/data-plane commands work when `BUNNY_DB_BEARER_TOKEN` is set:
+        - `db tables fuel`
+        - `db schema fuel users`
+        - `db pragma fuel journal_mode`
+        - `db doctor fuel`
+      - newly discovered hidden OpenAPI spec:
+        - the dashboard docs page at `https://api.bunny.net/database/docs` embeds `Redoc.init("./docs/private/api.json", ...)`
+        - `https://api.bunny.net/database/docs/private/api.json` exposes additional operations that were not yet in the CLI:
+          - `/v1/config/limits`
+          - `/v1/databases/{db_id}/fork`
+          - `/v1/databases/{db_id}/restore`
+          - `/v1/databases/{db_id}/list_versions`
+          - `/v1/groups/{group_id}/auth/generate`
+          - `/v1/groups/{group_id}/stats`
+          - `/v2/databases/active_usage`
+          - `/v2/databases/{db_id}/usage`
+          - `/v2/databases/{db_id}/statistics`
+      - implemented from the hidden spec in `bunny-cli-next.mjs`:
+        - `db limits`
+        - `db group-token`
+        - `db versions`
+        - `db fork`
+        - `db restore`
+        - `db usage`
+        - `db stats`
+        - `db group-stats`
+        - `db active-usage`
+        - `db api status`
+        - `db api sync-spec`
+      - live-validated on March 27, 2026:
+        - `db limits`
+        - `db active-usage`
+        - `db usage fuel 2026-03-26T00:00:00Z 2026-03-27T23:59:59Z`
+      - new drift-detection behavior in `bunny-cli-next.mjs`:
+        - DB command failures that come back as Bunny Database `HTTP` errors now trigger a best-effort refresh of `https://api.bunny.net/database/docs/private/api.json`
+        - the CLI caches that spec at `~/.cache/bunny-cli/bunny-database-private-api.json` by default, overridable with `BUNNY_DB_SPEC_CACHE`
+        - when a DB call fails, the CLI compares the cached and fresh spec hashes, maps the failing concrete path back to its templated OpenAPI path, and appends a drift summary to the error
+        - this does not self-modify the CLI; it tells the operator whether Bunny changed or removed the operation so the CLI can be updated quickly
+        - explicit operator commands:
+          - `db api status`
+          - `db api sync-spec`
+      - important auth finding: control-plane requests should use the Bunny access key only; including the bearer token on `/database/v1|v2` requests caused live `401` failures
+      - important permission finding: the `doctor` checks failed under a read-only token with a write-permission error, but succeeded under a full-access token
+      - current blocker: the hidden OpenAPI spec confirms the `CreateDatabaseV2Payload` shape you were already sending:
+        - `name`
+        - `storage_region`
+        - `primary_regions`
+        - `replicas_regions`
+      - despite matching the documented schema, `db create codex-cli-probe-20260327` and `db create codex-cli-probe-20260327 DEN us-east-1` still returned Bunny-side `HTTP 500` responses under:
+        - access-key auth
+        - dashboard JWT auth
+        - both headers together
+      - inference: create-database is currently blocked by a Bunny backend issue or account-side gating, not by an obvious missing field in the documented payload
+  - unsupported commands in the new copy delegate back to the live script so DNS, pull-zone, and database flows continue to work without reimplementing everything during the migration window
+  - added regression coverage in [tests/test_bunny_cli_next.mjs](/home/merm/projects/back-office/tests/test_bunny_cli_next.mjs) for env parsing, image parsing, env sync patching, spec application, app wait polling, and CLI command dispatch
+  - verified with:
+    - `node --test /home/merm/projects/back-office/tests/test_bunny_cli_next.mjs`
+    - `node --check /home/merm/projects/back-office/scripts/bunny-cli-next.mjs`
+    - `BUNNY_API_KEY=test-key node /home/merm/projects/back-office/scripts/bunny-cli-next.mjs --help`
+  - next recommended step after the current migration wave: exercise `bunny-cli-next.mjs` against one non-critical Bunny app first, then either rename it into place or keep it as the advanced/operator variant
+
+- Repaired the HQ/migration dashboard shell on 2026-03-27:
+  - fixed the stale `index-new.html` logo target in [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) so HQ nav resolves to the real dashboard entrypoint again
+  - restyled [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) to use the same Back Office visual language as HQ instead of the detached one-off migration theme
+  - added the same skip-link/main landmark structure to the migration page so navigation and accessibility behavior now match the rest of Back Office
+  - preserved the existing migration API wiring and editable controls; this was a shell/style correction, not a data-model rewrite
+  - verified the dashboard/server sync surface with `python3 -m pytest tests/test_sync_engine.py tests/test_servers.py` (`90 passed`)
+
+- Refreshed the Back Office migration dashboard source of truth for the live Bunny wave:
+  - updated [config/migration-plan.yaml](/home/merm/projects/back-office/config/migration-plan.yaml) so `app-redesign` is explicitly in progress
+  - updated repo cards for `back-office`, `fuel`, `selah`, `certstudy`, and `thenewbeautifulme` to reflect the current live cutover state instead of the earlier staged-only wording
+  - added live domain tracking for `fuel.codyjo.com` and `study.codyjo.com`, and marked `selahscripture.com` and `thenewbeautifulme.com` as active Bunny-facing cutovers
+  - linked the active repo cards to the new deploy-audit docs in those repos so the migration page now points at concrete smoke/rollback guidance
+
+- Added a reusable cloud migration comparison feature to Back Office:
+  - new persisted model in [backoffice/cloud_migration_compare.py](/home/merm/projects/back-office/backoffice/cloud_migration_compare.py) backed by `config/cloud-cost-comparison.yaml` and mirrored to `results/` + `dashboard/`
+  - added `GET /api/migration-plan/comparison` in [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py)
+  - extended [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) to render scenario cost ranges and an AWS→GCP/Vercel/Netlify service mapping panel
+  - seeded the current AWS month-to-date baseline from account `229678440188`, including a flagged CloudFront invalidation anomaly so scenario estimates do not blindly carry it forward
+  - added regression coverage in [tests/test_cloud_migration_compare.py](/home/merm/projects/back-office/tests/test_cloud_migration_compare.py) and extended [tests/test_servers.py](/home/merm/projects/back-office/tests/test_servers.py)
+- Added a new Back Office feature-plan seed for risk-based portfolio QA execution:
+  - created [docs/superpowers/plans/2026-03-26-qa-remediation-planner.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-03-26-qa-remediation-planner.md)
+  - documented the first remediation dataset using the March 26, 2026 portfolio QA backlog
+  - added a corresponding ready task in [config/task-queue.yaml](/home/merm/projects/back-office/config/task-queue.yaml) so the feature exists in the approval/task workflow
+- Implemented the first usable QA remediation planner surface in Back Office:
+  - added persisted model [backoffice/remediation_plan.py](/home/merm/projects/back-office/backoffice/remediation_plan.py) backed by `config/remediation-plan.yaml` and mirrored to `results/remediation-plan.json` and `dashboard/remediation-plan.json`
+  - the remediation plan is now generated from live `results/<repo>/findings.json` QA artifacts when present, with a seeded fallback only when no findings artifacts exist
+  - added local API endpoints in [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) for:
+    - `GET /api/remediation-plan`
+    - `POST /api/remediation-plan/seed-wave-one`
+    - `POST /api/remediation-plan/item/update`
+    - `POST /api/remediation-plan/updates/add`
+  - added an Operations dashboard tab in [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) that renders the remediation plan summary, wave breakdown, wave/repo status + notes controls, remediation updates, and a `Seed Wave 1 To Queue` action wired to the new API
+  - tightened the finding-detail approval flow in [dashboard/index.html](/home/merm/projects/back-office/dashboard/index.html) so `Queue for Approval` posts a stable finding hash, refreshes task-queue state, and re-renders the open detail panel after queuing
+  - added regression coverage in [tests/test_remediation_plan.py](/home/merm/projects/back-office/tests/test_remediation_plan.py) and [tests/test_servers.py](/home/merm/projects/back-office/tests/test_servers.py)
+  - intentionally limited edits to the remediation-planner slice plus the already-shared dashboard/server seams, leaving other unrelated in-progress Back Office worktree changes in place
+- Removed the obsolete `admin.thenewbeautifulme.com` dashboard publish target from Back Office:
+  - deleted the target from [config/backoffice.yaml](/home/merm/projects/back-office/config/backoffice.yaml) and [config/backoffice.codebuild.example.yaml](/home/merm/projects/back-office/config/backoffice.codebuild.example.yaml)
+  - removed the old origin from [config/api-config.yaml](/home/merm/projects/back-office/config/api-config.yaml)
+  - narrowed CodeBuild deploy permissions in [terraform/codebuild.tf](/home/merm/projects/back-office/terraform/codebuild.tf) so future CI/CD no longer needs access to the old bucket/distribution
+  - re-ran the dashboard sync and confirmed only `admin.codyjo.com` published; `admin.thenewbeautifulme.com` is no longer a sync target
+  - completed the AWS decommission for the old admin surface:
+    - deleted Route53 `A` and `AAAA` alias records for `admin.thenewbeautifulme.com`
+    - deleted the ACM validation CNAME for that hostname
+    - deleted ACM certificate `bb9bf1b6-3190-4d08-afa7-14ca05630003`
+    - deleted CloudFront distribution `E372ZR95FXKVT5`
+    - deleted S3 bucket `admin-thenewbeautifulme-site`
+    - verified final bucket removal with `aws s3api head-bucket --bucket admin-thenewbeautifulme-site`, which now returns `404 Not Found`
+  - coordinated the final app-side cleanup live in `thenewbeautifulme`:
+    - applied the API Gateway CORS removal for the retired hostname
+    - updated the live API Lambda so it no longer emits `Access-Control-Allow-Origin` for `https://admin.thenewbeautifulme.com`
+    - smoke verified that `useradmin.thenewbeautifulme.com` still receives the expected CORS header
+- Added a first-class cloud migration planning surface to Back Office for the portfolio AWS exit plan:
+  - new persisted model in [backoffice/migration_plan.py](/home/merm/projects/back-office/backoffice/migration_plan.py) backed by `config/migration-plan.yaml` and mirrored to `results/` + `dashboard/`
+  - new local API endpoints in [backoffice/server.py](/home/merm/projects/back-office/backoffice/server.py) for reading the plan, updating phase/repo/domain status, and appending update-log entries
+  - dedicated full dashboard page at [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) linked from the HQ top bar, with auto-refresh every 15s and editable phases, repositories, domains, and update log
+  - the original seeded content was GCP-first, but the current plan has now been updated to `Bunny static + edge`, `Scaleway backend/privacy core`, and `GCP email only`, with VM exceptions kept on Scaleway instances and `postal-aws` explicitly out of scope for this migration wave
+  - added regression coverage in [tests/test_migration_plan.py](/home/merm/projects/back-office/tests/test_migration_plan.py) and extended [tests/test_servers.py](/home/merm/projects/back-office/tests/test_servers.py)
+- Added execution bridging from the migration dashboard into the normal Back Office queue:
+  - `POST /api/migration-plan/seed-wave-one` now seeds the first migration work wave into `task-queue`
+  - the migration dashboard exposes `Seed Wave 1 Tasks`
+  - live seed run already created 5 migration tasks in the queue for `back-office`, `codyjo.com`, `auth-service`, `certstudy`, and `fuel`
+- Linked the migration dashboard to the live Back Office queue:
+  - [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) now also reads `/api/tasks`
+  - repository cards show inline queue state for seeded migration execution tasks and link back to the HQ queue
+  - this keeps the migration plan page and the approval/execution queue visibly aligned during work
 - Finished the shared-package cutover cleanup across the portfolio: removed the final checked-in mirror directory from `thenewbeautifulme`, retired `scripts/sync_shared_packages.py` and `tests/test_sync_shared_packages.py`, updated the portfolio audit to flag future mirror drift, and updated the engineering standard/roadmap to treat `/home/merm/projects/shared/packages` as the only approved shared package source.
 - Added the missing legal/e2e baseline in the remaining apps: `continuum` now has top-level `/privacy` and `/accessibility` pages, `pattern` now has `/accessibility`, and `certstudy`, `selah`, `thenewbeautifulme`, `continuum`, and `pattern` now all have Playwright config plus a public smoke spec.
 - Verified `continuum-ci` succeeds live with the `shared` secondary source attached, then removed the final fallback copy blocks from [continuum buildspecs](/home/merm/projects/continuum/buildspec-ci.yml). The Next app portfolio no longer depends on buildspec mirror fallbacks.
@@ -173,6 +810,8 @@ Back Office is centered on a human-centered approval model. The immediate produc
 
 ## Pending
 
+- Extend the QA remediation planner beyond the seeded static dataset:
+  - refine the live planner heuristics beyond the current repo-to-wave rules if you want fully derived wave assignment instead of the current hybrid of live findings + curated repo execution policy
 - Decide whether to bring the code in line with the approval-first docs or soften the docs to match reality. The current gap is specifically around:
   - `Makefile` targets: `watch`, `scan-and-fix`, `full-scan`, and all `overnight*` targets
   - `backoffice/server.py` overnight start/stop/status endpoints
@@ -208,6 +847,11 @@ Back Office is centered on a human-centered approval model. The immediate produc
 
 ## Files To Read First
 
+- `backoffice/migration_plan.py`
+- `dashboard/migration.html`
+- `dashboard/index.html`
+- `backoffice/server.py`
+- `tests/test_migration_plan.py`
 - `README.md`
 - `docs/WORKFLOW-ARCHITECTURE.md`
 - `docs/CICD-REFERENCE.md`
@@ -270,3 +914,53 @@ Back Office is centered on a human-centered approval model. The immediate produc
 - Added `scripts/portfolio_drift_audit.py` as the first-pass automated drift check for the Next.js app portfolio.
 - Added `/home/merm/projects/shared/packages/app-config` as the first new shared package for config-driven app metadata and shell extraction.
 - Intended next step: create `@codyjo/app-shell`, then migrate Fuel and CertStudy first.
+
+## 2026-03-30 SEO Blog Draft Batch
+
+- Added review-only draft blog posts under [docs/seo-blog-drafts](/home/merm/projects/back-office/docs/seo-blog-drafts) for the Back Office product story. No dashboard or public site assets were changed.
+- Drafts created:
+  - [2026-02-18-ai-code-review-dashboard.md](/home/merm/projects/back-office/docs/seo-blog-drafts/2026-02-18-ai-code-review-dashboard.md)
+  - [2026-03-14-reviewable-ai-engineering-workflows.md](/home/merm/projects/back-office/docs/seo-blog-drafts/2026-03-14-reviewable-ai-engineering-workflows.md)
+- The drafts are positioned for future marketing/docs publication and emphasize the product's approval-centric operating model rather than autonomous hype.
+- Recommended next step:
+  - decide whether approved pieces belong in the public product docs, a dedicated marketing/blog surface, or the CodyJo parent-site blog as product-linked thought-leadership posts
+
+## 2026-04-02 Local Infrastructure Monitoring Chunk 1 Foundation
+
+- Implemented Chunk 1 foundation tasks from [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md) through the file-creation/provisioning steps only.
+- Completed work:
+  - added `monitoring/.env` to [.gitignore](/home/merm/projects/back-office/.gitignore)
+  - created [monitoring/.env.example](/home/merm/projects/back-office/monitoring/.env.example)
+  - created local untracked `monitoring/.env` with generated `openssl rand -base64 16` passwords
+  - created [monitoring/timescaledb/init.sql](/home/merm/projects/back-office/monitoring/timescaledb/init.sql)
+  - created [monitoring/ingest/requirements.txt](/home/merm/projects/back-office/monitoring/ingest/requirements.txt), [monitoring/ingest/main.py](/home/merm/projects/back-office/monitoring/ingest/main.py), and [monitoring/ingest/Dockerfile](/home/merm/projects/back-office/monitoring/ingest/Dockerfile)
+  - replaced [monitoring/docker-compose.yml](/home/merm/projects/back-office/monitoring/docker-compose.yml) with the 4-service stack from the plan
+  - created [monitoring/provisioning/datasources/timescaledb.yml](/home/merm/projects/back-office/monitoring/provisioning/datasources/timescaledb.yml)
+- Current direction:
+  - Chunk 1 file setup is in place; the next planned step is the smoke-test portion of Task 6 when container startup is allowed
+  - later chunks still need the Vector collector scripts, Vector config, and Grafana dashboards from the same plan
+- Pending work:
+  - do not regenerate or commit `monitoring/.env`; it is intentionally local-only
+  - start the stack and run the smoke tests from Task 6 when explicitly requested
+  - continue with Chunk 2+ plan items afterward
+- Constraints:
+  - implementation followed the plan file bodies exactly, including the async ingest service and NDJSON parsing
+  - no Docker containers were started in this pass
+  - the compose file references later-chunk assets such as `monitoring/vector/vector.yaml` and dashboard JSON files that are not created yet
+- Key files:
+  - [monitoring/docker-compose.yml](/home/merm/projects/back-office/monitoring/docker-compose.yml)
+  - [monitoring/timescaledb/init.sql](/home/merm/projects/back-office/monitoring/timescaledb/init.sql)
+  - [monitoring/ingest/main.py](/home/merm/projects/back-office/monitoring/ingest/main.py)
+  - [monitoring/provisioning/datasources/timescaledb.yml](/home/merm/projects/back-office/monitoring/provisioning/datasources/timescaledb.yml)
+  - [monitoring/.env.example](/home/merm/projects/back-office/monitoring/.env.example)
+- Integrations:
+  - Vector is configured to post NDJSON batches to the ingest service over HTTP
+  - ingest writes to TimescaleDB using `psycopg_pool.AsyncConnectionPool`
+  - Grafana is provisioned with a PostgreSQL datasource against TimescaleDB
+- Next steps:
+  - if continuing this plan, create the collector scripts and Vector config before trying to launch the full compose stack
+  - once the remaining referenced files exist, rerun `docker compose config --quiet` from `monitoring/`
+  - when smoke testing is allowed, bring up only the services called for in Task 6 and validate DB schema plus ingest health
+- Verification state:
+  - file creation and commit boundaries were completed for the requested foundation tasks
+  - requested local verification commands should be rerun after the remaining compose-referenced files are present
