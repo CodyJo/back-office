@@ -1,0 +1,679 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Infrastructure Alerts
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: disk-critical
+        title: Disk Critical (>90%)
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Disk usage above 90%
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, labels->>'device' AS metric,
+                       avg_val / NULLIF((SELECT avg_val
+                         FROM metrics_5m m2
+                         WHERE m2.metric = 'disk_total_bytes'
+                           AND m2.labels->>'device' = metrics_5m.labels->>'device'
+                           AND $__timeFilter(m2.bucket)
+                         ORDER BY m2.bucket DESC
+                         LIMIT 1), 0) AS value
+                FROM metrics_5m
+                WHERE metric = 'disk_used_bytes'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [0.9]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: disk-warning
+        title: Disk Warning (>85%)
+        condition: C
+        for: 10m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Disk usage above 85%
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, labels->>'device' AS metric,
+                       avg_val / NULLIF((SELECT avg_val
+                         FROM metrics_5m m2
+                         WHERE m2.metric = 'disk_total_bytes'
+                           AND m2.labels->>'device' = metrics_5m.labels->>'device'
+                           AND $__timeFilter(m2.bucket)
+                         ORDER BY m2.bucket DESC
+                         LIMIT 1), 0) AS value
+                FROM metrics_5m
+                WHERE metric = 'disk_used_bytes'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [0.85]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: gpu-thermal
+        title: GPU Thermal (>83C)
+        condition: C
+        for: 2m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: RTX 3080 temperature exceeds 83C
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, avg_val AS value
+                FROM metrics_5m
+                WHERE metric = 'gpu_temp_celsius'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [83]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: gpu-throttling
+        title: GPU Throttling
+        condition: C
+        for: 1m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: GPU clock throttling active (thermal or power cap)
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time,
+                       greatest(
+                         max(CASE WHEN metric = 'gpu_throttle_hw_thermal' THEN avg_val END),
+                         max(CASE WHEN metric = 'gpu_throttle_sw_thermal' THEN avg_val END),
+                         max(CASE WHEN metric = 'gpu_throttle_sw_power_cap' THEN avg_val END)
+                       ) AS value
+                FROM metrics_5m
+                WHERE metric IN ('gpu_throttle_hw_thermal', 'gpu_throttle_sw_thermal', 'gpu_throttle_sw_power_cap')
+                  AND $__timeFilter(bucket)
+                GROUP BY bucket
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: ram-pressure
+        title: RAM Pressure (<4GB)
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Less than 4GB RAM available
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, avg_val AS value
+                FROM metrics_5m
+                WHERE metric = 'memory_available_bytes'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [4294967296]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: swap-thrashing
+        title: Swap Thrashing
+        condition: C
+        for: 1m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Swap I/O rate exceeds 1000 pages/s
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time,
+                       (avg_val - lag(avg_val) OVER (ORDER BY bucket))
+                       / NULLIF(EXTRACT(EPOCH FROM bucket - lag(bucket) OVER (ORDER BY bucket)), 0) AS value
+                FROM metrics_5m
+                WHERE metric = 'swap_io_in_pages'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [1000]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: gpu-offload
+        title: GPU Offload
+        condition: C
+        for: 1m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Model partially on CPU because VRAM ratio is below 1.0
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, labels->>'model' AS metric, avg_val AS value
+                FROM metrics_5m
+                WHERE metric = 'ollama_model_vram_ratio'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [1.0]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: inference-degraded
+        title: Inference Degraded (<15 t/s)
+        condition: C
+        for: 2m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: LLM generation speed below 15 tokens per second
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, coalesce(labels->>'model', 'unknown') AS metric, avg_val AS value
+                FROM metrics_5m
+                WHERE metric = 'ollama_eval_rate'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [15]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: vram-exhausted
+        title: VRAM Exhausted (<500MB)
+        condition: C
+        for: 2m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Less than 500MB VRAM free
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, avg_val AS value
+                FROM metrics_5m
+                WHERE metric = 'gpu_memory_free_bytes'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [524288000]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: ollama-down
+        title: Ollama Down
+        condition: C
+        for: 1m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Ollama service is not responding
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time, avg_val AS value
+                FROM metrics_5m
+                WHERE metric = 'ollama_running'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+      - uid: oom-kill
+        title: OOM Kill
+        condition: C
+        for: 0s
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: OOM killer fired
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: timescaledb
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb
+              editorMode: code
+              format: time_series
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT bucket AS time,
+                       avg_val - lag(avg_val) OVER (ORDER BY bucket) AS value
+                FROM metrics_5m
+                WHERE metric = 'oom_kills_total'
+                  AND $__timeFilter(bucket)
+                ORDER BY bucket
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 60000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold

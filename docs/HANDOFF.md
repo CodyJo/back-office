@@ -2,6 +2,86 @@
 
 Last updated: April 2, 2026
 
+## 2026-04-02 Local Infrastructure Monitoring Chunk 4 Tasks 13-18
+
+- Current direction:
+  - Chunk 4 dashboard provisioning and Chunk 5 alert provisioning are now implemented from [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+  - `dashboards.yml` was reviewed and already auto-discovers all JSON dashboards from `/etc/grafana/provisioning/dashboards`, so no provisioning change was needed for Task 17
+- Completed work:
+  - created [monitoring/provisioning/dashboards/host-overview.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/host-overview.json) with 11 host panels covering CPU per-core, load, RAM, swap, disk, network, temperature, OOM kills, and page faults
+  - created [monitoring/provisioning/dashboards/gpu-monitoring.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/gpu-monitoring.json) with the required GPU hero gauge, thermal history, VRAM panels, power, clocks, fan, throttle stats, and PCIe link status
+  - created [monitoring/provisioning/dashboards/llm-inference.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/llm-inference.json) with repeating per-model VRAM ratio gauges plus model status, inference performance, service status, headroom, and correlation panels
+  - created [monitoring/provisioning/dashboards/claude-sessions.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/claude-sessions.json) with session/worktree stats, session history, uptime detail, and system-impact panels
+  - created [monitoring/provisioning/alerting/alerts.yml](/home/merm/projects/back-office/monitoring/provisioning/alerting/alerts.yml) with 11 Grafana alert rules for disk, GPU thermal/throttling, RAM, swap, GPU offload, inference degradation, VRAM exhaustion, Ollama availability, and OOM kills
+- Pending work:
+  - runtime-import verification in Grafana remains pending because Docker/Grafana were not started in this task
+  - if a later pass brings the stack up, verify dashboard rendering, repeated-model behavior on the LLM dashboard, and alert rule import in the Grafana UI/API
+- Constraints:
+  - did not start Docker containers
+  - the repo has substantial unrelated modified and untracked files; they were left untouched
+  - the GPU dashboard has 14 panels because the task required distinct VRAM, PCIe, and four separate throttle stat panels
+- Key files:
+  - [monitoring/provisioning/dashboards/dashboards.yml](/home/merm/projects/back-office/monitoring/provisioning/dashboards/dashboards.yml)
+  - [monitoring/provisioning/dashboards/host-overview.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/host-overview.json)
+  - [monitoring/provisioning/dashboards/gpu-monitoring.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/gpu-monitoring.json)
+  - [monitoring/provisioning/dashboards/llm-inference.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/llm-inference.json)
+  - [monitoring/provisioning/dashboards/claude-sessions.json](/home/merm/projects/back-office/monitoring/provisioning/dashboards/claude-sessions.json)
+  - [monitoring/provisioning/alerting/alerts.yml](/home/merm/projects/back-office/monitoring/provisioning/alerting/alerts.yml)
+- Integrations and assumptions:
+  - every dashboard panel uses the provisioned Postgres datasource `timescaledb`
+  - all SQL targets read from the `metrics_5m` continuous aggregate and assume the collectors/vector pipeline from earlier chunks are active
+  - the LLM dashboard depends on `ollama_*` metrics from both the Ollama collector and the journal-derived inference parser
+- Verification state:
+  - `python3 -c "import json; json.load(open('monitoring/provisioning/dashboards/host-overview.json')); print('OK')"` passed
+  - `python3 -c "import json; json.load(open('monitoring/provisioning/dashboards/gpu-monitoring.json')); print('OK')"` passed
+  - `python3 -c "import json; json.load(open('monitoring/provisioning/dashboards/llm-inference.json')); print('OK')"` passed
+  - `python3 -c "import json; json.load(open('monitoring/provisioning/dashboards/claude-sessions.json')); print('OK')"` passed
+  - `monitoring/provisioning/dashboards/dashboards.yml` already points Grafana at `/etc/grafana/provisioning/dashboards` with `foldersFromFilesStructure: false`
+  - Grafana UI import/render validation and alert execution validation were not run
+- Recommended next steps:
+  - bring Grafana up in a later task and verify all four dashboards import cleanly
+  - confirm the exact alert provisioning schema against the running Grafana version if import warnings appear
+  - add the follow-on Makefile targets from Chunk 6 after dashboard/alert provisioning is accepted
+
+## 2026-04-02 Local Infrastructure Monitoring Chunk 3 Task 11
+
+- Current direction:
+  - local infrastructure monitoring plan implementation continues from [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+  - Chunk 3 Task 11 is now complete; Task 12 and later plan tasks remain pending
+- Completed work:
+  - created [monitoring/vector/vector.yaml](/home/merm/projects/back-office/monitoring/vector/vector.yaml) with the full Vector pipeline exactly from the plan
+  - included API config on `0.0.0.0:8686`
+  - included all required sources: `host_metrics`, `gpu_metrics`, `system_sensors`, `ollama_metrics`, `claude_metrics`, `ollama_journal`, `system_journal`, `docker_logs`
+  - included all required transforms: `host_normalize`, `gpu_passthrough`, `sensors_passthrough`, `ollama_passthrough`, `claude_passthrough`, `ollama_inference_parse`, `ollama_logs`, `system_logs`, `system_event_metrics`, `docker_normalize`
+  - included both required HTTP sinks: `ingest_metrics` and `ingest_logs`
+  - preserved the exact `ingest_metrics` inputs from the plan, including `ollama_inference_parse` and `system_event_metrics`
+- Pending work:
+  - do not modify Task 11 further unless the plan changes
+  - perform Chunk 3 Task 12 separately: start the stack and verify end-to-end flow
+  - run Vector-native validation later if Docker access is used for the planned `vector validate` step
+- Constraints:
+  - followed the plan YAML exactly, including the VRL regex-based `ollama_inference_parse` transform that emits 7 inference metrics
+  - did not start Docker containers
+  - the repo still contains substantial unrelated modified and untracked files that were left untouched
+- Key files:
+  - [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+  - [monitoring/vector/vector.yaml](/home/merm/projects/back-office/monitoring/vector/vector.yaml)
+  - [monitoring/vector/collectors/gpu_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/gpu_metrics.sh)
+  - [monitoring/vector/collectors/system_sensors.sh](/home/merm/projects/back-office/monitoring/vector/collectors/system_sensors.sh)
+  - [monitoring/vector/collectors/ollama_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/ollama_metrics.sh)
+  - [monitoring/vector/collectors/claude_sessions.sh](/home/merm/projects/back-office/monitoring/vector/collectors/claude_sessions.sh)
+- Integrations and assumptions:
+  - the Vector config expects collector scripts at `/etc/vector/collectors/*.sh`
+  - the HTTP sinks target the local ingest service on `http://localhost:8087`
+  - journald and docker sources will only function correctly when Vector has the expected runtime mounts/permissions from the later stack setup
+- Verification state:
+  - `python3 -c "import yaml; yaml.safe_load(open('monitoring/vector/vector.yaml')); print('YAML OK')"` passed
+  - the Docker-based `vector validate` step from the plan was not run in this task
+- Recommended next steps:
+  - execute Task 12 without changing the checked-in YAML unless validation reveals a plan mismatch
+  - when the stack is started, confirm that the ingest service receives both metrics and log batches
+  - if Vector reports source-specific warnings, distinguish expected mount/runtime issues from actual config errors before editing the pipeline
+
 ## 2026-04-02 Local Infrastructure Monitoring Chunk 2
 
 - Current direction:
@@ -295,6 +375,13 @@ Last updated: April 2, 2026
   - [dashboard/migration.html](/home/merm/projects/back-office/dashboard/migration.html) now includes Deploy, Actions Archive, and Forgejo nav links
 - Added a short operator routine doc:
   - [docs/DAILY_USE.md](/home/merm/projects/back-office/docs/DAILY_USE.md)
+- Added user-session autostart scaffolding:
+  - [systemd-user/forgejo-local.service](/home/merm/projects/back-office/systemd-user/forgejo-local.service)
+  - [systemd-user/back-office-forgejo.service](/home/merm/projects/back-office/systemd-user/back-office-forgejo.service)
+  - [scripts/start-forgejo-local.sh](/home/merm/projects/back-office/scripts/start-forgejo-local.sh)
+  - [scripts/install-local-platform-autostart.sh](/home/merm/projects/back-office/scripts/install-local-platform-autostart.sh)
+  - [docs/AUTOSTART.md](/home/merm/projects/back-office/docs/AUTOSTART.md)
+- Autostart is not just scaffolded now; it is installed and enabled for user-session startup on this machine.
 - Current remaining gap:
   - local Forgejo shows the repos and will show future runs
   - old GitHub Actions runs must be archived locally if you want to keep them visible outside GitHub
