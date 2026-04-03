@@ -1,4 +1,88 @@
+# BreakPoint Labs — Local Infrastructure Monitoring
+# Vector → Ingest → TimescaleDB → Grafana
+#
+# Usage:
+#   cd monitoring && docker compose up -d
+#   Open http://localhost:3333
+
 services:
+  # ── TimescaleDB (metrics + logs storage) ───────────────────
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: breakpoint-timescaledb
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: monitoring
+      POSTGRES_USER: vector
+      POSTGRES_PASSWORD: ${TSDB_PASSWORD:?Set TSDB_PASSWORD in .env}
+    volumes:
+      - tsdb-data:/var/lib/postgresql/data
+      - ./timescaledb/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vector -d monitoring"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Ingest service (Vector http sink → TimescaleDB) ────────
+  ingest:
+    build: ./ingest
+    container_name: breakpoint-ingest
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      TSDB_PASSWORD: ${TSDB_PASSWORD}
+      DATABASE_URL: "postgresql://vector:${TSDB_PASSWORD}@timescaledb:5432/monitoring"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8087/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Vector (collection + transport) ────────────────────────
+  vector:
+    image: timberio/vector:latest-debian
+    container_name: breakpoint-vector
+    restart: unless-stopped
+    ports:
+      - "8686:8686"
+    volumes:
+      - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - ./vector/collectors:/etc/vector/collectors:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /usr/bin/nvidia-smi:/usr/bin/nvidia-smi:ro
+      - /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1:/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1:ro
+    environment:
+      VECTOR_LOG: info
+      HOST_PROC: /host/proc
+      HOST_SYS: /host/sys
+    pid: host
+    # Note: Vector does NOT use network_mode: host. This means network metrics
+    # from host_metrics will reflect the container's network namespace, not the
+    # host's. This is acceptable because: (1) our system_sensors.sh reads
+    # /host/proc/net/dev for host network stats if needed, and (2) not using
+    # network_mode: host allows Vector to reach ingest via Docker DNS.
+    # If host network metrics are critical, add a network stats collector script.
+    depends_on:
+      ingest:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "vector", "top", "--interval", "1", "--human-metrics", "false"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Grafana (dashboards + alerts) ──────────────────────────
   grafana:
     image: grafana/grafana:11.6.0
     container_name: breakpoint-grafana
@@ -6,17 +90,20 @@ services:
     ports:
       - "3333:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD environment variable}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/projects-overview.json
-      # AWS credentials — uses host credentials via env or instance profile
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_DEFAULT_REGION=us-west-2
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/host-overview.json
+      # AWS credentials for CloudWatch datasource (optional)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: us-west-2
     volumes:
       - grafana-data:/var/lib/grafana
       - ./provisioning:/etc/grafana/provisioning
+    depends_on:
+      timescaledb:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 30s
@@ -24,4 +111,5 @@ services:
       retries: 3
 
 volumes:
+  tsdb-data:
   grafana-data:
