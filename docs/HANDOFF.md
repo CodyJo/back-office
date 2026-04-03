@@ -2,6 +2,47 @@
 
 Last updated: April 2, 2026
 
+## 2026-04-02 Local Infrastructure Monitoring Chunks 6-8 Tasks 19-22
+
+- Current direction:
+  - local infrastructure monitoring plan implementation advanced through Chunk 6 Task 19, Chunk 7 Task 20, and Chunk 8 Tasks 21-22 from [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+  - the next pending work remains the later testing and verification tasks from the plan
+- Completed work:
+  - updated [Makefile](/home/merm/projects/back-office/Makefile) with the monitoring stack targets exactly from the plan: `monitoring-up`, `monitoring-down`, `monitoring-logs`, `monitoring-status`, `monitoring-restart`
+  - updated [Makefile](/home/merm/projects/back-office/Makefile) so `grafana` and `grafana-stop` are aliases for `monitoring-up` and `monitoring-down`
+  - added the Forgejo targets exactly from the plan in [Makefile](/home/merm/projects/back-office/Makefile): `forgejo-up`, `forgejo-down`, `forgejo-mirror`
+  - created executable remote access scripts from the plan:
+    - [monitoring/scripts/setup-remote-access.sh](/home/merm/projects/back-office/monitoring/scripts/setup-remote-access.sh)
+    - [monitoring/scripts/undo-remote-access.sh](/home/merm/projects/back-office/monitoring/scripts/undo-remote-access.sh)
+  - updated the local Forgejo runtime config in [ops/forgejo-local/.env](/home/merm/projects/back-office/ops/forgejo-local/.env) from `FORGEJO_DOMAIN=localhost` to `FORGEJO_DOMAIN=borg.local`
+  - created the requested commits:
+    - `f192a32` `feat(monitoring): add Makefile targets for monitoring stack`
+    - `126387c` `feat(monitoring): add remote access setup/undo scripts (SSH, Samba, RDP)`
+- Pending work:
+  - do not rerun or modify the remote access scripts unless the operator is ready to execute privileged setup on the host
+  - restart Forgejo manually later if the new `FORGEJO_DOMAIN=borg.local` setting needs to take effect at runtime
+  - continue with later monitoring-plan tasks, especially tests and any runtime verification that intentionally starts containers
+- Constraints:
+  - followed the plan snippets exactly for the `Makefile` additions and both remote access scripts
+  - did not run `monitoring/scripts/setup-remote-access.sh`
+  - did not run any `sudo` commands
+  - did not start Docker containers or restart Forgejo
+  - `ops/forgejo-local/.env` is runtime-local and was intentionally left uncommitted
+- Key files:
+  - [Makefile](/home/merm/projects/back-office/Makefile)
+  - [monitoring/scripts/setup-remote-access.sh](/home/merm/projects/back-office/monitoring/scripts/setup-remote-access.sh)
+  - [monitoring/scripts/undo-remote-access.sh](/home/merm/projects/back-office/monitoring/scripts/undo-remote-access.sh)
+  - [ops/forgejo-local/.env](/home/merm/projects/back-office/ops/forgejo-local/.env)
+  - [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md)
+- Integrations and assumptions:
+  - `monitoring-status` expects local services at `localhost:5433`, `localhost:8087`, `localhost:8686`, and `localhost:3333`
+  - `forgejo-mirror` reads target repo paths from `config/targets.yaml` and pushes to `http://borg.local:3300/merm/<repo>.git`
+  - the remote access scripts assume host user `merm`, LAN subnet `10.0.0.0/24`, Samba path `/media/merm`, and GNOME remote desktop on the machine named `borg`
+- Verification state:
+  - `make monitoring-status` ran successfully and reported all services `DOWN`, which is expected because the stack was not started in this task
+  - both remote access scripts were marked executable
+  - the Forgejo `.env` value was updated in-place only; no runtime verification was performed because restart was explicitly skipped
+
 ## 2026-04-02 Local Infrastructure Monitoring Chunk 4 Tasks 13-18
 
 - Current direction:
@@ -1095,3 +1136,29 @@ For Bunny migration tooling, the active path is now [scripts/bunny-cli-next.mjs]
 - Verification state:
   - file creation and commit boundaries were completed for the requested foundation tasks
   - requested local verification commands should be rerun after the remaining compose-referenced files are present
+
+## 2026-04-02 Local Infrastructure Monitoring Chunk 9 Tests
+
+- Implemented Task 23 and Task 24 from [docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md](/home/merm/projects/back-office/docs/superpowers/plans/2026-04-02-local-infrastructure-monitoring.md) exactly for file contents and Makefile target shape.
+- Completed work:
+  - created empty [tests/monitoring/__init__.py](/home/merm/projects/back-office/tests/monitoring/__init__.py)
+  - created [tests/monitoring/test_collectors.py](/home/merm/projects/back-office/tests/monitoring/test_collectors.py) with the exact helpers and 10 planned tests
+  - created executable [monitoring/scripts/smoke-test.sh](/home/merm/projects/back-office/monitoring/scripts/smoke-test.sh)
+  - added `monitoring-test` to [Makefile](/home/merm/projects/back-office/Makefile)
+- Constraints:
+  - did not run the smoke test script
+  - did not start Docker containers
+  - left collector implementations unchanged even though some now fail the new tests
+- Verification:
+  - ran `python3 -m pytest tests/monitoring/test_collectors.py -v`
+  - result: 7 passed, 3 failed
+  - failing cases:
+    - `TestGpuMetrics::test_produces_valid_json`
+    - `TestGpuMetrics::test_has_expected_metrics`
+    - `TestSystemSensors::test_has_vmstat_metrics`
+  - observed causes from current repo state:
+    - [monitoring/vector/collectors/gpu_metrics.sh](/home/merm/projects/back-office/monitoring/vector/collectors/gpu_metrics.sh) emitted invalid JSON on this host because the final parsed value expanded to `Not Active, 1, 8`
+    - [monitoring/vector/collectors/system_sensors.sh](/home/merm/projects/back-office/monitoring/vector/collectors/system_sensors.sh) returned an empty metric set for the vmstat assertions on this host
+- Next steps:
+  - fix the collector scripts if the goal is to make Chunk 9 green
+  - rerun the same pytest command after collector fixes

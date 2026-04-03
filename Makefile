@@ -1,7 +1,7 @@
 .PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression og-remediate
 .PHONY: seo ada compliance monetization product cloud-ops audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
-.PHONY: monitoring-up monitoring-down monitoring-logs monitoring-status monitoring-restart
+.PHONY: monitoring-up monitoring-down monitoring-logs monitoring-status monitoring-restart monitoring-test
 .PHONY: forgejo-up forgejo-down forgejo-mirror
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
 .PHONY: overnight overnight-dry overnight-stop overnight-status overnight-rollback
@@ -256,6 +256,9 @@ monitoring-status: ## Health check all monitoring services
 
 monitoring-restart: ## Restart monitoring stack
 	cd monitoring && docker compose restart
+
+monitoring-test: ## Run monitoring stack smoke test
+	bash monitoring/scripts/smoke-test.sh
 
 # ── Forgejo (Local Git Forge) ────────────────────────────────
 
