@@ -7,6 +7,13 @@ set -euo pipefail
 NVIDIA_SMI="${NVIDIA_SMI:-nvidia-smi}"
 GPU_LABEL="rtx3080"
 
+trim() {
+    local value="$1"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
 if ! command -v "$NVIDIA_SMI" &>/dev/null; then
     echo '[]'
     exit 0
@@ -31,11 +38,28 @@ pcie.link.gen.current,\
 pcie.link.width.current \
 --format=csv,noheader,nounits 2>/dev/null) || { echo '[]'; exit 0; }
 
-IFS=', ' read -r \
+IFS=',' read -r \
     temp util mem_used mem_total mem_free \
     power power_limit clock_cur clock_max fan \
     thr_idle thr_hw_thermal thr_sw_thermal thr_sw_power \
     pcie_gen pcie_width <<< "$RAW"
+
+temp=$(trim "${temp:-0}")
+util=$(trim "${util:-0}")
+mem_used=$(trim "${mem_used:-0}")
+mem_total=$(trim "${mem_total:-0}")
+mem_free=$(trim "${mem_free:-0}")
+power=$(trim "${power:-0}")
+power_limit=$(trim "${power_limit:-0}")
+clock_cur=$(trim "${clock_cur:-0}")
+clock_max=$(trim "${clock_max:-0}")
+fan=$(trim "${fan:-0}")
+thr_idle=$(trim "${thr_idle:-}")
+thr_hw_thermal=$(trim "${thr_hw_thermal:-}")
+thr_sw_thermal=$(trim "${thr_sw_thermal:-}")
+thr_sw_power=$(trim "${thr_sw_power:-}")
+pcie_gen=$(trim "${pcie_gen:-0}")
+pcie_width=$(trim "${pcie_width:-0}")
 
 # Convert MiB to bytes
 mem_used_b=$(( ${mem_used:-0} * 1048576 ))

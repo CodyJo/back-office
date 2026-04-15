@@ -29,7 +29,9 @@ import {
   runDatabaseDoctor,
   runDatabaseSql,
   runCli,
+  runDomainDoctor,
   setDatabaseRegions,
+  showPullZone,
   syncEnv,
   waitForApp,
 } from '../scripts/bunny-cli-next.mjs';
@@ -226,6 +228,79 @@ test('syncEnv replaces environment variables in app patch payload', async () => 
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('showPullZone renders concise pull zone details', async () => {
+  const stdout = { chunks: [], write(chunk) { this.chunks.push(chunk); } };
+  const client = {
+    stdout,
+    async get(path) {
+      assert.equal(path, '/pullzone/5587167');
+      return {
+        Id: 5587167,
+        Name: 'thenewbeautifulme-www',
+        OriginUrl: 'https://mc-lspdkzm5r5.bunny.run',
+        Enabled: true,
+        Hostnames: [
+          { Id: 1, Value: 'thenewbeautifulme.com', ForceSSL: true, CertificateStatus: 'Active', IsSystemHostname: false },
+        ],
+      };
+    },
+  };
+
+  await showPullZone(client, '5587167');
+
+  const output = stdout.chunks.join('');
+  assert.match(output, /thenewbeautifulme-www/);
+  assert.match(output, /mc-lspdkzm5r5\.bunny\.run/);
+  assert.match(output, /thenewbeautifulme\.com/);
+});
+
+test('runDomainDoctor reports drift and dns records', async () => {
+  const stdout = { chunks: [], write(chunk) { this.chunks.push(chunk); } };
+  const client = {
+    stdout,
+    async get(path) {
+      if (path === '/mc/apps/app_live') {
+        return {
+          id: 'app_live',
+          name: 'thenewbeautifulme-v2',
+          status: 'active',
+          displayEndpoint: { address: 'mc-lspdkzm5r5.bunny.run' },
+          containerTemplates: [],
+        };
+      }
+      if (path === '/pullzone/5587167') {
+        return {
+          Id: 5587167,
+          Name: 'thenewbeautifulme-www',
+          OriginUrl: 'https://mc-old.bunny.run',
+          Hostnames: [
+            { Value: 'thenewbeautifulme.com', ForceSSL: true, CertificateStatus: 'Active' },
+          ],
+        };
+      }
+      if (path === '/dnszone/759177') {
+        return {
+          Domain: 'thenewbeautifulme.com',
+          Records: [
+            { Id: 10, Type: 7, Name: '@', Value: '', Ttl: 60 },
+            { Id: 11, Type: 7, Name: 'www', Value: '', Ttl: 60 },
+          ],
+        };
+      }
+      throw new Error(`Unexpected path: ${path}`);
+    },
+  };
+
+  await runDomainDoctor(client, 'thenewbeautifulme.com', 'app_live', '5587167', '759177');
+
+  const output = stdout.chunks.join('');
+  assert.match(output, /thenewbeautifulme-v2/);
+  assert.match(output, /pull zone origin does not match the app display endpoint/);
+  assert.match(output, /DNS zone:\s+thenewbeautifulme\.com/);
+  assert.match(output, /PULLZONE @/);
+  assert.match(output, /PULLZONE www/);
 });
 
 test('applyAppSpec patches image, scale, env, and endpoints from exported spec', async () => {

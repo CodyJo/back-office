@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import mimetypes
 import os
+import shutil
 import subprocess
 import time
 import urllib.request
@@ -135,10 +136,22 @@ class BunnyCDN(CDNProvider):
     """Purge Bunny Pull Zone cache via DustBunny CLI."""
 
     def __init__(self, dustbunny_bin: str | None = None) -> None:
-        self._bin = dustbunny_bin or os.environ.get(
-            "DUSTBUNNY_BIN",
-            str(Path.home() / "projects" / "dustbunny" / "bin" / "dustbunny.mjs"),
-        )
+        configured = dustbunny_bin or os.environ.get("DUSTBUNNY_BIN")
+        if configured:
+            self._bin = configured
+            return
+
+        path_candidate = shutil.which("dustbunny")
+        if path_candidate:
+            self._bin = path_candidate
+            return
+
+        local_bin = Path.home() / ".local" / "bin" / "dustbunny"
+        if local_bin.exists():
+            self._bin = str(local_bin)
+            return
+
+        self._bin = str(Path.home() / "projects" / "dustbunny" / "bin" / "dustbunny.mjs")
 
     def invalidate(self, distribution_id: str, paths: list[str]) -> None:
         """Purge the entire Pull Zone cache.

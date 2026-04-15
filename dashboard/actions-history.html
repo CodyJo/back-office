@@ -326,9 +326,12 @@
     .summary-grid, .grid, .repos, .recent-list { grid-template-columns: 1fr; }
     .run-row { grid-template-columns: 1fr; }
   }
+  .skip-link { position: absolute; left: -9999px; }
+  .skip-link:focus { left: 0; top: 0; z-index: 9999; background: #fff; padding: 0.5rem 1rem; color: #0a0a0f; text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <header class="topbar">
     <div class="topbar-left">
       <a class="logo" href="index.html">Back Office</a>
@@ -343,7 +346,7 @@
     </div>
   </header>
 
-  <main class="container">
+  <main id="main-content" class="container">
     <section class="hero">
       <article class="panel hero-panel">
         <div class="kicker">GitHub Actions Archive</div>
@@ -359,7 +362,7 @@
 
     <section class="toolbar">
       <div class="filters" id="filters"></div>
-      <div class="meta" id="meta">Loading archived GitHub Actions history…</div>
+      <div class="meta" id="meta" aria-live="polite" role="status">Loading archived GitHub Actions history…</div>
     </section>
 
     <section class="recent-grid">
@@ -430,9 +433,11 @@ function renderFilters() {
   const root = document.getElementById('filters');
   root.innerHTML = '';
   FILTERS.forEach((filter) => {
+    const isActive = state.filter === filter.key;
     const chip = el('button', {
-      className: `filter-chip ${state.filter === filter.key ? 'active' : ''}`,
+      className: `filter-chip ${isActive ? 'active' : ''}`,
       textContent: filter.label,
+      'aria-pressed': isActive ? 'true' : 'false',
     });
     chip.addEventListener('click', () => {
       state.filter = filter.key;

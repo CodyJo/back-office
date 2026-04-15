@@ -64,9 +64,9 @@ lib/              — Standards references and severity definitions
 - `make overnight-rollback` — Roll back all repos to last overnight snapshot
 
 ### Dashboard
-- `python -m backoffice serve --port 8070` — Local dashboard server
-- `python -m backoffice refresh` — Regenerate dashboard data from results
-- `python -m backoffice sync` — Deploy dashboards to Bunny Storage/Pull Zone
+- `python3 -m backoffice serve --port 8070` — Local dashboard server
+- `python3 -m backoffice refresh` — Regenerate dashboard data from results
+- `python3 -m backoffice sync` — Deploy dashboards to Bunny Storage/Pull Zone
 
 ### Testing
 - `make test` — Run pytest suite
@@ -111,8 +111,8 @@ lib/              — Standards references and severity definitions
 ## Adding a New Target
 
 1. Add entry to `config/targets.yaml` with path, language, lint/test/deploy commands
-2. Verify: `python -m backoffice list-targets`
-3. Test: `python -m backoffice audit <name> --departments qa`
-4. Full audit: `python -m backoffice audit <name>`
-5. Refresh: `python -m backoffice refresh && python -m backoffice sync`
+2. Verify: `python3 -m backoffice list-targets`
+3. Test: `python3 -m backoffice audit <name> --departments qa`
+4. Full audit: `python3 -m backoffice audit <name>`
+5. Refresh: `python3 -m backoffice refresh && python3 -m backoffice sync`
 6. Optional: Add `autonomy:` block for overnight loop control

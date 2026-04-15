@@ -7,9 +7,11 @@ Each test mocks the underlying tool and verifies:
 """
 
 import json
+import shutil
 import subprocess
 import os
-import tempfile
+
+import pytest
 
 COLLECTORS_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "monitoring", "vector", "collectors"
@@ -46,10 +48,16 @@ def validate_metric(m: dict):
 class TestGpuMetrics:
     def test_produces_valid_json(self):
         metrics = run_collector("gpu_metrics.sh")
+        if not shutil.which("nvidia-smi"):
+            # Without nvidia-smi the collector returns [] which is valid
+            assert metrics == []
+            return
         for m in metrics:
             validate_metric(m)
 
     def test_has_expected_metrics(self):
+        if not shutil.which("nvidia-smi"):
+            pytest.skip("nvidia-smi not available on this system")
         metrics = run_collector("gpu_metrics.sh")
         names = {m["metric"] for m in metrics}
         expected = {"gpu_temp_celsius", "gpu_utilization_percent", "gpu_memory_used_bytes",
@@ -69,11 +77,19 @@ class TestSystemSensors:
             validate_metric(m)
 
     def test_has_vmstat_metrics(self):
+        if not os.path.exists("/proc/vmstat"):
+            pytest.skip("/proc/vmstat not available on this system")
         metrics = run_collector("system_sensors.sh")
         names = {m["metric"] for m in metrics}
-        # vmstat metrics should always be available
         assert "oom_kills_total" in names
         assert "memory_page_faults_major" in names
+
+    def test_has_cpu_temp_metrics(self):
+        """CPU temperature metrics require k10temp hwmon; skip if unavailable."""
+        metrics = run_collector("system_sensors.sh")
+        names = {m["metric"] for m in metrics}
+        if "cpu_temp_celsius" not in names:
+            pytest.skip("k10temp hwmon not available on this system")
 
 
 class TestOllamaMetrics:

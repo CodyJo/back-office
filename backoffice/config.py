@@ -276,7 +276,7 @@ def load_config(path: Path | None = None) -> Config:
         routing_policy=routing_policy,
         api=ApiConfig(
             port=int(api_raw.get("port", 8070)),
-            api_key=str(api_raw.get("api_key", "")),
+            api_key=str(api_raw.get("api_key", "")) or os.environ.get("BACKOFFICE_API_KEY", ""),
             allowed_origins=list(api_raw.get("allowed_origins", [])),
         ),
         deploy=DeployConfig(

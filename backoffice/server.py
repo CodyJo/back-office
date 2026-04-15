@@ -12,6 +12,7 @@ Usage::
 """
 from __future__ import annotations
 
+import hmac
 import http.server
 import json
 import logging
@@ -30,6 +31,12 @@ from urllib.parse import urlparse
 import yaml
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Request body size limit (1 MB)
+# ---------------------------------------------------------------------------
+
+MAX_BODY_SIZE: int = 1_048_576
 
 # ---------------------------------------------------------------------------
 # Department registry
@@ -277,6 +284,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     _root: Path
     _target_repo: str
     _allowed_origins: set[str]
+    _api_key: str = ""
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, directory=str(self._dashboard_dir), **kwargs)
@@ -304,17 +312,74 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Vary", "Origin")
 
     # ------------------------------------------------------------------
+    # Auth helpers
+    # ------------------------------------------------------------------
+
+    def _check_auth(self) -> bool:
+        """Return True if the request passes auth checks.
+
+        When no ``api_key`` is configured auth is disabled (open access for
+        local dev).  Comparison uses :func:`hmac.compare_digest` to prevent
+        timing attacks.  The key can be supplied via the ``Authorization``
+        header (``Bearer <key>``) or an ``api_key`` query parameter.
+        """
+        key = self._api_key
+        if not key:
+            return True
+
+        # Check Authorization header first (Bearer token)
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            if hmac.compare_digest(token, key):
+                return True
+
+        # Fall back to X-API-Key header (matches api_server.py pattern)
+        x_api_key = self.headers.get("X-API-Key", "")
+        if x_api_key and hmac.compare_digest(x_api_key, key):
+            return True
+
+        # Fall back to query parameter
+        from urllib.parse import parse_qs  # noqa: PLC0415
+        query = urlparse(self.path).query
+        params = parse_qs(query)
+        param_key = params.get("api_key", [""])[0]
+        if param_key and hmac.compare_digest(param_key, key):
+            return True
+
+        return False
+
+    # ------------------------------------------------------------------
     # Request parsing helpers
     # ------------------------------------------------------------------
 
-    def _read_body(self) -> dict:
+    def _read_body(self) -> dict | None:
+        """Read and parse a JSON request body.
+
+        Returns ``None`` when the body exceeds :data:`MAX_BODY_SIZE`
+        (after sending a 413 response) so callers can bail early.
+        """
         length = int(self.headers.get("Content-Length", 0))
         if length == 0:
             return {}
+        if length > MAX_BODY_SIZE:
+            self._json_response(413, {"error": "Payload Too Large", "max_bytes": MAX_BODY_SIZE})
+            return None
         try:
             return json.loads(self.rfile.read(length))
         except (json.JSONDecodeError, ValueError):
             return {}
+
+    def _check_body_size(self) -> bool:
+        """Return True if the Content-Length is within limits.
+
+        Sends a 413 response and returns False when the limit is exceeded.
+        """
+        length = int(self.headers.get("Content-Length", 0))
+        if length > MAX_BODY_SIZE:
+            self._json_response(413, {"error": "Payload Too Large", "max_bytes": MAX_BODY_SIZE})
+            return False
+        return True
 
     def _json_response(self, code: int, data: dict) -> None:
         body = json.dumps(data).encode()
@@ -339,11 +404,17 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self._set_cors_headers()
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers",
+                         "Content-Type, Authorization, X-API-Key")
         self.end_headers()
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+
+        # API endpoints require auth when api_key is configured
+        if path.startswith("/api/") and not self._check_auth():
+            self._json_response(401, {"error": "Unauthorized"})
+            return
 
         if path == "/api/ops/status":
             self._handle_ops_status()
@@ -367,6 +438,15 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+
+        # Auth gate — same pattern as api_server.py
+        if not self._check_auth():
+            self._json_response(401, {"error": "Unauthorized"})
+            return
+
+        # Body size gate
+        if not self._check_body_size():
+            return
 
         if path == "/api/run-scan":
             self._handle_run_scan()
@@ -429,6 +509,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         body = self._read_body()
+        if body is None:
+            return
         dept = body.get("department", "")
 
         if dept not in DEPT_SCRIPTS:
@@ -485,6 +567,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         body = self._read_body()
+        if body is None:
+            return
         parallel = body.get("parallel", False)
 
         with running_lock:
@@ -559,6 +643,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         body = self._read_body()
+        if body is None:
+            return
         title = (body.get("title") or "").strip()
         if not title:
             self._json_response(400, {"error": "title is required"})
@@ -818,6 +904,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_ops_audit(self) -> None:
         """POST /api/ops/audit — trigger an audit run."""
         body = self._read_body()
+        if body is None:
+            return
         if not body:
             self._json_response(400, {"error": "Request body required"})
             return
@@ -906,6 +994,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         body = self._read_body()
+        if body is None:
+            return
 
         interval = int(body.get("interval") or 120)
         targets_str = (body.get("targets") or "").strip()
@@ -1093,6 +1183,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_task_queue_finding(self) -> None:
         """POST /api/tasks/queue-finding — queue a finding for human approval."""
         body = self._read_body()
+        if body is None:
+            return
         finding = body.get("finding") if isinstance(body.get("finding"), dict) else body
         if not finding or not (finding.get("title") or "").strip() or not (finding.get("repo") or "").strip():
             self._json_response(400, {"error": "finding title and repo are required"})
@@ -1115,6 +1207,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_task_approve(self) -> None:
         """POST /api/tasks/approve — approve a queue item for human-reviewed execution."""
         body = self._read_body()
+        if body is None:
+            return
         task_id = (body.get("id") or "").strip()
         if not task_id:
             self._json_response(400, {"error": "id is required"})
@@ -1145,6 +1239,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_task_cancel(self) -> None:
         """POST /api/tasks/cancel — reject or cancel a queue item."""
         body = self._read_body()
+        if body is None:
+            return
         task_id = (body.get("id") or "").strip()
         if not task_id:
             self._json_response(400, {"error": "id is required"})
@@ -1169,6 +1265,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_task_request_pr(self) -> None:
         """POST /api/tasks/request-pr — create a draft GitHub PR for approval."""
         body = self._read_body()
+        if body is None:
+            return
         task_id = (body.get("id") or "").strip()
         if not task_id:
             self._json_response(400, {"error": "id is required"})
@@ -1258,6 +1356,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         from backoffice import migration_plan  # noqa: PLC0415
 
         body = self._read_body()
+        if body is None:
+            return
         collection = (body.get("collection") or "").strip()
         item_id = (body.get("id") or "").strip()
         if not collection or not item_id:
@@ -1287,6 +1387,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         from backoffice import migration_plan  # noqa: PLC0415
 
         body = self._read_body()
+        if body is None:
+            return
         try:
             payload = migration_plan.add_update(
                 self._root,
@@ -1319,6 +1421,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         from backoffice import remediation_plan  # noqa: PLC0415
 
         body = self._read_body()
+        if body is None:
+            return
         collection = (body.get("collection") or "").strip()
         item_id = (body.get("id") or "").strip()
         if not collection or not item_id:
@@ -1344,6 +1448,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         from backoffice import remediation_plan  # noqa: PLC0415
 
         body = self._read_body()
+        if body is None:
+            return
         try:
             payload = remediation_plan.add_update(
                 self._root,
@@ -1361,6 +1467,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_ops_mentor_plan(self) -> None:
         """POST /api/ops/mentor/plan — generate and queue a mentorship plan."""
         body = self._read_body()
+        if body is None:
+            return
         if not (body.get("goal") or "").strip():
             self._json_response(400, {"error": "goal is required"})
             return
@@ -1377,6 +1485,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_ops_product_suggest(self) -> None:
         """POST /api/ops/product/suggest — submit a product suggestion for approval."""
         body = self._read_body()
+        if body is None:
+            return
         if not (body.get("name") or "").strip():
             self._json_response(400, {"error": "name is required"})
             return
@@ -1391,6 +1501,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_ops_product_approve(self) -> None:
         """POST /api/ops/product/approve — approve and add a suggested product."""
         body = self._read_body()
+        if body is None:
+            return
         task_id = (body.get("id") or "").strip()
         if not task_id:
             self._json_response(400, {"error": "id is required"})
@@ -1434,6 +1546,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_ops_product_add(self) -> None:
         """POST /api/ops/product/add — add a new product/target."""
         body = self._read_body()
+        if body is None:
+            return
         if not body:
             self._json_response(400, {"error": "Request body required"})
             return
@@ -1460,6 +1574,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         from backoffice import deploy_control  # noqa: PLC0415
 
         body = self._read_body()
+        if body is None:
+            return
         target_key = str(body.get("target") or "").strip()
         ref = str(body.get("ref") or "").strip() or None
 
@@ -1529,6 +1645,7 @@ def create_handler(
     root: Path,
     target_repo: str,
     allowed_origins: set[str],
+    api_key: str = "",
 ) -> type[DashboardHandler]:
     """Return a DashboardHandler subclass pre-configured for the given runtime."""
 
@@ -1536,6 +1653,7 @@ def create_handler(
         _root = root
         _target_repo = target_repo
         _allowed_origins = allowed_origins
+        _api_key = api_key
 
     return _Handler
 
@@ -1556,8 +1674,9 @@ def main(port: int = 8070, target: str | None = None) -> int:
         still starts but ``/api/run-scan`` will return 400 until a target
         is provided.
     """
-    # Try to pull allowed_origins from the package config; fall back to
-    # the built-in localhost defaults so the server works without a config.
+    # Try to pull allowed_origins and api_key from the package config;
+    # fall back to localhost defaults so the server works without a config.
+    api_key = ""
     try:
         from backoffice.config import load_config  # noqa: PLC0415
         cfg = load_config()
@@ -1566,6 +1685,7 @@ def main(port: int = 8070, target: str | None = None) -> int:
             f"http://127.0.0.1:{port}",
         }
         root = cfg.root
+        api_key = cfg.api.api_key
     except Exception:
         allowed_origins = {
             f"http://localhost:{port}",
@@ -1586,8 +1706,9 @@ def main(port: int = 8070, target: str | None = None) -> int:
     logger.info("Dashboard server: http://localhost:%d/", port)
     logger.info("Jobs dashboard:   http://localhost:%d/jobs.html", port)
     logger.info("HQ dashboard:     http://localhost:%d/index.html", port)
+    logger.info("Auth: %s", "api_key required" if api_key else "open (no api_key configured)")
 
-    handler_cls = create_handler(root, target_repo, allowed_origins)
+    handler_cls = create_handler(root, target_repo, allowed_origins, api_key=api_key)
     server = http.server.HTTPServer(("127.0.0.1", port), handler_cls)
     logger.info("Press Ctrl+C to stop")
     try:

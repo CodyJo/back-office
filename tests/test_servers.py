@@ -987,9 +987,10 @@ def live_api_server_with_key(api_tmp_root: Path):
 
 
 class TestResolveTarget:
-    def test_direct_path_when_directory_exists(self, tmp_path: Path) -> None:
+    def test_raw_path_rejected_without_target_entry(self, tmp_path: Path) -> None:
+        """Raw filesystem paths are no longer accepted — only named targets."""
         result = resolve_target(str(tmp_path), targets={})
-        assert result == str(tmp_path)
+        assert result is None
 
     def test_named_target_lookup(self) -> None:
         class _T:
@@ -1013,12 +1014,13 @@ class TestResolveTarget:
         result = resolve_target("bogus-site", targets={})
         assert result is None
 
-    def test_unknown_hint_falls_back_to_first_target(self) -> None:
+    def test_unknown_hint_does_not_fall_back(self) -> None:
+        """Unknown hint no longer falls back to first target — returns None."""
         class _T:
             path = "/first/repo"
 
         result = resolve_target("unknown", targets={"first": _T()})
-        assert result == "/first/repo"
+        assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -1154,18 +1156,17 @@ class TestAPITargetResolution:
         for dept in API_ALL_DEPTS:
             assert dept in data["valid"]
 
-    def test_target_path_accepted_directly(self, live_api_server,
-                                           api_tmp_root: Path) -> None:
-        """Passing an existing directory path as target is accepted."""
+    def test_raw_path_rejected_as_target(self, live_api_server,
+                                         api_tmp_root: Path) -> None:
+        """Raw filesystem paths are no longer accepted — only named targets."""
         host, port = live_api_server
-        # Target path exists but no agent script → agent start fails gracefully
         status, data = self._post_run_scan(host, port, {
             "department": "qa",
             "target": str(api_tmp_root),
         })
-        # May be 200 (started) or 409 (already_running) but NOT 400 (no target)
-        assert status in (200, 409)
-        assert data.get("target") == str(api_tmp_root)
+        # Raw path is not in the targets dict, so resolve_target returns None → 400
+        assert status == 400
+        assert "error" in data
 
 
 # ---------------------------------------------------------------------------

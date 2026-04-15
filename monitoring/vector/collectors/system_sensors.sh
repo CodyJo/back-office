@@ -7,6 +7,16 @@ set -euo pipefail
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 METRICS="["
 FIRST=true
+HOST_SYS="${HOST_SYS:-/host/sys}"
+HOST_PROC="${HOST_PROC:-/host/proc}"
+
+if [ ! -d "$HOST_SYS" ] && [ -d /sys ]; then
+    HOST_SYS="/sys"
+fi
+
+if [ ! -d "$HOST_PROC" ] && [ -d /proc ]; then
+    HOST_PROC="/proc"
+fi
 
 add_metric() {
     local source="$1" metric="$2" labels="$3" value="$4"
@@ -18,7 +28,7 @@ add_metric() {
 # ── CPU Temperature (k10temp) ────────────────────────────────
 # Find the k10temp hwmon directory
 HWMON_DIR=""
-for d in /host/sys/class/hwmon/hwmon*/; do
+for d in "$HOST_SYS"/class/hwmon/hwmon*/; do
     if [ -f "${d}name" ] && [ "$(cat "${d}name" 2>/dev/null)" = "k10temp" ]; then
         HWMON_DIR="$d"
         break
@@ -41,7 +51,7 @@ fi
 
 # ── CPU Frequency ────────────────────────────────────────────
 core=0
-for freq_file in /host/sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
+for freq_file in "$HOST_SYS"/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
     [ -f "$freq_file" ] || continue
     raw=$(cat "$freq_file" 2>/dev/null || echo 0)
     # /sys reports kHz
@@ -51,7 +61,7 @@ for freq_file in /host/sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
 done
 
 # ── /proc/vmstat counters ────────────────────────────────────
-VMSTAT="/host/proc/vmstat"
+VMSTAT="$HOST_PROC/vmstat"
 if [ -f "$VMSTAT" ]; then
     pgmajfault=$(grep -w pgmajfault "$VMSTAT" 2>/dev/null | awk '{print $2}' || echo 0)
     oom_kill=$(grep -w oom_kill "$VMSTAT" 2>/dev/null | awk '{print $2}' || echo 0)

@@ -427,7 +427,6 @@ def with_run_lock(fn):
     return _wrapped
 
 
-@with_run_lock
 def handle_list_targets(args, config=None) -> int:
     """Handle the list-targets command."""
     targets = load_targets(args.config, config=config)
@@ -436,7 +435,6 @@ def handle_list_targets(args, config=None) -> int:
     return 0
 
 
-@with_run_lock
 def handle_refresh(args, config=None) -> int:
     """Handle the refresh command."""
     targets = load_targets(args.config, config=config)

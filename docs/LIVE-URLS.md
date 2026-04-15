@@ -5,15 +5,10 @@ This file is the exact URL index for the current public site, protected Back Off
 ## Local Platform
 
 - `http://127.0.0.1:8070/index.html`
-- `http://127.0.0.1:8070/deploy.html`
-- `http://127.0.0.1:8070/actions-history.html`
-- `http://127.0.0.1:8070/migration.html`
-- `http://127.0.0.1:3300/`
 
 Notes:
 
 - use `127.0.0.1` instead of `localhost`
-- use `http` for Forgejo, not `https`
 - these are local bookmarks for this machine
 
 ## Public Site

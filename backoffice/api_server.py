@@ -16,7 +16,6 @@ import hmac
 import http.server
 import json
 import logging
-import os
 import subprocess
 import sys
 import threading
@@ -26,6 +25,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Request body size limit (1 MB)
+# ---------------------------------------------------------------------------
+
+MAX_BODY_SIZE: int = 1_048_576
 
 # ---------------------------------------------------------------------------
 # Department registry
@@ -61,21 +66,20 @@ running_lock = threading.Lock()
 def resolve_target(site_hint: str | None, targets: dict) -> str | None:
     """Resolve a target repo path from a site hint or targets mapping.
 
-    Resolution order:
-    1. ``site_hint`` is an existing directory path → use as-is
-    2. ``site_hint`` matches a key in *targets* → return ``targets[site_hint].path``
-    3. *targets* is non-empty → return the first entry's path
-    4. Otherwise → ``None``
-    """
-    if site_hint and os.path.isdir(site_hint):
-        return site_hint
+    Only named targets from the configured targets list are accepted.
+    Raw filesystem paths are rejected to prevent arbitrary directory access.
 
+    Resolution order:
+    1. ``site_hint`` matches a key in *targets* → return ``targets[site_hint].path``
+    2. *targets* is non-empty and no hint given → return the first entry's path
+    3. Otherwise → ``None``
+    """
     if site_hint and site_hint in targets:
         target = targets[site_hint]
         # Support both Target dataclass (has .path) and plain str
         return target.path if hasattr(target, "path") else str(target)
 
-    if targets:
+    if not site_hint and targets:
         first = next(iter(targets.values()))
         return first.path if hasattr(first, "path") else str(first)
 
@@ -210,10 +214,13 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
     # Request parsing helpers
     # ------------------------------------------------------------------
 
-    def _read_body(self) -> dict:
+    def _read_body(self) -> dict | None:
         length = int(self.headers.get("Content-Length", 0))
         if length == 0:
             return {}
+        if length > MAX_BODY_SIZE:
+            self._json_response(413, {"error": "Payload Too Large", "max_bytes": MAX_BODY_SIZE})
+            return None
         try:
             return json.loads(self.rfile.read(length))
         except (json.JSONDecodeError, ValueError):
@@ -255,6 +262,12 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
 
         if not self._check_auth():
             self._json_response(401, {"error": "Invalid API key"})
+            return
+
+        # Body size gate
+        length = int(self.headers.get("Content-Length", 0))
+        if length > MAX_BODY_SIZE:
+            self._json_response(413, {"error": "Payload Too Large", "max_bytes": MAX_BODY_SIZE})
             return
 
         if path == "/api/run-scan":
@@ -299,6 +312,8 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
 
     def _handle_run_scan(self) -> None:
         body = self._read_body()
+        if body is None:
+            return
         dept = body.get("department", "")
         site = body.get("target", body.get("site", ""))
 
@@ -345,6 +360,8 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
 
     def _handle_run_all(self) -> None:
         body = self._read_body()
+        if body is None:
+            return
         site = body.get("target", body.get("site", ""))
         parallel = body.get("parallel", False)
 

@@ -1,7 +1,7 @@
 .PHONY: setup qa fix watch dashboard clean help jobs test test-coverage scaffold-workflows cli regression og-remediate
 .PHONY: seo ada compliance monetization product cloud-ops audit-all audit-all-parallel audit-live full-scan quick-sync
 .PHONY: grafana grafana-stop grafana-logs
-.PHONY: monitoring-up monitoring-down monitoring-logs monitoring-status monitoring-restart monitoring-test
+.PHONY: monitoring-up monitoring-down monitoring-logs monitoring-status monitoring-restart monitoring-test monitoring-pull
 .PHONY: forgejo-up forgejo-down forgejo-mirror
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
 .PHONY: overnight overnight-dry overnight-stop overnight-status overnight-rollback
@@ -102,7 +102,7 @@ audit-all: ## Run ALL audits sequentially on TARGET repo
 	@echo "╚══════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Running all department audits on: $(TARGET)"
-	@echo "Progress: http://localhost:8070/jobs.html"
+	@echo "Progress: http://localhost:8070"
 	@echo ""
 	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product cloud-ops"
 	bash agents/qa-scan.sh "$(TARGET)"
@@ -124,7 +124,7 @@ audit-all-parallel: ## Run ALL audits in parallel (2 waves of 3)
 	@echo "╚══════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Running all department audits in parallel on: $(TARGET)"
-	@echo "Progress: http://localhost:8070/jobs.html"
+	@echo "Progress: http://localhost:8070"
 	@echo ""
 	bash scripts/job-status.sh init "$(TARGET)" "qa seo ada compliance monetization product cloud-ops"
 	bash agents/qa-scan.sh "$(TARGET)" & \
@@ -240,6 +240,9 @@ monitoring-up: ## Start full monitoring stack (Vector + TimescaleDB + Grafana)
 	@echo "  TimescaleDB: localhost:5433"
 	@echo "  Vector API:  http://localhost:8686"
 	@echo "  Ingest API:  http://localhost:8087"
+
+monitoring-pull: ## Pre-pull monitoring stack images without starting containers
+	cd monitoring && docker compose pull
 
 monitoring-down: ## Stop monitoring stack
 	cd monitoring && docker compose down

@@ -928,6 +928,26 @@ async function listPullZones(client) {
   client.stdout.write('\n');
 }
 
+async function showPullZone(client, pullZoneId) {
+  if (!pullZoneId) fail('Usage: pz show <pullZoneId>');
+  const zone = await client.get(`/pullzone/${pullZoneId}`);
+  const hostnames = (zone.Hostnames || zone.hostnames || []).map((host) => ({
+    id: host.Id || host.id || null,
+    value: host.Value || host.value || '',
+    forceSsl: host.ForceSSL ?? host.forceSSL ?? null,
+    isSystemHostname: host.IsSystemHostname ?? host.isSystemHostname ?? null,
+    certificateStatus: host.CertificateStatus ?? host.certificateStatus ?? null,
+  }));
+
+  client.stdout.write(`${JSON.stringify({
+    id: zone.Id || zone.id,
+    name: zone.Name || zone.name,
+    originUrl: zone.OriginUrl || zone.originUrl || null,
+    enabled: zone.Enabled ?? zone.enabled ?? null,
+    hostnames,
+  }, null, 2)}\n`);
+}
+
 async function createPullZone(client, name, originUrl) {
   if (!name || !originUrl) fail('Usage: pz create <name> <originUrl>');
   const zone = await client.post('/pullzone', { Name: name, OriginUrl: originUrl });
@@ -975,6 +995,76 @@ async function healthCheck(client, url, { fetchImpl = fetch } = {}) {
   } catch (error) {
     fail(`Health check failed for ${target}: ${error.message}`);
   }
+}
+
+function findPullZoneHostname(zone, hostname) {
+  const hostnames = zone?.Hostnames || zone?.hostnames || [];
+  return hostnames.find((host) => (host.Value || host.value || '').toLowerCase() === String(hostname || '').toLowerCase()) || null;
+}
+
+async function runDomainDoctor(client, hostname, appId, pullZoneId, zoneId) {
+  if (!hostname || !appId || !pullZoneId) {
+    fail('Usage: doctor domain <hostname> <appId> <pullZoneId> [zoneId]');
+  }
+
+  const app = await getApp(client, appId);
+  const zone = await client.get(`/pullzone/${pullZoneId}`);
+  const matchedHostname = findPullZoneHostname(zone, hostname);
+  const originUrl = zone.OriginUrl || zone.originUrl || '';
+  const appEndpoint = app.displayEndpoint?.address || '';
+  const expectedOrigin = appEndpoint ? `https://${appEndpoint}` : null;
+
+  const lines = [];
+  lines.push(`Domain:     ${hostname}`);
+  lines.push(`App:        ${app.name} (${app.id}) status=${app.status}`);
+  lines.push(`App edge:   ${appEndpoint || 'none'}`);
+  lines.push(`Pull zone:  ${zone.Name || zone.name} (${zone.Id || zone.id})`);
+  lines.push(`PZ origin:  ${originUrl || 'none'}`);
+  lines.push(`Expected:   ${expectedOrigin || 'unknown'}`);
+  lines.push(`Hostname:   ${matchedHostname ? 'attached' : 'missing'}`);
+
+  if (matchedHostname) {
+    lines.push(`SSL:        force=${matchedHostname.ForceSSL ?? matchedHostname.forceSSL ?? 'n/a'} cert=${matchedHostname.CertificateStatus ?? matchedHostname.certificateStatus ?? 'unknown'}`);
+  }
+
+  if (expectedOrigin && originUrl !== expectedOrigin) {
+    lines.push('Drift:      pull zone origin does not match the app display endpoint');
+  } else {
+    lines.push('Drift:      no app/pull-zone origin drift detected');
+  }
+
+  if (zoneId) {
+    const { zone: dnsZone, records } = await getZoneRecords(client, zoneId);
+    const relevant = records.filter((record) => {
+      const name = String(record.Name || record.name || '').toLowerCase();
+      return name === hostname.toLowerCase() || name === '@' || name === 'www';
+    });
+    lines.push(`DNS zone:   ${dnsZone.Domain || dnsZone.domain} (${zoneId})`);
+    if (relevant.length === 0) {
+      lines.push('DNS:        no matching records found for host/@/www');
+    } else {
+      const types = {
+        0: 'A',
+        1: 'AAAA',
+        2: 'CNAME',
+        3: 'TXT',
+        4: 'MX',
+        5: 'REDIRECT',
+        6: 'FLATTEN',
+        7: 'PULLZONE',
+        8: 'SRV',
+        9: 'CAA',
+        12: 'NS',
+      };
+      for (const record of relevant) {
+        const type = types[record.Type ?? record.type] || String(record.Type ?? record.type);
+        const value = record.Value || record.value || '';
+        lines.push(`DNS:        ${type} ${(record.Name || record.name || '@')} -> ${value || '(pullzone)'} ttl=${record.Ttl || record.ttl || ''}`);
+      }
+    }
+  }
+
+  client.stdout.write(`${lines.join('\n')}\n`);
 }
 
 async function getAllDatabases(client) {
@@ -1569,6 +1659,10 @@ async function runCli(argv = process.argv.slice(2), options = {}) {
       await listPullZones(client);
       return 0;
     }
+    if (args[0] === 'show') {
+      await showPullZone(client, args[1]);
+      return 0;
+    }
     if (args[0] === 'create') {
       await createPullZone(client, args[1], args[2]);
       return 0;
@@ -1594,6 +1688,13 @@ async function runCli(argv = process.argv.slice(2), options = {}) {
   if (command === 'health') {
     await healthCheck(client, args[0], { fetchImpl: options.fetchImpl || fetch });
     return 0;
+  }
+
+  if (command === 'doctor') {
+    if (args[0] === 'domain') {
+      await runDomainDoctor(client, args[1], args[2], args[3], args[4]);
+      return 0;
+    }
   }
 
   if (command === 'db') {
@@ -1782,6 +1883,7 @@ export {
   removeEndpoint,
   removeEnvVar,
   runCli,
+  runDomainDoctor,
   runDatabaseBatch,
   runDatabaseDoctor,
   runDatabaseForeignKeyCheck,
@@ -1801,6 +1903,7 @@ export {
   showDatabaseUsage,
   showGroupStatistics,
   syncEnv,
+  showPullZone,
   updateAppImage,
   waitForApp,
   runDatabaseSql,

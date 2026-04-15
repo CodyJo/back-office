@@ -67,7 +67,7 @@ echo "  Metrics rows: $METRIC_COUNT"
 
 echo "[7/7] Checking Grafana datasource..."
 DS_COUNT=$(curl -sf http://localhost:3333/api/datasources \
-    -H "Authorization: Basic $(echo -n admin:$(grep GRAFANA_ADMIN_PASSWORD .env | cut -d= -f2) | base64)" \
+    -H "Authorization: Basic $(echo -n admin:$(grep '^GRAFANA_ADMIN_PASSWORD=' .env | cut -d= -f2-) | base64)" \
     2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
 [ "${DS_COUNT:-0}" -gt 0 ] || { echo "FAIL: No datasources in Grafana"; exit 1; }
 echo "  Datasources: $DS_COUNT"

@@ -44,8 +44,8 @@ flowchart LR
     D --> E[Merge to main]
     E --> F[CD Validation]
     F --> G[Dashboard Publish]
-    G --> H[S3]
-    G --> I[CloudFront]
+    G --> H[Bunny Storage]
+    G --> I[Bunny Pull Zone]
 ```
 
 This gives two distinct protections:
@@ -99,7 +99,7 @@ Expected responsibilities:
 
 - rerun essential validation
 - publish dashboard content
-- invalidate CloudFront safely
+- purge Bunny Pull Zone cache safely
 - fail closed if publish behavior becomes unexpectedly broad
 
 ---
@@ -114,8 +114,8 @@ flowchart TD
     D[dashboard/task-queue.json] --> P
     E[dashboard/score-history.json] --> P
     P --> F[backoffice.sync]
-    F --> G[S3 Upload]
-    G --> H[CloudFront Invalidation]
+    F --> G[Bunny Storage Upload]
+    G --> H[Pull Zone Cache Purge]
 ```
 
 Publishing includes:
@@ -162,7 +162,7 @@ That distinction keeps the system easy to reason about:
 Important delivery guardrails:
 
 - dashboard publishing is centralized through sync helpers
-- CloudFront invalidation is bounded, not path-explosive
+- Bunny Pull Zone cache purge is bounded, not path-explosive
 - delivery roles are scoped
 - merge to `main` remains the trigger for production-oriented publish behavior
 - draft PR creation does not bypass GitHub approval
@@ -173,10 +173,9 @@ Cost and infrastructure guardrails are documented separately in [docs/COST_GUARD
 
 ## Relevant Files
 
-- `buildspec-ci.yml`
-- `buildspec-cd.yml`
+- `ci/` directory (Bunny Magic Container webhook server)
 - `backoffice/sync/engine.py`
-- `backoffice/sync/providers/aws.py`
+- `backoffice/sync/providers/bunny.py`
 - `dashboard/index.html`
 - `dashboard/task-queue.json`
 - `docs/COST_GUARDRAILS.md`

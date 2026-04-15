@@ -89,7 +89,7 @@ flowchart TD
     D --> E[Draft PR]
     E --> F[GitHub Approval]
 
-    G[Cost Guardrails] --> H[CloudFront Safety]
+    G[Cost Guardrails] --> H[CDN Safety]
     I[Privacy Rules] --> J[Compliance Visibility]
     K[Accessibility Audits] --> L[User Trust]
 ```
@@ -98,7 +98,7 @@ The system is credible because it combines:
 
 - **Real artifacts**: JSON findings, queue payloads, score history, audit logs, and published dashboards.
 - **Clear boundaries**: approval before execution, draft PR before merge, GitHub review before production.
-- **Operational discipline**: CloudFront cost guardrails, per-product isolation, auditable status transitions.
+- **Operational discipline**: CDN cost guardrails, per-product isolation, auditable status transitions.
 - **Human-centered framing**: recommendations are visible and attributable, not silent background behavior.
 
 The current code backs that story directly:
@@ -370,7 +370,7 @@ Prerequisites:
 
 - Python 3.12+
 - Git
-- AWS CLI for dashboard publishing
+- Bunny Storage API key for dashboard publishing (see `config/backoffice.bunny.example.yaml`)
 - Claude CLI and/or Codex if you want AI-backed repo work
 - GitHub CLI (`gh`) if you want draft PR creation from the approval flow
 
@@ -424,13 +424,13 @@ targets:
 ```bash
 make qa TARGET=/path/to/my-app
 make audit-all-parallel TARGET=/path/to/my-app
-python -m backoffice audit-all --targets my-app
+python3 -m backoffice audit-all --targets my-app
 ```
 
 ### 4. Launch The Dashboard
 
 ```bash
-python -m backoffice serve --port 8070
+python3 -m backoffice serve --port 8070
 ```
 
 Then open `http://localhost:8070`.
@@ -449,10 +449,10 @@ Typical operator flow:
 ### 6. Publish Dashboard Assets
 
 ```bash
-python -m backoffice sync
+python3 -m backoffice sync
 ```
 
-This publishes dashboard assets to configured S3 targets and performs bounded CloudFront invalidation.
+This publishes dashboard assets to Bunny Storage and purges the Bunny Pull Zone cache.
 
 [Back to top](#table-of-contents)
 
@@ -465,7 +465,7 @@ This publishes dashboard assets to configured S3 targets and performs bounded Cl
 All commands run through:
 
 ```bash
-python -m backoffice <command>
+python3 -m backoffice <command>
 ```
 
 Key commands:
@@ -554,7 +554,7 @@ flowchart TD
     SERVER[backoffice.server]
     DASH[dashboard/*.json + index.html]
     SYNC[backoffice.sync]
-    AWS[S3 + CloudFront]
+    BUNNY[Bunny Storage + Pull Zone]
     GH[GitHub PR review]
 
     CFG --> AGENTS
@@ -569,7 +569,7 @@ flowchart TD
     SERVER --> GH
     DASH --> SERVER
     DASH --> SYNC
-    SYNC --> AWS
+    SYNC --> BUNNY
 ```
 
 ### Core Data Artifacts
@@ -600,7 +600,7 @@ flowchart TD
 | `scripts/sync-dashboard.sh` | Dashboard publishing entrypoint |
 | `docs/WORKFLOW-ARCHITECTURE.md` | Detailed architecture doc |
 | `docs/CICD-REFERENCE.md` | Delivery and GitHub review model |
-| `docs/COST_GUARDRAILS.md` | CloudFront and AWS cost controls |
+| `docs/COST_GUARDRAILS.md` | CDN and infrastructure cost controls |
 
 [Back to top](#table-of-contents)
 
@@ -608,23 +608,23 @@ flowchart TD
 
 ## CI/CD
 
-Back Office uses AWS CodeBuild for CI and CD and relies on GitHub review for pull request approval.
+Back Office uses Bunny Magic Container for CI and CD and relies on GitHub review for pull request approval.
 
 ```mermaid
 flowchart LR
-    PR[Pull Request] --> CI[CodeBuild CI]
+    PR[Pull Request] --> CI[CI Validation]
     CI --> CHECKS[Tests and Validation]
     CHECKS --> REVIEW[GitHub Review]
     REVIEW --> MERGE[Merge to main]
-    MERGE --> CD[CodeBuild CD]
-    CD --> PUBLISH[Publish dashboard assets]
+    MERGE --> CD[CD Deploy]
+    CD --> PUBLISH[Publish to Bunny Storage]
 ```
 
 Current posture:
 
-- pull requests run validation gates
+- pull requests run validation gates (shell syntax, Python linting, pytest)
 - merges to `main` run deployment gates
-- dashboard publishing is bounded and cost-aware
+- dashboard publishing goes to Bunny Storage with Pull Zone cache purge
 - draft PR creation from the dashboard still terminates in normal GitHub review
 
 [Back to top](#table-of-contents)

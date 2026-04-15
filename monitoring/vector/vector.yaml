@@ -72,7 +72,6 @@ sources:
   docker_logs:
     type: docker_logs
     include_containers:
-      - "forgejo*"
       - "breakpoint-grafana"
       - "breakpoint-timescaledb"
 
@@ -87,8 +86,8 @@ transforms:
       .source = "host"
       metric_name = string!(.name)
       .metric = replace(metric_name, "host_", "")
-      .labels = .tags ?? {}
-      .value = to_float(.gauge.value ?? .counter.value ?? .distribution.avg ?? 0.0) ?? 0.0
+      .labels = if exists(.tags) { .tags } else { {} }
+      .value = if exists(.gauge.value) { to_float(.gauge.value) ?? 0.0 } else { if exists(.counter.value) { to_float(.counter.value) ?? 0.0 } else { if exists(.distribution.avg) { to_float(.distribution.avg) ?? 0.0 } else { 0.0 } } }
       .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
       del(.tags)
       del(.name)
@@ -134,11 +133,7 @@ transforms:
       .service = "ollama"
       .level = downcase(to_string(.PRIORITY) ?? "info")
       # Map systemd priority numbers to level names
-      .level = if .level == "3" { "error" }
-               else if .level == "4" { "warning" }
-               else if .level == "6" { "info" }
-               else if .level == "7" { "debug" }
-               else { .level }
+      .level = if .level == "3" { "error" } else { if .level == "4" { "warning" } else { if .level == "6" { "info" } else { if .level == "7" { "debug" } else { .level } } } }
       .message = to_string(.MESSAGE) ?? ""
       .metadata = {}
       .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
@@ -165,8 +160,8 @@ transforms:
 
       # Extract model name (Ollama logs it as the first field or in a model= tag)
       model = "unknown"
-      model_match, err = parse_regex(msg, r'model=(?P<m>[^\s]+)')
-      if err == null { model = model_match.m }
+      model_match = parse_regex(msg, r'model=(?P<m>[^\s]+)') ?? {}
+      if exists(model_match.m) { model = model_match.m }
 
       # Extract numeric fields (nanoseconds in Ollama logs)
       eval_count = 0
@@ -175,23 +170,25 @@ transforms:
       prompt_eval_dur_ns = 0
       total_dur_ns = 0
 
-      ec, err = parse_regex(msg, r'eval_count=(?P<v>\d+)')
-      if err == null { eval_count = to_int!(ec.v) }
-      ed, err = parse_regex(msg, r'eval_duration=(?P<v>\d+)')
-      if err == null { eval_dur_ns = to_int!(ed.v) }
-      pec, err = parse_regex(msg, r'prompt_eval_count=(?P<v>\d+)')
-      if err == null { prompt_eval_count = to_int!(pec.v) }
-      ped, err = parse_regex(msg, r'prompt_eval_duration=(?P<v>\d+)')
-      if err == null { prompt_eval_dur_ns = to_int!(ped.v) }
-      td, err = parse_regex(msg, r'total_duration=(?P<v>\d+)')
-      if err == null { total_dur_ns = to_int!(td.v) }
+      ec = parse_regex(msg, r'eval_count=(?P<v>\d+)') ?? {}
+      if exists(ec.v) { eval_count = to_int!(ec.v) }
+      ed = parse_regex(msg, r'eval_duration=(?P<v>\d+)') ?? {}
+      if exists(ed.v) { eval_dur_ns = to_int!(ed.v) }
+      pec = parse_regex(msg, r'prompt_eval_count=(?P<v>\d+)') ?? {}
+      if exists(pec.v) { prompt_eval_count = to_int!(pec.v) }
+      ped = parse_regex(msg, r'prompt_eval_duration=(?P<v>\d+)') ?? {}
+      if exists(ped.v) { prompt_eval_dur_ns = to_int!(ped.v) }
+      td = parse_regex(msg, r'total_duration=(?P<v>\d+)') ?? {}
+      if exists(td.v) { total_dur_ns = to_int!(td.v) }
 
       labels = {"model": model}
-      eval_dur_ms = to_float(eval_dur_ns) / 1000000.0
-      prompt_eval_dur_ms = to_float(prompt_eval_dur_ns) / 1000000.0
-      total_dur_ms = to_float(total_dur_ns) / 1000000.0
-      eval_rate = if eval_dur_ns > 0 { to_float(eval_count) / (to_float(eval_dur_ns) / 1000000000.0) } else { 0.0 }
-      prompt_eval_rate = if prompt_eval_dur_ns > 0 { to_float(prompt_eval_count) / (to_float(prompt_eval_dur_ns) / 1000000000.0) } else { 0.0 }
+      eval_dur_ms = to_float!(eval_dur_ns) / 1000000.0
+      prompt_eval_dur_ms = to_float!(prompt_eval_dur_ns) / 1000000.0
+      total_dur_ms = to_float!(total_dur_ns) / 1000000.0
+      eval_rate, err = if eval_dur_ns > 0 { to_float(eval_count) / (to_float(eval_dur_ns) / 1000000000.0) } else { 0.0 }
+      if err != null { eval_rate = 0.0 }
+      prompt_eval_rate, err = if prompt_eval_dur_ns > 0 { to_float(prompt_eval_count) / (to_float(prompt_eval_dur_ns) / 1000000000.0) } else { 0.0 }
+      if err != null { prompt_eval_rate = 0.0 }
 
       . = [
         {"time": now, "source": "ollama_inference", "metric": "ollama_eval_rate", "labels": labels, "value": eval_rate},
@@ -211,11 +208,7 @@ transforms:
       .source = "journald"
       .service = to_string(._SYSTEMD_UNIT) ?? "kernel"
       .level = downcase(to_string(.PRIORITY) ?? "info")
-      .level = if .level == "3" { "error" }
-               else if .level == "4" { "warning" }
-               else if .level == "6" { "info" }
-               else if .level == "7" { "debug" }
-               else { .level }
+      .level = if .level == "3" { "error" } else { if .level == "4" { "warning" } else { if .level == "6" { "info" } else { if .level == "7" { "debug" } else { .level } } } }
       .message = to_string(.MESSAGE) ?? ""
       .metadata = {}
       .time = format_timestamp!(.timestamp, "%Y-%m-%dT%H:%M:%SZ")
@@ -253,7 +246,7 @@ transforms:
     source: |
       .host = "borg"
       .source = "docker"
-      .service = .container_name ?? "unknown"
+      .service = if exists(.container_name) { .container_name } else { "unknown" }
       .level = "info"
       .message = to_string(.message) ?? ""
       .metadata = {"container_id": to_string(.container_id) ?? ""}
@@ -274,7 +267,7 @@ sinks:
       - claude_passthrough
       - ollama_inference_parse
       - system_event_metrics
-    uri: "http://localhost:8087/ingest/metrics"
+    uri: "http://ingest:8087/ingest/metrics"
     method: post
     encoding:
       codec: json
@@ -292,7 +285,7 @@ sinks:
       - ollama_logs
       - system_logs
       - docker_normalize
-    uri: "http://localhost:8087/ingest/logs"
+    uri: "http://ingest:8087/ingest/logs"
     method: post
     encoding:
       codec: json

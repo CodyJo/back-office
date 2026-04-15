@@ -420,7 +420,7 @@
 </div>
 
 <main id="main-content" tabindex="-1" class="page">
-  <div id="feedback" class="feedback"></div>
+  <div id="feedback" class="feedback" aria-live="polite" role="status"></div>
 
   <section class="hero">
     <div class="hero-card">
@@ -467,7 +467,8 @@
         <div class="card-title">Add Update</div>
         <div class="controls single">
           <input id="updateActor" class="input" value="dashboard" aria-label="Update actor">
-          <textarea id="updateMessage" class="textarea" placeholder="Record progress, blockers, or decision changes…"></textarea>
+          <label for="updateMessage" class="summary-label" style="margin-bottom:0.3rem;display:block;">Update message</label>
+          <textarea id="updateMessage" class="textarea" placeholder="Record progress, blockers, or decision changes…" aria-label="Update message"></textarea>
         </div>
         <div class="actions">
           <button id="addUpdateBtn" class="btn btn-primary">Add Update</button>
@@ -643,7 +644,7 @@
   function buildEditableCard(item, collection, opts) {
     var wrap = el('div', {className: 'item'});
     var linkedTask = opts.taskLookup ? opts.taskLookup(item) : null;
-    var statusSelect = el('select', {className: 'select'});
+    var statusSelect = el('select', {className: 'select', 'aria-label': 'Status for ' + (item.label || item.title || item.id)});
     ['planned', 'in_progress', 'blocked', 'complete'].forEach(function(status) {
       var option = el('option', {value: status, textContent: status.replace(/_/g, ' ')});
       if (item.status === status) option.selected = true;
@@ -672,7 +673,7 @@
 
     var targetSelect = null;
     if (opts.targetField) {
-      targetSelect = el('select', {className: 'select'});
+      targetSelect = el('select', {className: 'select', 'aria-label': 'Target for ' + (item.label || item.title || item.id)});
       opts.targetOptions.forEach(function(target) {
         var option = el('option', {value: target, textContent: targetLabel(target)});
         if (item[opts.targetField] === target) option.selected = true;
@@ -684,11 +685,11 @@
     }
     wrap.appendChild(controls);
 
-    var notesInput = el('textarea', {className: 'textarea', placeholder: 'Notes'});
+    var notesInput = el('textarea', {className: 'textarea', placeholder: 'Notes', 'aria-label': 'Notes for ' + (item.label || item.title || item.id)});
     notesInput.value = item.notes || '';
     wrap.appendChild(notesInput);
 
-    var nextInput = el('input', {className: 'input', placeholder: 'Next step'});
+    var nextInput = el('input', {className: 'input', placeholder: 'Next step', 'aria-label': 'Next step for ' + (item.label || item.title || item.id)});
     nextInput.value = item.next_step || '';
     wrap.appendChild(el('div', {className: 'controls single'}, [nextInput]));
 
@@ -763,19 +764,19 @@
       ]));
 
       var controls = el('div', {className: 'controls'});
-      var statusSelect = el('select', {className: 'select'});
+      var statusSelect = el('select', {className: 'select', 'aria-label': 'Status for ' + item.label});
       ['planned', 'in_progress', 'blocked', 'complete'].forEach(function(status) {
         var option = el('option', {value: status, textContent: status.replace(/_/g, ' ')});
         if (item.status === status) option.selected = true;
         statusSelect.appendChild(option);
       });
-      var dnsSelect = el('select', {className: 'select'});
+      var dnsSelect = el('select', {className: 'select', 'aria-label': 'DNS target for ' + item.label});
       ['route53-temporary', 'bunny', 'defer'].forEach(function(target) {
         var option = el('option', {value: target, textContent: 'DNS → ' + targetLabel(target)});
         if (item.dns_target === target) option.selected = true;
         dnsSelect.appendChild(option);
       });
-      var regSelect = el('select', {className: 'select'});
+      var regSelect = el('select', {className: 'select', 'aria-label': 'Registrar target for ' + item.label});
       ['keep-current', 'bunny', 'defer'].forEach(function(target) {
         var option = el('option', {value: target, textContent: 'Registrar → ' + targetLabel(target)});
         if (item.registration_target === target) option.selected = true;
@@ -786,9 +787,9 @@
       wrap.appendChild(controls);
       wrap.appendChild(el('div', {className: 'controls single'}, [regSelect]));
 
-      var notesInput = el('textarea', {className: 'textarea', placeholder: 'Notes'});
+      var notesInput = el('textarea', {className: 'textarea', placeholder: 'Notes', 'aria-label': 'Notes for ' + item.label});
       notesInput.value = item.notes || '';
-      var nextInput = el('input', {className: 'input', placeholder: 'Next step'});
+      var nextInput = el('input', {className: 'input', placeholder: 'Next step', 'aria-label': 'Next step for ' + item.label});
       nextInput.value = item.next_step || '';
       wrap.appendChild(notesInput);
       wrap.appendChild(el('div', {className: 'controls single'}, [nextInput]));

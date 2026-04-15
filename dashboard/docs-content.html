@@ -87,16 +87,16 @@
 
 <!-- Tab Navigation -->
 <div class="docs-tabs" role="tablist">
-  <button class="docs-tab active" role="tab" aria-selected="true" data-docs-tab="overview">Overview</button>
-  <button class="docs-tab" role="tab" aria-selected="false" data-docs-tab="github">GitHub</button>
-  <button class="docs-tab" role="tab" aria-selected="false" data-docs-tab="cicd">CI/CD</button>
-  <button class="docs-tab" role="tab" aria-selected="false" data-docs-tab="cli">CLI</button>
+  <button class="docs-tab active" role="tab" aria-selected="true" aria-controls="docs-panel-overview" id="docs-tab-overview" data-docs-tab="overview">Overview</button>
+  <button class="docs-tab" role="tab" aria-selected="false" aria-controls="docs-panel-github" id="docs-tab-github" data-docs-tab="github">GitHub</button>
+  <button class="docs-tab" role="tab" aria-selected="false" aria-controls="docs-panel-cicd" id="docs-tab-cicd" data-docs-tab="cicd">CI/CD</button>
+  <button class="docs-tab" role="tab" aria-selected="false" aria-controls="docs-panel-cli" id="docs-tab-cli" data-docs-tab="cli">CLI</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════ -->
 <!-- OVERVIEW TAB                                    -->
 <!-- ═══════════════════════════════════════════════ -->
-<div class="docs-panel active" id="docs-panel-overview" role="tabpanel">
+<div class="docs-panel active" id="docs-panel-overview" role="tabpanel" aria-labelledby="docs-tab-overview">
   <div class="docs-hero">
     <p class="docs-eyebrow">Back Office Documentation</p>
     <h2>Back Office documentation hub</h2>
@@ -148,7 +148,7 @@ https://admin.codyjo.com/metrics.html</code></pre>
 <!-- ═══════════════════════════════════════════════ -->
 <!-- GITHUB TAB                                      -->
 <!-- ═══════════════════════════════════════════════ -->
-<div class="docs-panel" id="docs-panel-github" role="tabpanel">
+<div class="docs-panel" id="docs-panel-github" role="tabpanel" aria-labelledby="docs-tab-github">
   <div class="docs-hero">
     <p class="docs-eyebrow">GitHub Reference</p>
     <h2>How Back Office is organized across repositories.</h2>
@@ -217,7 +217,7 @@ https://github.com/CodyJo/bible-app</code></pre>
 <!-- ═══════════════════════════════════════════════ -->
 <!-- CI/CD TAB                                       -->
 <!-- ═══════════════════════════════════════════════ -->
-<div class="docs-panel" id="docs-panel-cicd" role="tabpanel">
+<div class="docs-panel" id="docs-panel-cicd" role="tabpanel" aria-labelledby="docs-tab-cicd">
   <div class="docs-hero">
     <p class="docs-eyebrow">CI/CD Reference</p>
     <h2>Delivery should be automated, reviewable, and hard to misuse.</h2>
@@ -294,7 +294,7 @@ templates/github-actions/nightly-backoffice.yml</code></pre>
 <!-- ═══════════════════════════════════════════════ -->
 <!-- CLI TAB                                         -->
 <!-- ═══════════════════════════════════════════════ -->
-<div class="docs-panel" id="docs-panel-cli" role="tabpanel">
+<div class="docs-panel" id="docs-panel-cli" role="tabpanel" aria-labelledby="docs-tab-cli">
   <div class="docs-hero">
     <p class="docs-eyebrow">CLI Reference</p>
     <h2>The portable operating surface for Back Office.</h2>

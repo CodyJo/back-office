@@ -1,9 +1,7 @@
 """Tests for Bunny storage and CDN providers."""
 from __future__ import annotations
 
-import os
-from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -41,8 +39,6 @@ def test_upload_file_sends_put_request(tmp_path):
     """upload_file should issue an HTTP PUT to the correct BunnyCDN URL."""
     local_file = tmp_path / "index.html"
     local_file.write_bytes(b"<html></html>")
-
-    responses = []
 
     class FakeResponse:
         status = 201
@@ -222,7 +218,6 @@ def test_upload_files_iterates_all_mappings(tmp_path):
     upload_calls = []
 
     s = _make_storage()
-    original_upload = s.upload_file
 
     def recording_upload(bucket, local_path, remote_key, content_type, cache_control):
         upload_calls.append((bucket, local_path, remote_key, content_type, cache_control))
@@ -317,8 +312,8 @@ def test_upload_file_rejects_oversized_file(tmp_path):
     large_file = tmp_path / "huge.bin"
     # Create a sparse file that reports large size without using disk
     large_file.write_bytes(b"x")
-    import os
-    os.truncate(str(large_file), MAX_UPLOAD_SIZE + 1)
+    import os as _os
+    _os.truncate(str(large_file), MAX_UPLOAD_SIZE + 1)
 
     s = _make_storage()
     with pytest.raises(ValueError, match="File too large"):
@@ -453,6 +448,20 @@ def test_invalidate_uses_default_dustbunny_path(mock_run):
 
     cmd = mock_run.call_args[0][0]
     assert "dustbunny" in cmd[0]
+
+
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+@patch("backoffice.sync.providers.bunny.shutil.which")
+def test_invalidate_prefers_path_dustbunny(mock_which, mock_run):
+    """When dustbunny is on PATH, prefer that resolved binary."""
+    mock_which.return_value = "/home/merm/.local/bin/dustbunny"
+    mock_run.return_value.returncode = 0
+
+    cdn = BunnyCDN()
+    cdn.invalidate("321", ["/*"])
+
+    cmd = mock_run.call_args[0][0]
+    assert cmd == ["/home/merm/.local/bin/dustbunny", "pz", "purge", "321"]
 
 
 @patch("backoffice.sync.providers.bunny.subprocess.run")
