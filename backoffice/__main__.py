@@ -375,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(sorted(q.flagged())))
             return 0
 
-        state.print_help()
+        parser.parse_args(["state", "--help"])
         return 1
 
     if args.command == "setup":
