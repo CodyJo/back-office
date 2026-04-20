@@ -1,6 +1,15 @@
 # Back Office — Unified Configuration (Example / Template)
 # Copy to config/backoffice.yaml and fill in your values.
 # DO NOT commit backoffice.yaml — it contains secrets and local paths.
+#
+# Per-target autonomy policy (used by the overnight loop):
+#   Each target may declare an `autonomy:` block. Conservative defaults
+#   apply when the block is omitted (see MASTER-PROMPT.md §Per-Target
+#   Autonomy Policy). Overnight.sh asks:
+#       python -m backoffice policy <repo> <gate>
+#   (exit 0 = allow, 1 = block, 2 = error). This file is the single
+#   source of truth for both audit/build commands AND autonomy; the
+#   legacy config/targets.yaml is DEPRECATED.
 
 runner:
   # Shell command used to invoke the AI coding agent
@@ -73,6 +82,18 @@ targets:
     context: |
       Brief description of this project for the AI agent.
       Focus areas, tech stack, known constraints, and product priorities.
+    # Conservative defaults below — uncomment and adjust only after
+    # you trust the audit + fix flow on this target.
+    # autonomy:
+    #   allow_fix: true
+    #   allow_feature_dev: false           # branch-only feature dev off
+    #   allow_auto_commit: true
+    #   allow_auto_merge: false            # merges require human review
+    #   allow_auto_deploy: false
+    #   require_clean_worktree: true
+    #   require_tests: true
+    #   max_changes_per_cycle: 3
+    #   deploy_mode: disabled              # disabled | manual | staging-only | production-allowed
 
   my-frontend:
     path: /path/to/my-frontend
@@ -84,3 +105,10 @@ targets:
     deploy_command: "npm run build"
     context: |
       Description of the frontend project.
+    autonomy:
+      allow_fix: true
+      allow_feature_dev: true
+      allow_auto_merge: false
+      allow_auto_deploy: false
+      deploy_mode: disabled
+      max_changes_per_cycle: 5

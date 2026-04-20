@@ -105,6 +105,34 @@ class NotificationsConfig:
     sync_to_storage: bool = True
 
 
+VALID_DEPLOY_MODES = ("disabled", "manual", "staging-only", "production-allowed")
+
+
+@dataclass(frozen=True)
+class Autonomy:
+    """Per-target autonomy policy for the overnight loop.
+
+    Conservative defaults match MASTER-PROMPT.md §Per-Target Autonomy Policy:
+    fixes allowed; feature dev, auto-merge, auto-deploy, and production
+    deploys all OFF unless the target explicitly opts in.
+    """
+    allow_fix: bool = True
+    allow_feature_dev: bool = False
+    allow_auto_commit: bool = True
+    allow_auto_merge: bool = False
+    allow_auto_deploy: bool = False
+    require_clean_worktree: bool = True
+    require_tests: bool = True
+    max_changes_per_cycle: int = 3
+    deploy_mode: str = "disabled"
+
+    def __post_init__(self):
+        if self.deploy_mode not in VALID_DEPLOY_MODES:
+            raise ValueError(
+                f"deploy_mode must be one of {VALID_DEPLOY_MODES}, got: {self.deploy_mode!r}"
+            )
+
+
 @dataclass(frozen=True)
 class Target:
     path: str = ""
@@ -115,6 +143,7 @@ class Target:
     coverage_command: str = ""
     deploy_command: str = ""
     context: str = ""
+    autonomy: Autonomy = field(default_factory=Autonomy)
 
 
 @dataclass(frozen=True)
@@ -134,6 +163,33 @@ class Config:
 REQUIRED_SECTIONS = ("runner", "deploy", "targets")
 
 
+def _build_autonomy(raw: dict | None) -> Autonomy:
+    """Build an Autonomy block from a raw mapping, applying conservative defaults.
+
+    Unknown fields are ignored; invalid values raise ConfigError via
+    Autonomy.__post_init__. ``None`` or missing yields the default policy.
+    """
+    if not raw or not isinstance(raw, dict):
+        return Autonomy()
+    kwargs = {}
+    bool_fields = (
+        "allow_fix", "allow_feature_dev", "allow_auto_commit",
+        "allow_auto_merge", "allow_auto_deploy",
+        "require_clean_worktree", "require_tests",
+    )
+    for name in bool_fields:
+        if name in raw:
+            kwargs[name] = bool(raw[name])
+    if "max_changes_per_cycle" in raw:
+        kwargs["max_changes_per_cycle"] = int(raw["max_changes_per_cycle"])
+    if "deploy_mode" in raw:
+        kwargs["deploy_mode"] = str(raw["deploy_mode"])
+    try:
+        return Autonomy(**kwargs)
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
 def _build_targets(raw: dict) -> dict[str, Target]:
     targets = {}
     for name, data in (raw or {}).items():
@@ -142,6 +198,10 @@ def _build_targets(raw: dict) -> dict[str, Target]:
         deps = data.get("default_departments", [])
         if isinstance(deps, str):
             deps = [d.strip() for d in deps.split(",")]
+        try:
+            autonomy = _build_autonomy(data.get("autonomy"))
+        except ConfigError as exc:
+            raise ConfigError(f"Target {name!r}: {exc}") from exc
         targets[name] = Target(
             path=str(data.get("path", "")),
             language=str(data.get("language", "")),
@@ -151,6 +211,7 @@ def _build_targets(raw: dict) -> dict[str, Target]:
             coverage_command=str(data.get("coverage_command", "")),
             deploy_command=str(data.get("deploy_command", "")),
             context=str(data.get("context", "")),
+            autonomy=autonomy,
         )
     return targets
 
@@ -213,8 +274,12 @@ def _build_agent_backends(
 
 def load_config(path: Path | None = None) -> Config:
     if path is None:
-        root = Path(os.environ.get("BACK_OFFICE_ROOT", Path(__file__).resolve().parents[1]))
-        path = root / "config" / "backoffice.yaml"
+        override = os.environ.get("BACK_OFFICE_CONFIG")
+        if override:
+            path = Path(override)
+        else:
+            root = Path(os.environ.get("BACK_OFFICE_ROOT", Path(__file__).resolve().parents[1]))
+            path = root / "config" / "backoffice.yaml"
 
     if not path.exists():
         raise ConfigError(

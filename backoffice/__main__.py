@@ -75,6 +75,38 @@ def build_parser() -> argparse.ArgumentParser:
     # List targets
     sub.add_parser("list-targets", help="List configured targets")
 
+    # Drift check between backoffice.yaml and legacy targets.yaml
+    sub.add_parser(
+        "check-drift",
+        help="Report any drift between backoffice.yaml and config/targets.yaml",
+    )
+
+    # Targets JSON — stable machine-readable output for shell consumers
+    tj = sub.add_parser(
+        "targets-json",
+        help="Emit all validated targets as a JSON array (for overnight.sh et al)",
+    )
+    tj.add_argument("--filter", help="Comma-separated target names to include")
+    tj.add_argument(
+        "--require-path",
+        action="store_true",
+        help="Only emit targets whose path exists and contains .git",
+    )
+
+    # Policy — per-target autonomy gate evaluation
+    policy = sub.add_parser(
+        "policy",
+        help="Evaluate a per-target autonomy gate (exit 0=allow, 1=block, 2=error)",
+    )
+    policy.add_argument("repo", help="Target repo name")
+    policy.add_argument("gate", help="Gate name (fix, feature_dev, auto_merge, auto_commit, deploy)")
+    policy.add_argument(
+        "--context",
+        action="append",
+        default=[],
+        help="key=value context pair (repeatable), e.g. --context worktree_clean=false",
+    )
+
     # Invoke (backend bridge)
     invoke = sub.add_parser("invoke", help="Invoke an AI backend directly")
     invoke.add_argument("--backend", required=True, help="Backend name (claude, codex)")
@@ -198,6 +230,69 @@ def main(argv: list[str] | None = None) -> int:
         if result.error:
             print(result.error, end="", file=sys.stderr)
         return result.exit_code
+
+    if args.command == "check-drift":
+        from backoffice.config import load_config
+        from backoffice.config_drift import detect_drift
+        import json
+        cfg = load_config()
+        legacy_path = cfg.root / "config" / "targets.yaml"
+        report = detect_drift(cfg, legacy_path)
+        payload = {
+            "ok": report.ok,
+            "legacy_path": str(legacy_path),
+            "conflicts": report.conflicts,
+            "extra_in_legacy": report.extra_in_legacy,
+            "extra_in_unified": report.extra_in_unified,
+        }
+        print(json.dumps(payload, indent=2))
+        return 0 if report.ok else 1
+
+    if args.command == "targets-json":
+        from backoffice.config import load_config
+        import json, os
+        cfg = load_config()
+        filter_list: list[str] = []
+        if args.filter:
+            filter_list = [f.strip() for f in args.filter.split(",") if f.strip()]
+        out: list[dict] = []
+        for name, t in cfg.targets.items():
+            if filter_list and name not in filter_list:
+                continue
+            if args.require_path:
+                if not t.path or not os.path.isdir(t.path):
+                    continue
+                if not os.path.isdir(os.path.join(t.path, ".git")):
+                    continue
+            out.append({
+                "name": name,
+                "path": t.path,
+                "language": t.language,
+                "lint_command": t.lint_command,
+                "test_command": t.test_command,
+                "coverage_command": t.coverage_command,
+                "deploy_command": t.deploy_command,
+                "autonomy": {
+                    "allow_fix": t.autonomy.allow_fix,
+                    "allow_feature_dev": t.autonomy.allow_feature_dev,
+                    "allow_auto_commit": t.autonomy.allow_auto_commit,
+                    "allow_auto_merge": t.autonomy.allow_auto_merge,
+                    "allow_auto_deploy": t.autonomy.allow_auto_deploy,
+                    "require_clean_worktree": t.autonomy.require_clean_worktree,
+                    "require_tests": t.autonomy.require_tests,
+                    "max_changes_per_cycle": t.autonomy.max_changes_per_cycle,
+                    "deploy_mode": t.autonomy.deploy_mode,
+                },
+            })
+        print(json.dumps(out))
+        return 0
+
+    if args.command == "policy":
+        from backoffice.policy import main as policy_main
+        argv = [args.repo, args.gate]
+        for ctx in args.context:
+            argv += ["--context", ctx]
+        return policy_main(argv)
 
     if args.command == "setup":
         try:
