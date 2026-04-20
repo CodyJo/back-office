@@ -17,6 +17,34 @@ logger = logging.getLogger(__name__)
 
 MAX_SNAPSHOTS = 10
 
+# Trust class: "objective" findings are factual/standards-based and flow
+# more directly toward remediation; "advisory" findings are judgment-based
+# recommendations that require human decision-making.
+# See MASTER-PROMPT.md §Critical Product Insight.
+TRUST_CLASSES = ("objective", "advisory")
+
+DEPARTMENT_TRUST_CLASS = {
+    "qa": "objective",
+    "ada": "objective",
+    "compliance": "objective",
+    "privacy": "objective",
+    "cloud-ops": "objective",
+    "seo": "advisory",            # technical SEO can override per-finding
+    "monetization": "advisory",
+    "product": "advisory",
+}
+
+
+def trust_class_for(department: str) -> str:
+    """Return the default trust class for *department*.
+
+    Unknown / future departments fall back to ``advisory`` — conservative:
+    we do not want an unclassified department to default into the
+    "remediate now" pile.
+    """
+    return DEPARTMENT_TRUST_CLASS.get(department, "advisory")
+
+
 # Maps raw effort labels -> canonical effort levels
 EFFORT_MAP = {
     "low": "easy",
@@ -88,6 +116,14 @@ def normalize_finding(raw, department, repo):
     if not impact and department == "monetization":
         impact = description
 
+    # Trust class: derive from department by default; allow per-finding
+    # override when the agent explicitly sets raw['trust_class'].
+    trust_class = raw.get("trust_class") or trust_class_for(department)
+    if trust_class not in TRUST_CLASSES:
+        raise ValueError(
+            f"trust_class must be one of {TRUST_CLASSES}, got {trust_class!r}"
+        )
+
     canonical = {
         "id": raw.get("id", ""),
         "department": department,
@@ -103,6 +139,7 @@ def normalize_finding(raw, department, repo):
         "status": raw.get("status", "open"),
         "evidence": raw.get("evidence", ""),
         "line": raw.get("line"),
+        "trust_class": trust_class,
     }
 
     # impact is always included when non-empty
@@ -171,6 +208,8 @@ def merge_backlog(findings, backlog_path):
 
         h = finding_hash(dept, repo, title, file_path)
 
+        tc = finding.get("trust_class") or trust_class_for(dept)
+
         if h in existing:
             entry = existing[h]
             entry["audit_count"] = entry.get("audit_count", 1) + 1
@@ -182,6 +221,7 @@ def merge_backlog(findings, backlog_path):
             entry["file"] = file_path
             entry["severity"] = finding.get("severity", entry.get("severity", ""))
             entry["status"] = finding.get("status", entry.get("status", "open"))
+            entry["trust_class"] = tc
             entry["current_finding"] = finding
         else:
             existing[h] = {
@@ -195,6 +235,7 @@ def merge_backlog(findings, backlog_path):
                 "last_seen": now,
                 "severity": finding.get("severity", ""),
                 "status": finding.get("status", "open"),
+                "trust_class": tc,
                 "current_finding": finding,
             }
 

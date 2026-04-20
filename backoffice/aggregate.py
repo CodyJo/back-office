@@ -9,6 +9,8 @@ import logging
 import os
 from datetime import datetime, timezone
 
+from backoffice.backlog import DEPARTMENT_TRUST_CLASS
+
 logger = logging.getLogger(__name__)
 
 PRIVACY_KEYWORDS = (
@@ -123,6 +125,23 @@ def count_severities(findings):
         if severity not in counts:
             severity = "info"
         counts[severity] += 1
+    return counts
+
+
+def count_by_trust_class(findings):
+    """Split findings into objective vs advisory buckets.
+
+    Findings without an explicit trust_class are treated as advisory
+    (matching trust_class_for()'s conservative default — we never
+    inflate the "objective / remediate now" pile).
+    """
+    counts = {"objective": 0, "advisory": 0}
+    for finding in findings:
+        tc = finding.get("trust_class")
+        if tc == "objective":
+            counts["objective"] += 1
+        else:
+            counts["advisory"] += 1
     return counts
 
 
@@ -314,14 +333,17 @@ def aggregate_department(results_dir, findings_filename, department_name, valid_
 
         from backoffice.backlog import normalize_finding
 
+        normalized_findings = [
+            normalize_finding(f, department_name, repo_name)
+            for f in findings
+        ]
+
         repo_entry = {
             "name": repo_name,
             "scanned_at": data.get("scanned_at", ""),
             "summary": summary,
-            "findings": [
-                normalize_finding(f, department_name, repo_name)
-                for f in findings
-            ],
+            "findings": normalized_findings,
+            "trust_class_counts": count_by_trust_class(normalized_findings),
         }
 
         # Include department-specific metadata
@@ -346,10 +368,19 @@ def aggregate_department(results_dir, findings_filename, department_name, valid_
 
         repos.append(repo_entry)
 
+    # Department-wide trust_class rollup (sum of per-repo counts)
+    trust_class_totals = {"objective": 0, "advisory": 0}
+    for entry in repos:
+        per_repo = entry.get("trust_class_counts") or {}
+        trust_class_totals["objective"] += per_repo.get("objective", 0)
+        trust_class_totals["advisory"] += per_repo.get("advisory", 0)
+
     return {
         "department": department_name,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "totals": totals,
+        "trust_class_totals": trust_class_totals,
+        "default_trust_class": DEPARTMENT_TRUST_CLASS.get(department_name, "advisory"),
         "repos": repos,
     }
 
