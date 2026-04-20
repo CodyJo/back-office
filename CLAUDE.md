@@ -26,9 +26,9 @@ backoffice/       — Python package (CLI, aggregation, backlog, sync, config)
 agents/           — Shell agent launchers + system prompts
   prompts/        — System prompts for each agent type
 config/           — Target repo configuration (gitignored)
-  backoffice.yaml             — Unified config (runner, deploy, scan, fix, targets)
+  backoffice.yaml             — SINGLE SOURCE OF TRUTH (runner, deploy, scan, fix, targets, autonomy)
   backoffice.bunny.example.yaml — Example config for Bunny Storage/Pull Zone deployment
-  targets.yaml                — Target repos with autonomy policy
+  targets.yaml                — DEPRECATED (still read by shell; run `python -m backoffice check-drift`)
 dashboard/        — Consolidated HQ dashboard with slide-over panels
   index.html      — Single HQ page (matrix view + all department panels)
   backlog.json    — Persistent finding registry (content-hash dedup)
@@ -63,6 +63,14 @@ lib/              — Standards references and severity definitions
 - `make overnight-status` — Show latest plan and cycle history
 - `make overnight-rollback` — Roll back all repos to last overnight snapshot
 
+### Policy & Loop State
+- `python -m backoffice policy <repo> <gate>` — Evaluate an autonomy gate (exit 0=allow, 1=block, 2=error; JSON stdout)
+- `python -m backoffice check-drift` — Detect drift between `backoffice.yaml` and legacy `targets.yaml`
+- `python -m backoffice targets-json` — Emit validated targets + autonomy blocks as JSON (for shell consumers)
+- `python -m backoffice state ledger-append` — Append a decision record to `results/overnight-ledger.jsonl`
+- `python -m backoffice state blocked-items` — Items that failed in the last N cycles (`FailureMemory`)
+- `python -m backoffice state quarantined` — Repos under rollback-streak quarantine (cleared via `results/quarantine-clear.json`)
+
 ### Dashboard
 - `python3 -m backoffice serve --port 8070` — Local dashboard server
 - `python3 -m backoffice refresh` — Regenerate dashboard data from results
@@ -95,8 +103,13 @@ lib/              — Standards references and severity definitions
 - **Single dashboard page**: All department views are slide-over panels in `index.html`, not separate pages
 - **Content-hash dedup**: Findings tracked across scans via SHA-256 hash of department+repo+title+file
 - **Canonical finding schema**: All departments normalized to same format in `backoffice/backlog.py`
-- **Per-target autonomy policy**: `autonomy` block in targets.yaml controls what the overnight loop can do
-- **Conservative defaults**: Fixes allowed, feature dev/merge/deploy disabled unless explicitly enabled
+- **Trust class on every finding**: `trust_class ∈ {objective, advisory}` is a schema field stamped by `normalize_finding` from `DEPARTMENT_TRUST_CLASS`; agents may override per-finding via `raw['trust_class']`. Flows through `backlog.json`, `aggregate`, and Product Owner prioritisation.
+- **Per-target autonomy policy**: `autonomy` block in `config/backoffice.yaml` (source of truth). `backoffice.policy` turns it into allow/block decisions for the overnight loop via a gate registry (`fix`, `feature_dev`, `auto_commit`, `auto_merge`, `deploy`).
+- **Loop resilience** (`backoffice/overnight_state.py`):
+  - **ExecutionLedger** — append-only JSONL at `results/overnight-ledger.jsonl`; every gate decision, skip, rollback, and deploy writes a record. This is the operator audit trail.
+  - **FailureMemory** — items that failed in the last N cycles are suppressed from the next plan (`python -m backoffice state blocked-items`).
+  - **Quarantine** — repos with N consecutive rollback cycles are skipped until an operator drops `{"cleared": [...]}` into `results/quarantine-clear.json`.
+- **Conservative defaults**: Fixes allowed, feature dev/merge/deploy disabled unless explicitly enabled.
 
 ## Adding a New Department
 
@@ -110,9 +123,10 @@ lib/              — Standards references and severity definitions
 
 ## Adding a New Target
 
-1. Add entry to `config/targets.yaml` with path, language, lint/test/deploy commands
-2. Verify: `python3 -m backoffice list-targets`
-3. Test: `python3 -m backoffice audit <name> --departments qa`
-4. Full audit: `python3 -m backoffice audit <name>`
-5. Refresh: `python3 -m backoffice refresh && python3 -m backoffice sync`
-6. Optional: Add `autonomy:` block for overnight loop control
+1. Add entry to `config/backoffice.yaml` under `targets:` with path, language, lint/test/deploy commands
+2. Optionally add `autonomy:` block (conservative defaults apply otherwise — see `backoffice/config.py`)
+3. Mirror the entry in `config/targets.yaml` until that file is retired; verify with `python -m backoffice check-drift`
+4. Verify: `python3 -m backoffice list-targets`
+5. Test: `python3 -m backoffice audit <name> --departments qa`
+6. Full audit: `python3 -m backoffice audit <name>`
+7. Refresh: `python3 -m backoffice refresh && python3 -m backoffice sync`

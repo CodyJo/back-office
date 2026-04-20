@@ -217,10 +217,15 @@ Back Office distinguishes between:
 - **Objective work**: issues that can be checked against standards, tests, or concrete implementation facts.
 - **Advisory work**: suggestions that still benefit from human judgment and product context.
 
-That distinction matters in the queue:
-
-- objective findings can move quickly into approval for remediation
-- advisory findings can be queued as deliberate product decisions instead of being treated as facts
+That distinction is **a schema-level field on every finding** (`trust_class`,
+values `objective` or `advisory`). `backoffice.backlog.normalize_finding`
+stamps it from the department by default (QA/ADA/compliance/privacy/cloud-ops
+→ objective; product/monetization/SEO → advisory) and agents may override
+per-finding via `raw['trust_class']`. The field threads through to
+`backlog.json`, the aggregate payload (`trust_class_totals`,
+`trust_class_counts`), and the Product Owner’s prioritisation — so the queue
+can move objective findings into approval quickly while advisory items stay
+framed as deliberate product decisions.
 
 [Back to top](#table-of-contents)
 
@@ -380,12 +385,12 @@ Prerequisites:
 cp config/backoffice.example.yaml config/backoffice.yaml
 ```
 
-Two config files matter in the current code:
-
-- `config/backoffice.yaml` for runtime config, dashboard publish targets, backend routing, and the newer target map used by server and sync code
-- `config/targets.yaml` for the local audit workflow target list used by `backoffice/workflow.py`
-
-The simplest safe approach is to keep target definitions aligned in both files.
+`config/backoffice.yaml` is the single source of truth: runtime config, dashboard
+publish targets, backend routing, target map, **and per-target `autonomy:` policy
+consumed by the overnight loop**. `config/targets.yaml` is **deprecated** (its
+shell-consumer read path inside `overnight.sh` is still wired up, but no new
+fields should go there). Run `python -m backoffice check-drift` to detect any
+divergence between the two; CI and the overnight loop fail closed on drift.
 
 Example target in `config/backoffice.yaml`:
 
@@ -401,23 +406,27 @@ targets:
     deploy_command: "npm run build"
     context: |
       What the product does, who uses it, and what matters most.
+    autonomy:                        # optional; conservative defaults apply
+      allow_fix: true
+      allow_feature_dev: false       # branch-only feature dev off
+      allow_auto_commit: true
+      allow_auto_merge: false        # merges require human review
+      allow_auto_deploy: false
+      require_clean_worktree: true
+      require_tests: true
+      max_changes_per_cycle: 3
+      deploy_mode: disabled          # disabled | manual | staging-only | production-allowed
 ```
 
-Example target in `config/targets.yaml`:
+Gate evaluation is policy-as-data. Overnight.sh asks
 
-```yaml
-targets:
-  - name: my-app
-    path: /path/to/my-app
-    language: typescript
-    default_departments: [qa, seo, ada, compliance, monetization, product, cloud-ops]
-    lint_command: "npm run lint"
-    test_command: "npm test"
-    coverage_command: "npm run test:coverage"
-    deploy_command: "npm run build"
-    context: |
-      What the product does, who uses it, and what matters most.
+```bash
+python -m backoffice policy <repo> <gate> [--context worktree_clean=false]
 ```
+
+where `<gate>` is one of `fix`, `feature_dev`, `auto_commit`, `auto_merge`,
+`deploy`. Exit code `0` = allow, `1` = block, `2` = error; JSON stdout carries
+the reason code.
 
 ### 3. Run Audits
 
@@ -584,6 +593,9 @@ flowchart TD
 | `results/task-queue.json` | Machine-readable queue payload |
 | `dashboard/task-queue.json` | Frontend-facing queue payload |
 | `results/local-audit-log.json` | Audit log and target snapshot data |
+| `results/overnight-ledger.jsonl` | Append-only JSONL audit trail of every gate decision, skip, rollback, or deploy (written by the overnight loop; never rotated in place) |
+| `results/overnight-history.json` | Last 50 cycle summaries — used to compute the failure-memory window and quarantine streaks |
+| `results/quarantine-clear.json` | Operator override: `{"cleared": ["repo-a", ...]}` clears a repo back into rotation |
 
 ### Key Files
 
@@ -591,7 +603,10 @@ flowchart TD
 |---|---|
 | `backoffice/workflow.py` | Audit orchestration and refresh flow |
 | `backoffice/aggregate.py` | Findings aggregation into dashboard payloads |
-| `backoffice/backlog.py` | Finding normalization and recurrence tracking |
+| `backoffice/backlog.py` | Finding normalization, trust-class stamping, recurrence tracking |
+| `backoffice/policy.py` | Per-target autonomy gates (policy-as-data, JSON + exit codes) |
+| `backoffice/config_drift.py` | Detects drift between `backoffice.yaml` and legacy `targets.yaml` |
+| `backoffice/overnight_state.py` | Execution ledger, failure-memory backoff, per-repo quarantine |
 | `backoffice/tasks.py` | Approval queue model and queue lifecycle |
 | `backoffice/server.py` | Dashboard server and approval APIs |
 | `backoffice/__main__.py` | CLI routing |
