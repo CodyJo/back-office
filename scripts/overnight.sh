@@ -37,6 +37,10 @@ SUMMARY_FILE="$RESULTS_DIR/overnight-summary.json"
 PLAN_FILE="$RESULTS_DIR/overnight-plan.json"
 STOP_FILE="$RESULTS_DIR/.overnight-stop"
 CONFIG_FILE="$ROOT_DIR/config/targets.yaml"
+LEDGER_FILE="$RESULTS_DIR/overnight-ledger.jsonl"
+QUARANTINE_OVERRIDES="$RESULTS_DIR/quarantine-clear.json"
+QUARANTINE_THRESHOLD="${QUARANTINE_THRESHOLD:-3}"
+FAILURE_WINDOW="${FAILURE_WINDOW:-2}"
 
 # ── Args ─────────────────────────────────────────────────────────────────────
 
@@ -339,9 +343,63 @@ print(json.dumps(failures))
 PYEOF
 }
 
+# Append a decision to the execution ledger. Non-fatal if it fails.
+# Usage: ledger <action> <target> <true|false> <reason_code> [detail_json]
+ledger() {
+  local action="$1" target="$2" allow="$3" reason="$4" detail="${5:-{\}}"
+  (cd "$ROOT_DIR" && python3 -m backoffice state ledger-append \
+      --path "$LEDGER_FILE" \
+      --cycle "${CYCLE_ID:-unknown}" \
+      --action "$action" \
+      --target "$target" \
+      --allow "$allow" \
+      --reason "$reason" \
+      --detail "$detail") 2>/dev/null || true
+}
+
+# Return JSON array of quarantined repos (empty array if none).
+get_quarantined() {
+  (cd "$ROOT_DIR" && python3 -m backoffice state quarantined \
+      --history "$HISTORY_FILE" \
+      --threshold "$QUARANTINE_THRESHOLD" \
+      --overrides "$QUARANTINE_OVERRIDES") 2>/dev/null || echo "[]"
+}
+
+# Case-insensitive check: is "repo|title" in the recent-failure window?
+is_recently_failed() {
+  local repo="$1" title="$2"
+  REPO="$repo" TITLE="$title" HISTORY_FILE="$HISTORY_FILE" \
+  FAILURE_WINDOW="$FAILURE_WINDOW" python3 - <<'PYEOF'
+import json, os, sys
+from pathlib import Path
+sys.path.insert(0, os.environ.get('ROOT_DIR', '.'))
+from backoffice.overnight_state import FailureMemory
+mem = FailureMemory(
+    Path(os.environ['HISTORY_FILE']),
+    window=int(os.environ.get('FAILURE_WINDOW', '2')),
+)
+sys.exit(0 if mem.should_skip(os.environ['REPO'], os.environ['TITLE']) else 1)
+PYEOF
+}
+
+# Check if a repo is quarantined (exit 0 if yes, 1 if no).
+is_quarantined() {
+  local repo="$1"
+  local flagged
+  flagged=$(get_quarantined)
+  REPO="$repo" FLAGGED="$flagged" python3 - <<'PYEOF'
+import json, os, sys
+try:
+    names = json.loads(os.environ['FLAGGED'])
+except json.JSONDecodeError:
+    sys.exit(1)
+sys.exit(0 if os.environ['REPO'] in names else 1)
+PYEOF
+}
+
 # Export functions and variables for background subshells (parallel fix/feature phases)
-export -f log log_phase check_stop get_policy is_worktree_clean run_tests get_coverage_pct get_default_branch get_valid_targets
-export ROOT_DIR CONFIG_FILE RESULTS_DIR PLAN_FILE STOP_FILE DRY_RUN HISTORY_FILE SUMMARY_FILE
+export -f log log_phase check_stop get_policy is_worktree_clean run_tests get_coverage_pct get_default_branch get_valid_targets ledger is_recently_failed is_quarantined get_quarantined
+export ROOT_DIR CONFIG_FILE RESULTS_DIR PLAN_FILE STOP_FILE DRY_RUN HISTORY_FILE SUMMARY_FILE LEDGER_FILE QUARANTINE_OVERRIDES QUARANTINE_THRESHOLD FAILURE_WINDOW
 
 # ── Banner ───────────────────────────────────────────────────────────────────
 
@@ -552,6 +610,21 @@ PYEOF
 
           if [ -z "$FIX_PATH" ] || [ ! -d "$FIX_PATH" ]; then
             echo "skip|$fix_repo|$fix_title|path-not-found" > "$FIX_TMPDIR/$fix_idx.result"
+            ledger fix "$fix_repo" false "block:path-not-found" "{}"
+            continue
+          fi
+
+          # Quarantine check — repos with persistent rollbacks are off-limits
+          if is_quarantined "$fix_repo"; then
+            echo "skip|$fix_repo|$fix_title|quarantined" > "$FIX_TMPDIR/$fix_idx.result"
+            ledger fix "$fix_repo" false "block:quarantined" "{}"
+            continue
+          fi
+
+          # Failure memory — same item failed in the recent window
+          if is_recently_failed "$fix_repo" "$fix_title"; then
+            echo "skip|$fix_repo|$fix_title|recently-failed" > "$FIX_TMPDIR/$fix_idx.result"
+            ledger fix "$fix_repo" false "block:recently-failed" "{}"
             continue
           fi
 
@@ -559,6 +632,7 @@ PYEOF
           ALLOW_FIX=$(get_policy "$fix_repo" "allow_fix" "true")
           if [ "$ALLOW_FIX" != "true" ]; then
             echo "skip|$fix_repo|$fix_title|policy-no-fix" > "$FIX_TMPDIR/$fix_idx.result"
+            ledger fix "$fix_repo" false "block:allow_fix=false" "{}"
             continue
           fi
 
@@ -566,8 +640,11 @@ PYEOF
           REQUIRE_CLEAN=$(get_policy "$fix_repo" "require_clean_worktree" "true")
           if [ "$REQUIRE_CLEAN" = "true" ] && ! is_worktree_clean "$FIX_PATH"; then
             echo "skip|$fix_repo|$fix_title|dirty-worktree" > "$FIX_TMPDIR/$fix_idx.result"
+            ledger fix "$fix_repo" false "block:worktree_dirty" "{}"
             continue
           fi
+
+          ledger fix "$fix_repo" true "policy:allow_fix" "{}"
 
           log "  FIX: $fix_repo — [$fix_sev] $fix_title"
 
@@ -629,6 +706,7 @@ print('true' if post < pre - tolerance else 'false')
                 log "  FIX ROLLED BACK: $fix_repo — coverage decreased beyond 0.5% tolerance ($PRE_COV% -> $POST_COV%)"
                 (cd "$FIX_PATH" && git reset --hard "$TAG_NAME") >/dev/null 2>&1 || true
                 echo "rollback|$fix_repo|$fix_title|coverage_regression" > "$FIX_TMPDIR/$fix_idx.result"
+                ledger rollback "$fix_repo" false "rollback:coverage_regression" "{}"
               else
                 log "  FIX OK: $fix_repo — tests pass, coverage $PRE_COV% -> $POST_COV%"
                 echo "ok|$fix_repo|$fix_title|" > "$FIX_TMPDIR/$fix_idx.result"
@@ -637,6 +715,7 @@ print('true' if post < pre - tolerance else 'false')
               log "  FIX ROLLED BACK: $fix_repo — tests failed after fix"
               (cd "$FIX_PATH" && git reset --hard "$TAG_NAME") >/dev/null 2>&1 || true
               echo "rollback|$fix_repo|$fix_title|tests_failed" > "$FIX_TMPDIR/$fix_idx.result"
+              ledger rollback "$fix_repo" false "rollback:tests_failed" "{}"
             fi
           else
             log "  FIX OK: $fix_repo — no test gate (policy: require_tests=$REQUIRE_TESTS)"
@@ -763,6 +842,21 @@ PYEOF
 
           if [ -z "$FEAT_PATH" ] || [ ! -d "$FEAT_PATH" ]; then
             echo "skip|$FEAT_REPO|$FEAT_TITLE|path-not-found" > "$FEAT_TMPDIR/$feat_idx.result"
+            ledger feature "$FEAT_REPO" false "block:path-not-found" "{}"
+            continue
+          fi
+
+          # Quarantine check — repos with persistent rollbacks are off-limits
+          if is_quarantined "$FEAT_REPO"; then
+            echo "skip|$FEAT_REPO|$FEAT_TITLE|quarantined" > "$FEAT_TMPDIR/$feat_idx.result"
+            ledger feature "$FEAT_REPO" false "block:quarantined" "{}"
+            continue
+          fi
+
+          # Failure memory — same feature title failed in the recent window
+          if is_recently_failed "$FEAT_REPO" "$FEAT_TITLE"; then
+            echo "skip|$FEAT_REPO|$FEAT_TITLE|recently-failed" > "$FEAT_TMPDIR/$feat_idx.result"
+            ledger feature "$FEAT_REPO" false "block:recently-failed" "{}"
             continue
           fi
 
@@ -770,6 +864,7 @@ PYEOF
           ALLOW_FEAT=$(get_policy "$FEAT_REPO" "allow_feature_dev" "false")
           if [ "$ALLOW_FEAT" != "true" ]; then
             echo "skip|$FEAT_REPO|$FEAT_TITLE|policy-no-feature" > "$FEAT_TMPDIR/$feat_idx.result"
+            ledger feature "$FEAT_REPO" false "block:allow_feature_dev=false" "{}"
             continue
           fi
 
@@ -777,8 +872,11 @@ PYEOF
           REQUIRE_CLEAN=$(get_policy "$FEAT_REPO" "require_clean_worktree" "true")
           if [ "$REQUIRE_CLEAN" = "true" ] && ! is_worktree_clean "$FEAT_PATH"; then
             echo "skip|$FEAT_REPO|$FEAT_TITLE|dirty-worktree" > "$FEAT_TMPDIR/$feat_idx.result"
+            ledger feature "$FEAT_REPO" false "block:worktree_dirty" "{}"
             continue
           fi
+
+          ledger feature "$FEAT_REPO" true "policy:allow_feature_dev" "{}"
 
           log "  BUILD: $FEAT_REPO — $FEAT_TITLE"
 
@@ -963,6 +1061,7 @@ items = json.loads(os.environ['ROLLBACK_REPOS_JSON'])
 items.append(os.environ['REPO'])
 print(json.dumps(items))
 ") || true
+        ledger rollback "$name" false "rollback:verify_tests_failed" "{}"
       else
         log "  $name: PASS"
       fi
@@ -984,17 +1083,20 @@ print(json.dumps(items))
 
       if [ "$DEPLOY_MODE" = "disabled" ] || [ "$ALLOW_DEPLOY" != "true" ]; then
         log "  $name: deploy skipped (deploy_mode=$DEPLOY_MODE, allow_auto_deploy=$ALLOW_DEPLOY)"
+        ledger deploy "$name" false "block:deploy_mode=$DEPLOY_MODE,allow_auto_deploy=$ALLOW_DEPLOY" "{}"
         continue
       fi
 
       if [ -z "$deploy_cmd" ]; then
         log "  $name: no deploy command configured, skipping"
+        ledger deploy "$name" false "block:no_deploy_command" "{}"
         continue
       fi
 
       # Validate deploy command (no shell metacharacters beyond safe set)
       if [[ "$deploy_cmd" =~ [^a-zA-Z0-9\ _/.\-\&\|\;] ]]; then
         log "  $name: deploy command contains unsafe characters, skipping"
+        ledger deploy "$name" false "block:unsafe_deploy_command" "{}"
         continue
       fi
 
@@ -1008,9 +1110,11 @@ items = json.loads(os.environ['DEPLOYED_REPOS_JSON'])
 items.append(os.environ['REPO'])
 print(json.dumps(items))
 ") || true
+        ledger deploy "$name" true "policy:deploy_mode=$DEPLOY_MODE" "{}"
       else
         log "  $name: DEPLOY FAILED (code is committed but not deployed)"
         DEPLOYS_FAIL=$((DEPLOYS_FAIL + 1))
+        ledger deploy "$name" false "fail:deploy_command_exit_nonzero" "{}"
       fi
     done < <(get_valid_targets)
 

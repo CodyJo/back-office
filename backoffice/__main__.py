@@ -107,6 +107,40 @@ def build_parser() -> argparse.ArgumentParser:
         help="key=value context pair (repeatable), e.g. --context worktree_clean=false",
     )
 
+    # Loop state (execution ledger + failure memory + quarantine)
+    state = sub.add_parser(
+        "state",
+        help="Overnight loop state helpers (ledger, failure memory, quarantine)",
+    )
+    state_sub = state.add_subparsers(dest="state_command")
+
+    ledger = state_sub.add_parser(
+        "ledger-append",
+        help="Append a decision record to the execution ledger",
+    )
+    ledger.add_argument("--path", help="Ledger JSONL path (default: results/overnight-ledger.jsonl)")
+    ledger.add_argument("--cycle", required=True, help="Cycle ID")
+    ledger.add_argument("--action", required=True, help="Action (fix|feature|deploy|rollback|plan)")
+    ledger.add_argument("--target", required=True, help="Target repo name")
+    ledger.add_argument("--allow", required=True, choices=["true", "false"], help="Allowed?")
+    ledger.add_argument("--reason", required=True, help="Machine-readable reason code")
+    ledger.add_argument("--detail", default="{}", help="JSON object of extra detail")
+
+    blocked = state_sub.add_parser(
+        "blocked-items",
+        help="Emit JSON array of recently-failed (repo,title) items",
+    )
+    blocked.add_argument("--history", help="History JSON path (default: results/overnight-history.json)")
+    blocked.add_argument("--window", type=int, default=2, help="Number of cycles to inspect")
+
+    quar = state_sub.add_parser(
+        "quarantined",
+        help="Emit JSON array of repos currently under quarantine",
+    )
+    quar.add_argument("--history", help="History JSON path (default: results/overnight-history.json)")
+    quar.add_argument("--threshold", type=int, default=3, help="Consecutive rollbacks to flag")
+    quar.add_argument("--overrides", help="Manual clear path (default: results/quarantine-clear.json)")
+
     # Invoke (backend bridge)
     invoke = sub.add_parser("invoke", help="Invoke an AI backend directly")
     invoke.add_argument("--backend", required=True, help="Backend name (claude, codex)")
@@ -293,6 +327,56 @@ def main(argv: list[str] | None = None) -> int:
         for ctx in args.context:
             argv += ["--context", ctx]
         return policy_main(argv)
+
+    if args.command == "state":
+        from backoffice.config import load_config
+        from backoffice.overnight_state import (
+            ExecutionLedger,
+            FailureMemory,
+            LedgerRecord,
+            Quarantine,
+        )
+        import json
+        cfg = load_config()
+        results_dir = cfg.root / "results"
+
+        if args.state_command == "ledger-append":
+            path = args.path or str(results_dir / "overnight-ledger.jsonl")
+            try:
+                detail = json.loads(args.detail)
+            except json.JSONDecodeError as exc:
+                print(f"Invalid --detail JSON: {exc}", file=sys.stderr)
+                return 2
+            ledger = ExecutionLedger(path)
+            ledger.append(LedgerRecord(
+                cycle_id=args.cycle,
+                action=args.action,
+                target=args.target,
+                allow=(args.allow == "true"),
+                reason=args.reason,
+                detail=detail if isinstance(detail, dict) else {},
+            ))
+            return 0
+
+        if args.state_command == "blocked-items":
+            history = args.history or str(results_dir / "overnight-history.json")
+            mem = FailureMemory(history, window=args.window)
+            payload = [
+                {"repo": repo, "title": title}
+                for repo, title in sorted(mem.blocked_items())
+            ]
+            print(json.dumps(payload))
+            return 0
+
+        if args.state_command == "quarantined":
+            history = args.history or str(results_dir / "overnight-history.json")
+            overrides = args.overrides or str(results_dir / "quarantine-clear.json")
+            q = Quarantine(history, threshold=args.threshold, overrides_path=overrides)
+            print(json.dumps(sorted(q.flagged())))
+            return 0
+
+        state.print_help()
+        return 1
 
     if args.command == "setup":
         try:
