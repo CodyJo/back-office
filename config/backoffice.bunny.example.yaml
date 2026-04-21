@@ -8,6 +8,9 @@ runner:
 
 api:
   port: 8070
+  # Required whenever the server binds to a non-loopback address.
+  # Generate with: openssl rand -hex 24
+  # Paste it into the dashboard's Run panel (stored locally as bo.api_key).
   api_key: ""
   allowed_origins:
     - "https://admin.yoursite.com"

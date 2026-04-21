@@ -530,6 +530,7 @@ The local dashboard server exposes concrete JSON endpoints:
 |---|---|---|
 | `/api/run-scan` | `POST` | Run one department against the current target repo |
 | `/api/run-all` | `POST` | Run all departments against the current target repo |
+| `/api/run-fix` | `POST` | Launch `agents/fix-bugs.sh` against a configured target (optional `preview: true`) |
 | `/api/run-regression` | `POST` | Start regression runner |
 | `/api/manual-item` | `POST` | Add a manual backlog item |
 | `/api/ops/status` | `GET` | Fetch jobs, queue state, backend health, and targets |
@@ -542,6 +543,33 @@ The local dashboard server exposes concrete JSON endpoints:
 | `/api/tasks/request-pr` | `POST` | Open a draft GitHub PR |
 | `/api/ops/product/suggest` | `POST` | Submit a product suggestion |
 | `/api/ops/product/approve` | `POST` | Approve a suggested product and add it to config |
+
+### Dashboard Run Panel
+
+The dashboard's **Run** button (top-right) drives `backoffice.api_server`
+directly so operators can trigger scans and fixes from the browser.
+
+Setup:
+
+1. Generate an API key: `openssl rand -hex 24`
+2. Add to `config/backoffice.yaml`:
+
+   ```yaml
+   api:
+     port: 8071
+     api_key: <your-key>
+     allowed_origins:
+       - https://admin.codyjo.com
+       - http://localhost:8070
+   ```
+
+3. Start the API server: `python3 -m backoffice api-server --bind 0.0.0.0 --port 8071`
+4. In the dashboard, click **Run**, paste the key when prompted (stored
+   per-browser under `localStorage['bo.api_key']`).
+
+The server refuses to start on a non-loopback bind without a key. Use
+**Preview mode (recommended)** on the Fix section — it lands changes on
+an isolated branch for review instead of editing `main` on the target.
 
 [Back to top](#table-of-contents)
 
