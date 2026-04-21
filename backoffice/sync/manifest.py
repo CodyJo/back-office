@@ -10,6 +10,7 @@ DASHBOARD_FILES: list[str] = [
     "migration.html",
     "faq-content.html",
     "docs-content.html",
+    "app.js",
     "site-branding.js", "department-context.js", "favicon.svg",
 ]
 
