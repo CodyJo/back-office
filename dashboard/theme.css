@@ -1,0 +1,111 @@
+/* Back Office — theme tokens
+ *
+ * Two palettes, switched by [data-theme] on <html>.
+ * Dark is the default (matches first-paint for existing users).
+ */
+
+:root, [data-theme="dark"] {
+  /* Surfaces */
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface-2: #1a1a26;
+  --surface-3: #22222e;
+  --border:    #2a2a3a;
+
+  /* Text */
+  --text:     #e4e4ef;
+  --text-dim: #8888a0;
+
+  /* Brand */
+  --accent:   #c4944a;
+  --accent-2: #6c5ce7;
+
+  /* Semantic severity */
+  --critical: #ff4757;
+  --high:     #ff8c42;
+  --medium:   #ffd166;
+  --low:      #4ecdc4;
+  --info:     #74b9ff;
+  --success:  #2ed573;
+
+  /* Severity alpha overlays for cells/pills */
+  --critical-soft: rgba(255, 71, 87, 0.15);
+  --high-soft:     rgba(255, 140, 66, 0.15);
+  --medium-soft:   rgba(255, 209, 102, 0.15);
+  --low-soft:      rgba(78, 205, 196, 0.15);
+  --info-soft:     rgba(116, 185, 255, 0.15);
+  --success-soft:  rgba(46, 213, 115, 0.15);
+
+  /* Shadows & radius */
+  --radius:   12px;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.28);
+
+  /* Typography */
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing scale — multiples of 4 */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Type scale */
+  --text-xs:   0.7rem;
+  --text-sm:   0.8rem;
+  --text-base: 0.95rem;
+  --text-lg:   1.1rem;
+  --text-xl:   1.4rem;
+  --text-2xl:  1.8rem;
+}
+
+[data-theme="light"] {
+  --bg:        #f7f7fb;
+  --surface:   #ffffff;
+  --surface-2: #f1f2f7;
+  --surface-3: #e6e7ef;
+  --border:    #d9dbe5;
+
+  --text:     #1c1d29;
+  --text-dim: #5c5e70;
+
+  --accent:   #9a6b1f;
+  --accent-2: #4b3fc7;
+
+  --critical-soft: rgba(217, 43, 59, 0.12);
+  --high-soft:     rgba(217, 110, 38, 0.12);
+  --medium-soft:   rgba(201, 155, 36, 0.16);
+  --low-soft:      rgba(36, 167, 157, 0.14);
+  --info-soft:     rgba(44, 134, 214, 0.12);
+  --success-soft:  rgba(30, 159, 86, 0.14);
+
+  --critical: #d92b3b;
+  --high:     #d96e26;
+  --medium:   #a3791b;
+  --low:      #24a79d;
+  --info:     #2c86d6;
+  --success:  #1e9f56;
+
+  --shadow-1: 0 1px 2px rgba(20, 24, 40, 0.08);
+  --shadow-2: 0 8px 24px rgba(20, 24, 40, 0.10);
+}
+
+html { transition: background-color 0.15s ease, color 0.15s ease; }
+body { background: var(--bg); color: var(--text); }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

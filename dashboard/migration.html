@@ -8,33 +8,16 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface-2: #1a1a26;
-    --surface-3: #22222e;
-    --border: #2a2a3a;
-    --text: #e4e4ef;
-    --text-dim: #8888a0;
-    --accent: #c4944a;
-    --accent-2: #74b9ff;
-    --accent-3: #6c5ce7;
-    --critical: #ff4757;
-    --high: #ff8c42;
-    --medium: #ffd166;
-    --low: #4ecdc4;
-    --success: #2ed573;
-    --radius: 12px;
-    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --mono: 'JetBrains Mono', 'Fira Code', monospace;
-  }
+  /* Migration page uses --accent-2 as an info/blue tone; override the
+     theme default (which is purple) to preserve this page's identity. */
+  :root, [data-theme="dark"] { --accent-2: #74b9ff; --accent-3: #6c5ce7; }
+  [data-theme="light"]      { --accent-2: #2c86d6; --accent-3: #4b3fc7; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
     min-height: 100vh;
     padding-top: 49px;
   }

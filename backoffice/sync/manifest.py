@@ -8,9 +8,13 @@ sync-dashboard.sh and quick-sync.sh file lists.
 DASHBOARD_FILES: list[str] = [
     "index.html",
     "migration.html",
+    "deploy.html",
+    "actions-history.html",
     "faq-content.html",
     "docs-content.html",
     "app.js",
+    "theme.css",
+    "theme.js",
     "site-branding.js", "department-context.js", "favicon.svg",
 ]
 

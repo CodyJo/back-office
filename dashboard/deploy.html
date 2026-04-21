@@ -8,24 +8,37 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --ink: #e4e4ef;
-    --muted: #8f8fa6;
-    --line: #2a2a3a;
-    --panel: #12121a;
-    --panel-2: #1a1a26;
-    --accent: #c4944a;
-    --accent-soft: rgba(196, 148, 74, 0.16);
-    --success: #34d399;
+  /* Page-specific aliases layered on top of theme.css tokens. */
+  :root, [data-theme="dark"] {
+    --ink:          #e4e4ef;
+    --muted:        #8f8fa6;
+    --line:         #2a2a3a;
+    --panel:        #12121a;
+    --panel-2:      #1a1a26;
+    --accent-soft:  rgba(196, 148, 74, 0.16);
     --success-soft: rgba(52, 211, 153, 0.14);
-    --warn: #ffd166;
-    --warn-soft: rgba(255, 209, 102, 0.14);
-    --danger: #ff5d73;
-    --danger-soft: rgba(255, 93, 115, 0.14);
-    --shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
-    --radius: 18px;
+    --warn:         #ffd166;
+    --warn-soft:    rgba(255, 209, 102, 0.14);
+    --danger:       #ff5d73;
+    --danger-soft:  rgba(255, 93, 115, 0.14);
+    --shadow:       0 22px 60px rgba(0, 0, 0, 0.35);
+    --radius:       18px;
+  }
+  [data-theme="light"] {
+    --ink:          #1c1d29;
+    --muted:        #5c5e70;
+    --line:         #d9dbe5;
+    --panel:        #ffffff;
+    --panel-2:      #f1f2f7;
+    --accent-soft:  rgba(154, 107, 31, 0.16);
+    --success-soft: rgba(30, 159, 86, 0.14);
+    --warn:         #a3791b;
+    --warn-soft:    rgba(163, 121, 27, 0.16);
+    --danger:       #d92b3b;
+    --danger-soft:  rgba(217, 43, 59, 0.14);
+    --shadow:       0 16px 40px rgba(20, 24, 40, 0.10);
   }
   * { box-sizing: border-box; }
   body {
