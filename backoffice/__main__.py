@@ -156,6 +156,20 @@ def build_parser() -> argparse.ArgumentParser:
     api.add_argument("--port", type=int)
     api.add_argument("--bind", default="0.0.0.0")
 
+    # Preview — generate preview artifact for a fix-agent branch
+    prev = sub.add_parser(
+        "preview",
+        help="Generate preview JSON artifact for a fix-agent branch",
+    )
+    prev.add_argument("--repo-path", required=True, help="Path to the repo checkout")
+    prev.add_argument("--repo-name", required=True, help="Target repo name")
+    prev.add_argument("--job-id", required=True, help="Fix job ID")
+    prev.add_argument("--branch", required=True, help="Current preview branch name")
+    prev.add_argument("--base-ref", required=True, help="Base ref (e.g. main)")
+    prev.add_argument("--findings", required=True, help="Path to findings JSON array")
+    prev.add_argument("--remote-url", help="Override for git remote URL")
+    prev.add_argument("--out", required=True, help="Destination JSON path")
+
     return parser
 
 
@@ -402,8 +416,54 @@ def main(argv: list[str] | None = None) -> int:
             print("API server module not yet implemented", file=sys.stderr)
             return 1
 
+    if args.command == "preview":
+        from pathlib import Path
+        import json
+        from backoffice.preview import PreviewInputs, build_preview
+
+        repo_path = Path(args.repo_path)
+        try:
+            findings = json.loads(Path(args.findings).read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Failed to read findings: {exc}", file=sys.stderr)
+            return 2
+        if not isinstance(findings, list):
+            print("Findings file must contain a JSON array", file=sys.stderr)
+            return 2
+
+        remote = args.remote_url or _derive_remote(repo_path)
+        payload = build_preview(PreviewInputs(
+            repo_path=repo_path,
+            repo_name=args.repo_name,
+            job_id=args.job_id,
+            branch=args.branch,
+            base_ref=args.base_ref,
+            findings_addressed=findings,
+            remote_url=remote,
+        ))
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(payload, indent=2))
+        return 0
+
     parser.print_help()
     return 1
+
+
+def _derive_remote(repo_path) -> str | None:
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    url = result.stdout.strip()
+    return url or None
 
 
 if __name__ == "__main__":
