@@ -15,6 +15,7 @@ DASHBOARD_FILES: list[str] = [
     "app.js",
     "theme.css",
     "theme.js",
+    "theme-bootstrap.js",
     "site-branding.js", "department-context.js", "favicon.svg",
 ]
 

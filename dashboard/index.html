@@ -8,6 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme-bootstrap.js"></script>
 <link rel="stylesheet" href="theme.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -539,6 +540,7 @@
     <button class="topbar-btn" id="jobsBtn">Jobs</button>
     <button class="topbar-btn" id="docsBtn">Docs</button>
     <button class="topbar-btn" id="faqBtn">FAQ</button>
+    <button class="topbar-btn" id="themeToggle" aria-label="Switch theme">Light</button>
     <span class="timestamp" id="lastScan" aria-live="polite">Last scan: --</span>
     <span class="stale-warning" id="staleWarning" hidden aria-live="polite" role="status">Data may be stale</span>
   </div>
@@ -625,5 +627,6 @@
 </div>
 
 <script src="app.js"></script>
+<script type="module" src="theme.js"></script>
 </body>
 </html>
