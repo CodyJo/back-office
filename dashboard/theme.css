@@ -17,8 +17,10 @@
   --text-dim: #8888a0;
 
   /* Brand */
-  --accent:   #c4944a;
-  --accent-2: #6c5ce7;
+  --accent:    #c4944a;
+  --accent-2:  #6c5ce7;
+  --on-accent: #0a0a0f;
+  --accent-2-soft: rgba(108, 92, 231, 0.15);
 
   /* Semantic severity */
   --critical: #ff4757;
@@ -72,8 +74,10 @@
   --text:     #1c1d29;
   --text-dim: #5c5e70;
 
-  --accent:   #9a6b1f;
-  --accent-2: #4b3fc7;
+  --accent:    #9a6b1f;
+  --accent-2:  #4b3fc7;
+  --on-accent: #ffffff;
+  --accent-2-soft: rgba(75, 63, 199, 0.14);
 
   --critical-soft: rgba(217, 43, 59, 0.12);
   --high-soft:     rgba(217, 110, 38, 0.12);
