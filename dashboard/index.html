@@ -398,6 +398,91 @@
   .run-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.4rem; line-height: 1; }
   .run-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
 
+  /* Review & Approve panel */
+  .review-slideover {
+    position: fixed; top: 49px; right: 0; bottom: 0;
+    width: min(560px, 96vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-2);
+    overflow-y: auto;
+    z-index: 102;
+    padding: var(--space-5);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+  .review-slideover.open { transform: translateX(0); }
+  .review-slideover[hidden] { display: none; }
+  .review-empty { font-size: var(--text-sm); color: var(--text-dim); padding: var(--space-4) 0; }
+  .review-list { list-style: none; margin: 0; padding: 0; }
+  .review-item {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .review-item:hover, .review-item:focus-visible { border-color: var(--accent); outline: none; }
+  .review-item-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .review-item-repo { font-weight: 600; font-size: var(--text-base); color: var(--text); }
+  .review-item-job { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim); }
+  .review-item-meta { font-size: var(--text-xs); color: var(--text-dim); margin-top: var(--space-1); }
+  .review-item-stats { display: flex; gap: var(--space-3); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-dim); }
+  .review-item-stat strong { color: var(--text); }
+  .review-detail { margin-top: var(--space-4); }
+  .review-detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+  .review-detail-title { font-size: var(--text-lg); font-weight: 600; }
+  .review-section { margin-bottom: var(--space-4); }
+  .review-section h4 { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: var(--space-2); }
+  .review-changes, .review-commits, .review-checklist { list-style: none; margin: 0; padding: 0; }
+  .review-changes li, .review-commits li {
+    font-family: var(--mono); font-size: var(--text-sm);
+    padding: var(--space-1) 0; color: var(--text);
+    display: flex; gap: var(--space-2); align-items: baseline;
+  }
+  .review-diff-ins { color: var(--success); min-width: 3rem; text-align: right; }
+  .review-diff-del { color: var(--danger); min-width: 3rem; text-align: right; }
+  .review-commit-sha { color: var(--accent); }
+  .review-checklist li {
+    display: flex; gap: var(--space-3); align-items: flex-start;
+    padding: var(--space-2) 0; border-bottom: 1px solid var(--border);
+    font-size: var(--text-sm);
+  }
+  .review-checklist li:last-child { border-bottom: none; }
+  .review-checklist input[type=checkbox] { margin-top: 0.2rem; }
+  .review-checklist-trust-objective { color: var(--text-dim); font-size: var(--text-xs); }
+  .review-checklist-trust-advisory { color: var(--warning); font-size: var(--text-xs); }
+  .review-compare { display: inline-block; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--accent); }
+  .review-actions { display: flex; gap: var(--space-3); margin-top: var(--space-4); }
+  .review-approve {
+    background: var(--success); color: var(--on-accent);
+    border: none; border-radius: 8px; padding: var(--space-3) var(--space-4);
+    font-weight: 600; font-family: var(--sans); cursor: pointer; flex: 1;
+  }
+  .review-approve[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .review-approve:not([disabled]):hover { filter: brightness(1.05); }
+  .review-discard {
+    background: transparent; color: var(--danger);
+    border: 1px solid var(--danger); border-radius: 8px;
+    padding: var(--space-3) var(--space-4); cursor: pointer; font-family: var(--sans);
+  }
+  .review-back { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: var(--text-sm); }
+  .topbar-badge {
+    display: inline-block;
+    min-width: 18px; height: 18px;
+    padding: 0 5px;
+    margin-left: 0.35rem;
+    background: var(--accent-2); color: var(--on-accent);
+    border-radius: 9px;
+    font-size: 0.7rem; line-height: 18px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 600;
+  }
+  .topbar-btn--review { background: color-mix(in srgb, var(--accent-2) 18%, transparent); color: var(--text); }
+  .topbar-btn--review:hover { background: color-mix(in srgb, var(--accent-2) 28%, transparent); }
+
   /* Finding Detail Panel (nested slide-over) */
   .detail-panel { position: fixed; top: 0; right: -45%; width: 45%; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 102; transition: right 0.3s ease; overflow-y: auto; }
   .detail-panel.open { right: 0; }
@@ -592,6 +677,10 @@
     <a class="topbar-btn topbar-btn--actions" id="actionsArchiveBtn" href="actions-history.html">Actions Archive</a>
     <a class="topbar-btn topbar-btn--forgejo" id="forgejoBtn" href="http://127.0.0.1:3300/" target="_blank" rel="noreferrer">Forgejo</a>
     <button class="topbar-btn topbar-btn--run" id="runBtn" aria-label="Open run panel">Run</button>
+    <button class="topbar-btn topbar-btn--review" id="reviewBtn" aria-label="Open review panel">
+      Review
+      <span class="topbar-badge" id="reviewBadge" hidden aria-label="pending previews">0</span>
+    </button>
     <button class="topbar-btn" id="jobsBtn">Jobs</button>
     <button class="topbar-btn" id="docsBtn">Docs</button>
     <button class="topbar-btn" id="faqBtn">FAQ</button>
@@ -719,6 +808,48 @@
     <button class="run-secondary" id="runStopBtn">Stop all</button>
     <span id="runStatus" class="run-status" aria-live="polite"></span>
   </footer>
+</aside>
+
+<!-- Review & Approve panel -->
+<aside id="reviewPanel" class="review-slideover" hidden role="dialog" aria-labelledby="reviewPanelTitle" aria-modal="false">
+  <div class="run-header">
+    <h2 id="reviewPanelTitle">Review &amp; Approve</h2>
+    <button class="run-close" id="reviewPanelClose" aria-label="Close review panel">&times;</button>
+  </div>
+
+  <div id="reviewListView">
+    <p class="run-hint">
+      Preview jobs land on isolated <code>back-office/preview/&lt;job-id&gt;</code>
+      branches. Approve merges into base; discard throws it away.
+    </p>
+    <ul class="review-list" id="reviewList"></ul>
+    <p class="review-empty" id="reviewEmpty" hidden>No previews waiting.</p>
+  </div>
+
+  <div id="reviewDetailView" hidden>
+    <div class="review-detail-header">
+      <button class="review-back" id="reviewBackBtn">&larr; Back</button>
+      <span id="reviewStatus" class="run-status" aria-live="polite"></span>
+    </div>
+    <div class="review-detail-title" id="reviewDetailTitle"></div>
+    <div class="review-section" id="reviewDetailMeta"></div>
+    <div class="review-section">
+      <h4>Commits</h4>
+      <ul class="review-commits" id="reviewCommits"></ul>
+    </div>
+    <div class="review-section">
+      <h4>File changes</h4>
+      <ul class="review-changes" id="reviewChanges"></ul>
+    </div>
+    <div class="review-section">
+      <h4>Verification checklist</h4>
+      <ul class="review-checklist" id="reviewChecklist"></ul>
+    </div>
+    <div class="review-actions">
+      <button class="review-approve" id="reviewApproveBtn" disabled>Approve &amp; merge</button>
+      <button class="review-discard" id="reviewDiscardBtn">Discard</button>
+    </div>
+  </div>
 </aside>
 
 <!-- Finding Detail Panel (nested) -->

@@ -3648,4 +3648,297 @@
     });
   });
 
+  // ------------------------------------------------------------------
+  // Review & Approve panel
+  // ------------------------------------------------------------------
+
+  var _reviewPreviews = [];
+  var _reviewCurrent = null;
+  var _reviewBadgeTimer = null;
+
+  function reviewSetStatus(msg) {
+    var s = document.getElementById('reviewStatus');
+    if (s) s.textContent = msg || '';
+  }
+
+  function reviewUpdateBadge(count) {
+    var badge = document.getElementById('reviewBadge');
+    if (!badge) return;
+    if (count && count > 0) {
+      badge.textContent = String(count);
+      badge.hidden = false;
+    } else {
+      badge.hidden = true;
+    }
+  }
+
+  function pollReviewBadge() {
+    apiGet('/api/previews').then(function(data) {
+      var list = (data && data.previews) || [];
+      reviewUpdateBadge(list.length);
+    }).catch(function() {
+      reviewUpdateBadge(0);
+    });
+  }
+
+  function startReviewBadgePoll() {
+    if (_reviewBadgeTimer) return;
+    pollReviewBadge();
+    _reviewBadgeTimer = setInterval(pollReviewBadge, 15000);
+  }
+
+  function renderReviewList() {
+    var host = document.getElementById('reviewList');
+    var empty = document.getElementById('reviewEmpty');
+    if (!host) return;
+    while (host.firstChild) host.removeChild(host.firstChild);
+
+    if (!_reviewPreviews.length) {
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+
+    _reviewPreviews.forEach(function(p) {
+      var li = document.createElement('li');
+      li.className = 'review-item';
+      li.tabIndex = 0;
+      li.setAttribute('role', 'button');
+
+      var top = document.createElement('div');
+      top.className = 'review-item-top';
+      var repo = document.createElement('span');
+      repo.className = 'review-item-repo';
+      repo.textContent = p.repo || '(unknown)';
+      var job = document.createElement('span');
+      job.className = 'review-item-job';
+      job.textContent = p.job_id || '';
+      top.appendChild(repo);
+      top.appendChild(job);
+      li.appendChild(top);
+
+      var meta = document.createElement('div');
+      meta.className = 'review-item-meta';
+      meta.textContent = (p.branch || '') + (p.created_at ? ' · ' + p.created_at : '');
+      li.appendChild(meta);
+
+      var stats = document.createElement('div');
+      stats.className = 'review-item-stats';
+      var files = document.createElement('span');
+      files.className = 'review-item-stat';
+      var filesStrong = document.createElement('strong');
+      filesStrong.textContent = String((p.changes || []).length);
+      files.appendChild(filesStrong);
+      files.appendChild(document.createTextNode(' files'));
+      var commits = document.createElement('span');
+      commits.className = 'review-item-stat';
+      var commitsStrong = document.createElement('strong');
+      commitsStrong.textContent = String((p.commits || []).length);
+      commits.appendChild(commitsStrong);
+      commits.appendChild(document.createTextNode(' commits'));
+      var checks = document.createElement('span');
+      checks.className = 'review-item-stat';
+      var checksStrong = document.createElement('strong');
+      checksStrong.textContent = String((p.checklist || []).length);
+      checks.appendChild(checksStrong);
+      checks.appendChild(document.createTextNode(' checks'));
+      stats.appendChild(files);
+      stats.appendChild(commits);
+      stats.appendChild(checks);
+      li.appendChild(stats);
+
+      var open = function() { openReviewDetail(p); };
+      li.addEventListener('click', open);
+      li.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+      host.appendChild(li);
+    });
+  }
+
+  function loadReviewList() {
+    return apiGet('/api/previews').then(function(data) {
+      _reviewPreviews = (data && data.previews) || [];
+      reviewUpdateBadge(_reviewPreviews.length);
+      renderReviewList();
+    }).catch(function(e) {
+      _reviewPreviews = [];
+      renderReviewList();
+      reviewSetStatus('Could not load previews: ' + e.message);
+    });
+  }
+
+  function showReviewList() {
+    document.getElementById('reviewListView').hidden = false;
+    document.getElementById('reviewDetailView').hidden = true;
+    _reviewCurrent = null;
+    reviewSetStatus('');
+  }
+
+  function openReviewDetail(preview) {
+    _reviewCurrent = preview;
+    document.getElementById('reviewListView').hidden = true;
+    var view = document.getElementById('reviewDetailView');
+    view.hidden = false;
+
+    document.getElementById('reviewDetailTitle').textContent =
+      preview.repo + ' · ' + (preview.job_id || '');
+
+    var meta = document.getElementById('reviewDetailMeta');
+    while (meta.firstChild) meta.removeChild(meta.firstChild);
+    var branch = document.createElement('div');
+    branch.textContent = 'Branch: ' + (preview.branch || '');
+    branch.style.fontFamily = 'var(--mono)';
+    branch.style.fontSize = 'var(--text-sm)';
+    branch.style.color = 'var(--text-dim)';
+    meta.appendChild(branch);
+    if (preview.compare_url) {
+      var link = document.createElement('a');
+      link.className = 'review-compare';
+      link.href = preview.compare_url;
+      link.target = '_blank';
+      link.rel = 'noreferrer';
+      link.textContent = 'Open compare view →';
+      meta.appendChild(link);
+    }
+
+    var commits = document.getElementById('reviewCommits');
+    while (commits.firstChild) commits.removeChild(commits.firstChild);
+    (preview.commits || []).forEach(function(c) {
+      var li = document.createElement('li');
+      var sha = document.createElement('span');
+      sha.className = 'review-commit-sha';
+      sha.textContent = (c.sha || '').slice(0, 7);
+      var subj = document.createElement('span');
+      subj.textContent = c.subject || '';
+      li.appendChild(sha);
+      li.appendChild(subj);
+      commits.appendChild(li);
+    });
+
+    var changes = document.getElementById('reviewChanges');
+    while (changes.firstChild) changes.removeChild(changes.firstChild);
+    (preview.changes || []).forEach(function(ch) {
+      var li = document.createElement('li');
+      var ins = document.createElement('span');
+      ins.className = 'review-diff-ins';
+      ins.textContent = '+' + (ch.insertions || 0);
+      var del = document.createElement('span');
+      del.className = 'review-diff-del';
+      del.textContent = '-' + (ch.deletions || 0);
+      var file = document.createElement('span');
+      file.textContent = ch.file || '';
+      li.appendChild(ins);
+      li.appendChild(del);
+      li.appendChild(file);
+      changes.appendChild(li);
+    });
+
+    var checklist = document.getElementById('reviewChecklist');
+    while (checklist.firstChild) checklist.removeChild(checklist.firstChild);
+    var items = preview.checklist || [];
+    if (!items.length) {
+      var li = document.createElement('li');
+      li.textContent = 'No checklist items — approve or discard based on the diff.';
+      li.style.color = 'var(--text-dim)';
+      checklist.appendChild(li);
+    } else {
+      items.forEach(function(item, idx) {
+        var li = document.createElement('li');
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.id = 'review-chk-' + idx;
+        chk.dataset.idx = String(idx);
+        chk.addEventListener('change', updateApproveEnabled);
+        var label = document.createElement('label');
+        label.htmlFor = chk.id;
+        var title = document.createElement('div');
+        title.textContent = '[' + (item.severity || '?') + '] ' + (item.title || item.finding_id || '');
+        var where = document.createElement('div');
+        where.style.fontFamily = 'var(--mono)';
+        where.style.fontSize = 'var(--text-xs)';
+        where.style.color = 'var(--text-dim)';
+        where.textContent = (item.file || '') + (item.line ? ':' + item.line : '');
+        var verify = document.createElement('div');
+        verify.className = 'review-checklist-trust-' + (item.trust_class || 'objective');
+        verify.textContent = item.verify || '';
+        label.appendChild(title);
+        label.appendChild(where);
+        label.appendChild(verify);
+        li.appendChild(chk);
+        li.appendChild(label);
+        checklist.appendChild(li);
+      });
+    }
+    updateApproveEnabled();
+  }
+
+  function updateApproveEnabled() {
+    var btn = document.getElementById('reviewApproveBtn');
+    if (!btn || !_reviewCurrent) return;
+    var items = _reviewCurrent.checklist || [];
+    if (!items.length) {
+      btn.disabled = false;
+      return;
+    }
+    var boxes = document.querySelectorAll('#reviewChecklist input[type=checkbox]');
+    var all = true;
+    for (var i = 0; i < boxes.length; i++) {
+      if (!boxes[i].checked) { all = false; break; }
+    }
+    btn.disabled = !all;
+  }
+
+  function openReviewPanel() {
+    var panel = document.getElementById('reviewPanel');
+    panel.hidden = false;
+    requestAnimationFrame(function() { panel.classList.add('open'); });
+    showReviewList();
+    loadReviewList();
+  }
+
+  function closeReviewPanel() {
+    var panel = document.getElementById('reviewPanel');
+    panel.classList.remove('open');
+    setTimeout(function() { panel.hidden = true; }, 250);
+  }
+
+  document.getElementById('reviewBtn').addEventListener('click', openReviewPanel);
+  document.getElementById('reviewPanelClose').addEventListener('click', closeReviewPanel);
+  document.getElementById('reviewBackBtn').addEventListener('click', showReviewList);
+
+  document.getElementById('reviewApproveBtn').addEventListener('click', function() {
+    if (!_reviewCurrent) return;
+    var btn = document.getElementById('reviewApproveBtn');
+    btn.disabled = true;
+    reviewSetStatus('Approving…');
+    apiPost('/api/approve', {
+      target: _reviewCurrent.repo,
+      job_id: _reviewCurrent.job_id,
+    }).then(function(r) {
+      reviewSetStatus('Merged into ' + (r.merged_into || 'base'));
+      loadReviewList().then(showReviewList);
+    }).catch(function(e) {
+      reviewSetStatus('Error: ' + e.message);
+      btn.disabled = false;
+    });
+  });
+
+  document.getElementById('reviewDiscardBtn').addEventListener('click', function() {
+    if (!_reviewCurrent) return;
+    if (!window.confirm('Discard preview ' + _reviewCurrent.job_id + '? This deletes the branch and artifact.')) return;
+    reviewSetStatus('Discarding…');
+    apiPost('/api/discard', {
+      target: _reviewCurrent.repo,
+      job_id: _reviewCurrent.job_id,
+    }).then(function() {
+      reviewSetStatus('Discarded');
+      loadReviewList().then(showReviewList);
+    }).catch(function(e) {
+      reviewSetStatus('Error: ' + e.message);
+    });
+  });
+
+  startReviewBadgePoll();
+
 })();
