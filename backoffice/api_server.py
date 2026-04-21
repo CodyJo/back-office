@@ -120,6 +120,40 @@ def run_agent(dept: str, target: str, *, sync: bool = True,
     return True
 
 
+running_fix: dict[str, threading.Thread] = {}
+running_fix_lock = threading.Lock()
+
+
+def run_fix_agent(target: str, *, preview: bool = False,
+                  root: Path | None = None) -> bool:
+    """Launch ``agents/fix-bugs.sh`` in a background thread.
+
+    Returns ``True`` when accepted, ``False`` if a fix is already in
+    flight against the same target.
+    """
+    r = root or _root
+    args = ["bash", str(r / "agents" / "fix-bugs.sh"), target, "--sync"]
+    if preview:
+        args.append("--preview")
+
+    def _run() -> None:
+        try:
+            subprocess.run(args, cwd=str(r))
+        finally:
+            with running_fix_lock:
+                running_fix.pop(target, None)
+
+    with running_fix_lock:
+        if target in running_fix:
+            return False
+        t = threading.Thread(target=_run, daemon=True)
+        running_fix[target] = t
+
+    t.start()
+    logger.info("Started fix agent target=%s preview=%s", target, preview)
+    return True
+
+
 def init_jobs(target: str, departments: list[str], root: Path | None = None) -> None:
     """Initialize the jobs status file for the given departments."""
     r = root or _root
@@ -274,6 +308,8 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             self._handle_run_scan()
         elif path == "/api/run-all":
             self._handle_run_all()
+        elif path == "/api/run-fix":
+            self._handle_run_fix()
         elif path == "/api/stop":
             self._handle_stop()
         else:
@@ -413,6 +449,28 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
                 "departments": ALL_DEPTS,
                 "target": target,
             })
+
+    def _handle_run_fix(self) -> None:
+        body = self._read_body()
+        if body is None:
+            return
+        site = body.get("target", body.get("site", ""))
+        preview = bool(body.get("preview", False))
+
+        target = resolve_target(site, self._targets)
+        if not target:
+            self._json_response(400, {
+                "error": "Unknown target. Check config/backoffice.yaml.",
+                "targets": list(self._targets.keys()),
+            })
+            return
+
+        started = run_fix_agent(target, preview=preview, root=self._root)
+        self._json_response(200 if started else 409, {
+            "status": "started" if started else "already_running",
+            "target": target,
+            "preview": preview,
+        })
 
     def _handle_stop(self) -> None:
         """Report status; we cannot safely kill claude --print mid-run."""
