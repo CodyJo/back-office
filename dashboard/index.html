@@ -397,6 +397,24 @@
   .run-footer { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-4); }
   .run-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.4rem; line-height: 1; }
   .run-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+  .run-api-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-4);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: var(--text-xs);
+  }
+  .run-api-label { color: var(--text-dim); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run-api-edit {
+    background: transparent; color: var(--accent-2);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 2px var(--space-2);
+    cursor: pointer; font-family: var(--sans); font-size: var(--text-xs);
+  }
+  .run-api-edit:hover { border-color: var(--accent-2); }
 
   /* Review & Approve panel */
   .review-slideover {
@@ -766,6 +784,11 @@
   <div class="run-header">
     <h2 id="runPanelTitle">Run</h2>
     <button class="run-close" id="runPanelClose" aria-label="Close run panel">&times;</button>
+  </div>
+
+  <div class="run-api-bar">
+    <span id="runApiBase" class="run-api-label">API: (same origin)</span>
+    <button type="button" class="run-api-edit" id="runApiBaseEdit">Edit</button>
   </div>
 
   <section class="run-section">

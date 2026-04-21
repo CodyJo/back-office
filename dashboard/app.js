@@ -3487,7 +3487,43 @@
   ══════════════════════════════════════════════════════════════ */
 
   var API_KEY_STORAGE = 'bo.api_key';
+  var API_BASE_STORAGE = 'bo.api_base';
   var _liveJobsTimer = null;
+
+  function getApiBase() {
+    // Same-origin works when the API server is serving this dashboard
+    // (e.g. local dev at http://localhost:8070). On admin.codyjo.com the
+    // static origin has no /api/* routes, so the operator points at their
+    // own machine via localStorage['bo.api_base'].
+    var base = null;
+    try { base = localStorage.getItem(API_BASE_STORAGE); } catch (_) { base = null; }
+    if (base == null) return '';
+    return base.replace(/\/+$/, '');
+  }
+
+  function setApiBase(value) {
+    try {
+      if (value) localStorage.setItem(API_BASE_STORAGE, value.replace(/\/+$/, ''));
+      else localStorage.removeItem(API_BASE_STORAGE);
+    } catch (_) {}
+  }
+
+  function promptApiBase() {
+    var current = getApiBase();
+    var next = window.prompt(
+      'API base URL (e.g. http://localhost:8070). Leave blank to use this origin.',
+      current || 'http://localhost:8070'
+    );
+    if (next == null) return current;
+    next = next.trim();
+    setApiBase(next);
+    return next.replace(/\/+$/, '');
+  }
+
+  function apiUrl(path) {
+    var base = getApiBase();
+    return (base || '') + path;
+  }
 
   function getApiKey() {
     var k = null;
@@ -3504,7 +3540,7 @@
   function apiPost(path, body) {
     var key = getApiKey();
     if (!key) return Promise.reject(new Error('API key required'));
-    return fetch(path, {
+    return fetch(apiUrl(path), {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-API-Key': key},
       body: JSON.stringify(body || {})
@@ -3521,17 +3557,28 @@
   }
 
   function apiGet(path) {
-    return fetch(path).then(function(resp) {
+    return fetch(apiUrl(path)).then(function(resp) {
       if (!resp.ok) throw new Error('GET ' + path + ': HTTP ' + resp.status);
       return resp.json();
     });
   }
 
-  function populateRunTargets() {
+  function renderApiBaseIndicator() {
+    var el = document.getElementById('runApiBase');
+    if (!el) return;
+    var base = getApiBase();
+    el.textContent = base ? ('API: ' + base) : 'API: (same origin)';
+  }
+
+  function populateRunTargets(force) {
     var select = document.getElementById('runTarget');
-    if (!select || select.dataset.populated === '1') return;
+    if (!select) return;
+    if (force) select.dataset.populated = '';
+    if (select.dataset.populated === '1') return;
     while (select.firstChild) select.removeChild(select.firstChild);
+    renderApiBaseIndicator();
     apiGet('/api/status').then(function(status) {
+      while (select.firstChild) select.removeChild(select.firstChild);
       (status.targets || []).forEach(function(t) {
         var opt = document.createElement('option');
         opt.value = t;
@@ -3539,11 +3586,13 @@
         select.appendChild(opt);
       });
       select.dataset.populated = '1';
+      setRunStatus('');
     }).catch(function() {
       var opt = document.createElement('option');
       opt.textContent = '\u2014 API unreachable \u2014';
       opt.disabled = true;
       select.appendChild(opt);
+      setRunStatus('API unreachable — click "Edit" to set the API URL');
     });
   }
 
@@ -3584,7 +3633,8 @@
     panel.hidden = false;
     // Next tick so the CSS transition engages
     requestAnimationFrame(function() { panel.classList.add('open'); });
-    populateRunTargets();
+    renderApiBaseIndicator();
+    populateRunTargets(true);
     startLiveJobsPoll();
   }
 
@@ -3602,6 +3652,12 @@
 
   document.getElementById('runBtn').addEventListener('click', openRunPanel);
   document.getElementById('runPanelClose').addEventListener('click', closeRunPanel);
+  document.getElementById('runApiBaseEdit').addEventListener('click', function() {
+    promptApiBase();
+    renderApiBaseIndicator();
+    populateRunTargets(true);
+    pollReviewBadge();
+  });
 
   document.getElementById('runScanBtn').addEventListener('click', function() {
     var target = document.getElementById('runTarget').value;
