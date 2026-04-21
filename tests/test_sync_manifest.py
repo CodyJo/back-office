@@ -1,9 +1,12 @@
 """Tests for backoffice.sync.manifest."""
+from pathlib import Path
+
 from backoffice.sync.manifest import (
     DASHBOARD_FILES,
     DEPT_DATA_MAP,
     AGG_DATA_MAP,
     content_type_for,
+    iter_preview_files,
 )
 
 
@@ -41,6 +44,33 @@ def test_content_type_for_svg():
 
 def test_content_type_for_markdown():
     assert content_type_for("local-audit-log.md") == "text/markdown"
+
+
+def test_iter_preview_files_discovers_preview_json(tmp_path):
+    (tmp_path / "repo-a").mkdir()
+    (tmp_path / "repo-a" / "preview-job-1.json").write_text("{}")
+    (tmp_path / "repo-a" / "preview-job-2.json").write_text("{}")
+    (tmp_path / "repo-a" / "findings.json").write_text("{}")
+    (tmp_path / "repo-b").mkdir()
+    (tmp_path / "repo-b" / "preview-deadbeef.json").write_text("{}")
+    # Non-preview JSON must be ignored
+    (tmp_path / "repo-b" / "other.json").write_text("{}")
+
+    results = list(iter_preview_files(tmp_path))
+    rel = sorted(
+        (Path(local).relative_to(tmp_path).as_posix(), remote_key)
+        for (local, remote_key) in results
+    )
+    assert rel == [
+        ("repo-a/preview-job-1.json", "previews/repo-a/preview-job-1.json"),
+        ("repo-a/preview-job-2.json", "previews/repo-a/preview-job-2.json"),
+        ("repo-b/preview-deadbeef.json", "previews/repo-b/preview-deadbeef.json"),
+    ]
+
+
+def test_iter_preview_files_handles_missing_results_dir(tmp_path):
+    missing = tmp_path / "does-not-exist"
+    assert list(iter_preview_files(missing)) == []
 
 
 def test_agg_data_map_has_departments():

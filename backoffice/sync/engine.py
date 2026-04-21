@@ -18,6 +18,7 @@ from backoffice.sync.manifest import (
     JOB_STATUS_FILES,
     SHARED_META_FILES,
     content_type_for,
+    iter_preview_files,
 )
 
 if TYPE_CHECKING:
@@ -175,6 +176,7 @@ class SyncEngine:
                 file_mappings.extend(self._agg_data_mappings(prefix))
             file_mappings.extend(self._shared_meta_mappings(prefix))
             file_mappings.extend(self._job_status_mappings(prefix))
+            file_mappings.extend(self._preview_mappings(prefix))
 
         # Filter to files that actually exist on disk
         file_mappings = [m for m in file_mappings if Path(m["local_path"]).exists()]
@@ -294,6 +296,18 @@ class SyncEngine:
                 "local_path": str(local_path),
                 "remote_key": f"{prefix}{filename}",
                 "content_type": content_type_for(filename),
+                "cache_control": CACHE_CONTROL,
+            })
+        return mappings
+
+    def _preview_mappings(self, prefix: str) -> list[dict]:
+        """Build mappings for fix-agent preview artifacts."""
+        mappings = []
+        for local_path, remote_key in iter_preview_files(self.results_dir):
+            mappings.append({
+                "local_path": local_path,
+                "remote_key": f"{prefix}{remote_key}",
+                "content_type": "application/json",
                 "cache_control": CACHE_CONTROL,
             })
         return mappings

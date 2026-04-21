@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Back Office — Fix Agent
-# Usage: ./agents/fix-bugs.sh /path/to/target-repo [--sync] [--deploy]
+# Usage: ./agents/fix-bugs.sh /path/to/target-repo [--sync] [--deploy] [--preview]
 #
 # Launches the configured agent runner that reads findings and fixes them
 # using isolated git worktrees for safe parallel development.
@@ -8,6 +8,9 @@
 # Options:
 #   --sync     Sync results to S3 after fixes complete
 #   --deploy   Run deploy command after successful fixes
+#   --preview  Land fixes on isolated back-office/preview/<job-id> branch,
+#              emit a preview-<job-id>.json artifact, and DO NOT deploy.
+#              Intended for the dashboard Review & Approve flow.
 
 set -euo pipefail
 
@@ -18,16 +21,23 @@ PROMPT_FILE="$SCRIPT_DIR/prompts/fix-bugs.md"
 
 # ── Args ─────────────────────────────────────────────────────────────────────
 
-TARGET_REPO="${1:?Usage: fix-bugs.sh /path/to/target-repo [--sync] [--deploy]}"
+TARGET_REPO="${1:?Usage: fix-bugs.sh /path/to/target-repo [--sync] [--deploy] [--preview]}"
 SYNC_TO_S3=false
 RUN_DEPLOY=false
+PREVIEW_MODE=false
 
 for arg in "$@"; do
   case "$arg" in
-    --sync)   SYNC_TO_S3=true ;;
-    --deploy) RUN_DEPLOY=true ;;
+    --sync)    SYNC_TO_S3=true ;;
+    --deploy)  RUN_DEPLOY=true ;;
+    --preview) PREVIEW_MODE=true ;;
   esac
 done
+
+if [ "$PREVIEW_MODE" = true ] && [ "$RUN_DEPLOY" = true ]; then
+  echo "Error: --preview and --deploy are mutually exclusive" >&2
+  exit 2
+fi
 
 if [ ! -d "$TARGET_REPO/.git" ]; then
   echo "Error: $TARGET_REPO is not a git repository" >&2
@@ -41,6 +51,26 @@ FINDINGS_FILE="$RESULTS_DIR/findings.json"
 if [ ! -f "$FINDINGS_FILE" ]; then
   echo "No findings file at $FINDINGS_FILE — run qa-scan.sh first" >&2
   exit 1
+fi
+
+# ── Preview mode: set up isolated branch ─────────────────────────────────────
+
+JOB_ID=""
+PREVIEW_BRANCH=""
+PREVIEW_BASE_REF=""
+if [ "$PREVIEW_MODE" = true ]; then
+  JOB_ID="$(date -u +%Y%m%dT%H%M%SZ)-$(printf '%06x' $((RANDOM*RANDOM)))"
+  PREVIEW_BRANCH="back-office/preview/$JOB_ID"
+  PREVIEW_BASE_REF="$(git -C "$TARGET_REPO" symbolic-ref --short HEAD 2>/dev/null || echo main)"
+
+  if ! git -C "$TARGET_REPO" diff --quiet || ! git -C "$TARGET_REPO" diff --cached --quiet; then
+    echo "Error: target repo has uncommitted changes — commit or stash before --preview" >&2
+    exit 2
+  fi
+
+  echo "Preview mode: creating branch $PREVIEW_BRANCH from $PREVIEW_BASE_REF"
+  git -C "$TARGET_REPO" checkout -b "$PREVIEW_BRANCH"
+  mkdir -p "$RESULTS_DIR"
 fi
 
 # Count findings
@@ -76,7 +106,23 @@ fi
 
 # ── Build the prompt ─────────────────────────────────────────────────────────
 
+PREVIEW_DIRECTIVE=""
+if [ "$PREVIEW_MODE" = true ]; then
+  PREVIEW_DIRECTIVE="
+## Preview Mode
+
+This job is running in preview mode. Commit ALL fixes to the current branch
+(\`$PREVIEW_BRANCH\`). DO NOT merge, push to main, or deploy. A human will
+review the resulting diff in the dashboard Review & Approve panel.
+
+Write the IDs of findings you addressed to \`$RESULTS_DIR/.fix-addressed-$JOB_ID.json\`
+as a JSON array, each entry matching the canonical finding schema
+(\`id\`, \`severity\`, \`title\`, \`file\`, \`line\`, \`trust_class\`).
+"
+fi
+
 FIX_PROMPT="$(cat "$PROMPT_FILE")
+$PREVIEW_DIRECTIVE
 
 ---
 
@@ -123,6 +169,38 @@ job_finish "fix" "$_EXIT_CODE"
 
 echo ""
 echo "Fixes complete. Results in: $RESULTS_DIR/"
+
+# ── Preview artifact generation ─────────────────────────────────────────────
+
+if [ "$PREVIEW_MODE" = true ]; then
+  PREVIEW_FINDINGS="$RESULTS_DIR/.fix-addressed-$JOB_ID.json"
+  if [ ! -f "$PREVIEW_FINDINGS" ]; then
+    echo "Warning: agent did not emit $PREVIEW_FINDINGS — writing empty checklist" >&2
+    echo "[]" > "$PREVIEW_FINDINGS"
+  fi
+
+  PREVIEW_OUT="$RESULTS_DIR/preview-$JOB_ID.json"
+  echo "Generating preview artifact -> $PREVIEW_OUT"
+  python3 -m backoffice preview \
+    --repo-path "$TARGET_REPO" \
+    --repo-name "$REPO_NAME" \
+    --job-id "$JOB_ID" \
+    --branch "$PREVIEW_BRANCH" \
+    --base-ref "$PREVIEW_BASE_REF" \
+    --findings "$PREVIEW_FINDINGS" \
+    --out "$PREVIEW_OUT"
+
+  # Preview mode NEVER deploys — return to base branch and bail here.
+  git -C "$TARGET_REPO" checkout "$PREVIEW_BASE_REF" >/dev/null 2>&1 || true
+  if [ "$SYNC_TO_S3" = true ]; then
+    echo "Syncing preview artifact..."
+    BACK_OFFICE_ENABLE_REMOTE_SYNC="${BACK_OFFICE_ENABLE_REMOTE_SYNC:-1}" \
+      python3 -m backoffice sync --dept qa || echo "Warning: preview sync failed"
+  fi
+  echo ""
+  echo "Preview ready: branch=$PREVIEW_BRANCH artifact=$PREVIEW_OUT"
+  exit 0
+fi
 
 # ── Deploy if requested ──────────────────────────────────────────────────────
 

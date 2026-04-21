@@ -4,6 +4,10 @@ Single source of truth for which files get uploaded and their
 content types. Resolves discrepancies between the old
 sync-dashboard.sh and quick-sync.sh file lists.
 """
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Iterator
 
 DASHBOARD_FILES: list[str] = [
     "index.html",
@@ -74,3 +78,21 @@ def content_type_for(filename: str) -> str:
         if filename.endswith(ext):
             return ct
     return "application/octet-stream"
+
+
+def iter_preview_files(results_dir: Path) -> Iterator[tuple[str, str]]:
+    """Yield (local_path, remote_key) for every preview artifact in results/.
+
+    Preview files live at ``results/<repo>/preview-<job-id>.json``. They
+    publish to ``previews/<repo>/preview-<job-id>.json`` so the Review
+    panel can fetch them from the dashboard origin.
+    """
+    base = Path(results_dir)
+    if not base.is_dir():
+        return
+    for repo_dir in sorted(base.iterdir()):
+        if not repo_dir.is_dir():
+            continue
+        for preview in sorted(repo_dir.glob("preview-*.json")):
+            remote_key = f"previews/{repo_dir.name}/{preview.name}"
+            yield (str(preview), remote_key)
