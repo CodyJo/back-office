@@ -3482,4 +3482,170 @@
   /* ── Wire Ops button ── */
   document.getElementById('opsBtn').addEventListener('click', openOpsPanel);
 
+  /* ══════════════════════════════════════════════════════════════
+     Operator Run Panel — drives backoffice.api_server endpoints
+  ══════════════════════════════════════════════════════════════ */
+
+  var API_KEY_STORAGE = 'bo.api_key';
+  var _liveJobsTimer = null;
+
+  function getApiKey() {
+    var k = null;
+    try { k = localStorage.getItem(API_KEY_STORAGE); } catch (_) { k = null; }
+    if (!k) {
+      k = window.prompt('Back Office API key:') || '';
+      if (k) {
+        try { localStorage.setItem(API_KEY_STORAGE, k); } catch (_) {}
+      }
+    }
+    return k;
+  }
+
+  function apiPost(path, body) {
+    var key = getApiKey();
+    if (!key) return Promise.reject(new Error('API key required'));
+    return fetch(path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-API-Key': key},
+      body: JSON.stringify(body || {})
+    }).then(function(resp) {
+      return resp.json().catch(function() { return {}; }).then(function(data) {
+        if (!resp.ok) {
+          var err = new Error(data.error || ('HTTP ' + resp.status));
+          err.status = resp.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  function apiGet(path) {
+    return fetch(path).then(function(resp) {
+      if (!resp.ok) throw new Error('GET ' + path + ': HTTP ' + resp.status);
+      return resp.json();
+    });
+  }
+
+  function populateRunTargets() {
+    var select = document.getElementById('runTarget');
+    if (!select || select.dataset.populated === '1') return;
+    while (select.firstChild) select.removeChild(select.firstChild);
+    apiGet('/api/status').then(function(status) {
+      (status.targets || []).forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        select.appendChild(opt);
+      });
+      select.dataset.populated = '1';
+    }).catch(function() {
+      var opt = document.createElement('option');
+      opt.textContent = '\u2014 API unreachable \u2014';
+      opt.disabled = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function renderLiveJobs(data) {
+    var host = document.getElementById('runLiveJobs');
+    if (!host) return;
+    if (!data || !data.jobs) { host.textContent = 'Idle.'; return; }
+    var rows = Object.keys(data.jobs).map(function(dept) {
+      var j = data.jobs[dept];
+      var state = (j.status || '?');
+      while (state.length < 10) state += ' ';
+      var elapsed = j.elapsed != null ? (j.elapsed + 's') : '';
+      while (elapsed.length < 6) elapsed += ' ';
+      var found = j.findings_count != null ? (j.findings_count + ' findings') : '';
+      var name = dept;
+      while (name.length < 14) name += ' ';
+      return name + ' ' + state + ' ' + elapsed + ' ' + found;
+    });
+    host.textContent = rows.length ? rows.join('\n') : 'Idle.';
+  }
+
+  function startLiveJobsPoll() {
+    if (_liveJobsTimer) return;
+    var tick = function() {
+      apiGet('/api/jobs').then(renderLiveJobs).catch(function() {});
+    };
+    tick();
+    _liveJobsTimer = setInterval(tick, 3000);
+  }
+
+  function stopLiveJobsPoll() {
+    if (_liveJobsTimer) clearInterval(_liveJobsTimer);
+    _liveJobsTimer = null;
+  }
+
+  function openRunPanel() {
+    var panel = document.getElementById('runPanel');
+    panel.hidden = false;
+    // Next tick so the CSS transition engages
+    requestAnimationFrame(function() { panel.classList.add('open'); });
+    populateRunTargets();
+    startLiveJobsPoll();
+  }
+
+  function closeRunPanel() {
+    var panel = document.getElementById('runPanel');
+    panel.classList.remove('open');
+    setTimeout(function() { panel.hidden = true; }, 250);
+    stopLiveJobsPoll();
+  }
+
+  function setRunStatus(msg) {
+    var s = document.getElementById('runStatus');
+    if (s) s.textContent = msg || '';
+  }
+
+  document.getElementById('runBtn').addEventListener('click', openRunPanel);
+  document.getElementById('runPanelClose').addEventListener('click', closeRunPanel);
+
+  document.getElementById('runScanBtn').addEventListener('click', function() {
+    var target = document.getElementById('runTarget').value;
+    var dept = document.getElementById('runDept').value;
+    var parallel = document.getElementById('runParallel').checked;
+    var btn = document.getElementById('runScanBtn');
+    btn.disabled = true;
+    setRunStatus('Starting\u2026');
+    var path = dept === '__all__' ? '/api/run-all' : '/api/run-scan';
+    var body = dept === '__all__' ? {target: target, parallel: parallel} : {target: target, department: dept};
+    apiPost(path, body).then(function(r) {
+      setRunStatus(r.status === 'started' ? 'Running' : (r.status || 'ok'));
+    }).catch(function(e) {
+      setRunStatus('Error: ' + e.message);
+    }).then(function() {
+      btn.disabled = false;
+    });
+  });
+
+  document.getElementById('runFixBtn').addEventListener('click', function() {
+    var target = document.getElementById('runTarget').value;
+    var preview = document.getElementById('runFixPreview').checked;
+    var btn = document.getElementById('runFixBtn');
+    btn.disabled = true;
+    setRunStatus('Starting fix\u2026');
+    apiPost('/api/run-fix', {target: target, preview: preview}).then(function(r) {
+      if (r.status === 'started') {
+        setRunStatus(preview ? 'Running (preview branch — check Review)' : 'Running');
+      } else {
+        setRunStatus(r.status || 'ok');
+      }
+    }).catch(function(e) {
+      setRunStatus('Error: ' + e.message);
+    }).then(function() {
+      btn.disabled = false;
+    });
+  });
+
+  document.getElementById('runStopBtn').addEventListener('click', function() {
+    apiPost('/api/stop', {}).then(function(r) {
+      setRunStatus(r.message || 'Stop requested');
+    }).catch(function(e) {
+      setRunStatus('Error: ' + e.message);
+    });
+  });
+
 })();

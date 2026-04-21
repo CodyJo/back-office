@@ -94,6 +94,7 @@
   .topbar-btn--deploy    { border-color: color-mix(in srgb, var(--success)  45%, transparent); color: var(--success); }
   .topbar-btn--actions   { border-color: color-mix(in srgb, var(--accent)   45%, transparent); color: var(--accent); }
   .topbar-btn--forgejo   { border-color: color-mix(in srgb, var(--info)     45%, transparent); color: var(--info); }
+  .topbar-btn--run       { border-color: color-mix(in srgb, var(--accent)   55%, transparent); color: var(--accent); font-weight: 600; }
   .timestamp { font-size: 0.72rem; color: var(--text-dim); }
   .stale-warning { font-size: 0.68rem; color: var(--high); margin-left: 0.25rem; }
 
@@ -349,6 +350,54 @@
   .slideover-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.35rem; }
   .slideover-stat-value { font-size: 1.3rem; font-weight: 700; }
 
+  /* Operator Run panel (drives backoffice.api_server) */
+  .run-slideover {
+    position: fixed; top: 49px; right: 0; bottom: 0;
+    width: min(440px, 92vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-2);
+    overflow-y: auto;
+    z-index: 102;
+    padding: var(--space-5);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+  .run-slideover.open { transform: translateX(0); }
+  .run-slideover[hidden] { display: none; }
+  .run-slideover h2 { font-size: var(--text-lg); margin-bottom: var(--space-4); }
+  .run-section { margin-bottom: var(--space-5); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
+  .run-section:last-of-type { border-bottom: none; }
+  .run-section h3 { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: var(--space-3); }
+  .run-section label { display: block; font-size: var(--text-sm); color: var(--text-dim); margin: var(--space-3) 0 var(--space-1); }
+  .run-section label.inline { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; color: var(--text); }
+  .run-section .product-select { width: 100%; }
+  .run-hint { font-size: var(--text-sm); color: var(--text-dim); margin-bottom: var(--space-3); }
+  .run-primary {
+    display: block; width: 100%;
+    background: var(--accent); color: var(--on-accent);
+    border: none; border-radius: 8px;
+    padding: var(--space-3); font-weight: 600; font-family: var(--sans);
+    margin-top: var(--space-3); cursor: pointer;
+  }
+  .run-primary:hover { opacity: 0.9; }
+  .run-primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .run-secondary {
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: var(--space-2) var(--space-3); cursor: pointer; font-family: var(--sans);
+  }
+  .run-status { font-size: var(--text-sm); color: var(--text-dim); margin-left: var(--space-3); }
+  #runLiveJobs {
+    font-family: var(--mono); font-size: var(--text-sm);
+    color: var(--text); white-space: pre; overflow-x: auto;
+    background: var(--surface-2); padding: var(--space-3); border-radius: 8px;
+    min-height: 4rem;
+  }
+  .run-footer { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-4); }
+  .run-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.4rem; line-height: 1; }
+  .run-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+
   /* Finding Detail Panel (nested slide-over) */
   .detail-panel { position: fixed; top: 0; right: -45%; width: 45%; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 102; transition: right 0.3s ease; overflow-y: auto; }
   .detail-panel.open { right: 0; }
@@ -542,6 +591,7 @@
     <a class="topbar-btn topbar-btn--deploy" id="deployBtn" href="deploy.html">Deploy</a>
     <a class="topbar-btn topbar-btn--actions" id="actionsArchiveBtn" href="actions-history.html">Actions Archive</a>
     <a class="topbar-btn topbar-btn--forgejo" id="forgejoBtn" href="http://127.0.0.1:3300/" target="_blank" rel="noreferrer">Forgejo</a>
+    <button class="topbar-btn topbar-btn--run" id="runBtn" aria-label="Open run panel">Run</button>
     <button class="topbar-btn" id="jobsBtn">Jobs</button>
     <button class="topbar-btn" id="docsBtn">Docs</button>
     <button class="topbar-btn" id="faqBtn">FAQ</button>
@@ -621,6 +671,55 @@
 
   <div class="slideover-body" id="slideoverBody"></div>
 </div>
+
+<!-- Operator Run panel -->
+<aside id="runPanel" class="run-slideover" hidden role="dialog" aria-labelledby="runPanelTitle" aria-modal="false">
+  <div class="run-header">
+    <h2 id="runPanelTitle">Run</h2>
+    <button class="run-close" id="runPanelClose" aria-label="Close run panel">&times;</button>
+  </div>
+
+  <section class="run-section">
+    <h3>Audit scan</h3>
+    <label for="runTarget">Target repository</label>
+    <select id="runTarget" class="product-select"></select>
+
+    <label for="runDept">Department</label>
+    <select id="runDept" class="product-select">
+      <option value="qa">QA</option>
+      <option value="seo">SEO</option>
+      <option value="ada">ADA</option>
+      <option value="compliance">Compliance</option>
+      <option value="monetization">Monetization</option>
+      <option value="product">Product</option>
+      <option value="cloud-ops">Cloud Ops</option>
+      <option value="__all__">All departments</option>
+    </select>
+
+    <label class="inline"><input type="checkbox" id="runParallel"> Run in parallel</label>
+    <button class="run-primary" id="runScanBtn">Start scan</button>
+  </section>
+
+  <section class="run-section">
+    <h3>Fix findings</h3>
+    <p class="run-hint">
+      Applies findings flagged <code>fixable_by_agent</code>. Preview mode
+      lands changes on an isolated branch for review before merging.
+    </p>
+    <label class="inline"><input type="checkbox" id="runFixPreview" checked> Preview mode (recommended)</label>
+    <button class="run-primary" id="runFixBtn">Start fix</button>
+  </section>
+
+  <section class="run-section">
+    <h3>Live jobs</h3>
+    <pre id="runLiveJobs" aria-live="polite">Idle.</pre>
+  </section>
+
+  <footer class="run-footer">
+    <button class="run-secondary" id="runStopBtn">Stop all</button>
+    <span id="runStatus" class="run-status" aria-live="polite"></span>
+  </footer>
+</aside>
 
 <!-- Finding Detail Panel (nested) -->
 <div class="detail-panel" id="detailPanel" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
