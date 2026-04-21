@@ -288,6 +288,8 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             self._handle_status()
         elif path == "/api/jobs":
             self._handle_get_jobs()
+        elif path == "/api/previews":
+            self._handle_list_previews()
         else:
             self.send_error(404)
 
@@ -310,6 +312,10 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             self._handle_run_all()
         elif path == "/api/run-fix":
             self._handle_run_fix()
+        elif path == "/api/approve":
+            self._handle_approve()
+        elif path == "/api/discard":
+            self._handle_discard()
         elif path == "/api/stop":
             self._handle_stop()
         else:
@@ -470,6 +476,84 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             "status": "started" if started else "already_running",
             "target": target,
             "preview": preview,
+        })
+
+    def _handle_list_previews(self) -> None:
+        from backoffice.review import list_previews
+        previews = list_previews(self._root / "results")
+        self._json_response(200, {"previews": previews})
+
+    def _resolve_review_target(self, body: dict) -> tuple[str | None, str | None]:
+        site = body.get("target", "")
+        job_id = body.get("job_id", "")
+        if not job_id:
+            self._json_response(400, {"error": "job_id is required"})
+            return None, None
+        target_path = resolve_target(site, self._targets)
+        if not target_path:
+            self._json_response(400, {
+                "error": "Unknown target. Check config/backoffice.yaml.",
+                "targets": list(self._targets.keys()),
+            })
+            return None, None
+        return target_path, job_id
+
+    def _handle_approve(self) -> None:
+        from backoffice.review import ReviewError, approve
+        body = self._read_body()
+        if body is None:
+            return
+        target_path, job_id = self._resolve_review_target(body)
+        if not target_path or not job_id:
+            return
+        repo_name = Path(target_path).name
+        try:
+            result = approve(
+                repo_path=Path(target_path),
+                results_dir=self._root / "results",
+                repo_name=repo_name,
+                job_id=job_id,
+            )
+        except ReviewError as exc:
+            msg = str(exc)
+            code = 404 if "not found" in msg else 409
+            self._json_response(code, {"error": msg, "job_id": job_id})
+            return
+        self._json_response(200, {
+            "status": "approved",
+            "job_id": result.job_id,
+            "repo": result.repo,
+            "branch": result.branch,
+            "merged_into": result.merged_into,
+            "head_sha": result.head_sha,
+        })
+
+    def _handle_discard(self) -> None:
+        from backoffice.review import ReviewError, discard
+        body = self._read_body()
+        if body is None:
+            return
+        target_path, job_id = self._resolve_review_target(body)
+        if not target_path or not job_id:
+            return
+        repo_name = Path(target_path).name
+        try:
+            result = discard(
+                repo_path=Path(target_path),
+                results_dir=self._root / "results",
+                repo_name=repo_name,
+                job_id=job_id,
+            )
+        except ReviewError as exc:
+            msg = str(exc)
+            code = 404 if "not found" in msg else 409
+            self._json_response(code, {"error": msg, "job_id": job_id})
+            return
+        self._json_response(200, {
+            "status": "discarded",
+            "job_id": result.job_id,
+            "repo": result.repo,
+            "branch": result.branch,
         })
 
     def _handle_stop(self) -> None:
