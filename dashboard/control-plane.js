@@ -18,12 +18,34 @@
 (function () {
   "use strict";
 
-  const ENDPOINTS = {
+  // Same origin works during local dev (where the dashboard server
+  // also serves /api/*). On admin.codyjo.com the static CDN has no
+  // /api/* routes, so the operator points at their own API server
+  // via the existing localStorage["bo.api_base"] knob (set from the
+  // Run panel — same control surface that captures bo.api_key).
+  function getApiBase() {
+    try {
+      const v = localStorage.getItem("bo.api_base") || "";
+      return v.replace(/\/+$/, "");
+    } catch (_) {
+      return "";
+    }
+  }
+
+  const ENDPOINT_PATHS = {
     agents: "/api/agents",
     runs: "/api/runs",
     audit: "/api/audit-events",
     tokens: "/api/tokens",
   };
+
+  function endpointUrl(name) {
+    return getApiBase() + ENDPOINT_PATHS[name];
+  }
+
+  function endpointPath(path) {
+    return getApiBase() + path;
+  }
 
   function authHeaders() {
     const apiKey =
@@ -31,7 +53,8 @@
     return apiKey ? { Authorization: "Bearer " + apiKey } : {};
   }
 
-  async function fetchJson(url) {
+  async function fetchJson(name) {
+    const url = endpointUrl(name);
     const r = await fetch(url, {
       method: "GET",
       headers: { Accept: "application/json", ...authHeaders() },
@@ -45,7 +68,8 @@
     return r.json();
   }
 
-  async function postJson(url, body) {
+  async function postJson(path, body) {
+    const url = endpointPath(path);
     const r = await fetch(url, {
       method: "POST",
       headers: {
@@ -124,7 +148,7 @@
       ]),
     );
     try {
-      const payload = await fetchJson(ENDPOINTS.agents);
+      const payload = await fetchJson("agents");
       const agents = payload.agents || [];
       if (!agents.length) {
         host.appendChild(emptyMessage("No agents registered yet."));
@@ -163,7 +187,7 @@
       ]),
     );
     try {
-      const payload = await fetchJson(ENDPOINTS.runs);
+      const payload = await fetchJson("runs");
       const recent = (payload.recent || []).slice(0, 10);
       if (!recent.length) {
         host.appendChild(emptyMessage("No runs yet."));
@@ -202,7 +226,7 @@
       ]),
     );
     try {
-      const payload = await fetchJson(ENDPOINTS.audit);
+      const payload = await fetchJson("audit");
       const events = (payload.events || []).slice(-50).reverse();
       if (!events.length) {
         host.appendChild(emptyMessage("No audit events yet."));
@@ -280,7 +304,7 @@
     async function refresh() {
       clear(list);
       try {
-        const payload = await fetchJson(ENDPOINTS.tokens);
+        const payload = await fetchJson("tokens");
         const tokens = payload.tokens || [];
         if (!tokens.length) {
           list.appendChild(emptyMessage("No tokens issued."));

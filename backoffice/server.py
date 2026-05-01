@@ -448,7 +448,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         path = urlparse(self.path).path
 
-        # API endpoints require auth when api_key is configured
+        # /api/health is intentionally unauthenticated — it is the
+        # liveness probe load balancers, smoke tests, and the operator
+        # use to confirm the service is up before attempting to auth.
+        if path == "/api/health":
+            self._handle_health_get()
+            return
+
+        # All other API endpoints require auth when api_key is configured
         if path.startswith("/api/") and not self._check_auth():
             self._json_response(401, {"error": "Unauthorized"})
             return
@@ -469,8 +476,6 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_deploy_control_get()
         elif path == "/api/github-actions/history":
             self._handle_github_actions_history_get()
-        elif path == "/api/health":
-            self._handle_health_get()
         elif path == "/api/agents":
             self._handle_agents_get()
         elif path == "/api/runs":
