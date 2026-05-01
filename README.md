@@ -45,6 +45,7 @@ This is the product story:
   - [Python CLI](#python-cli)
   - [Make Targets](#make-targets)
   - [Local Server APIs](#local-server-apis)
+- [Control Plane](#control-plane)
 - [Architecture](#architecture)
   - [System Topology](#system-topology)
   - [Core Data Artifacts](#core-data-artifacts)
@@ -491,6 +492,13 @@ Key commands:
 | `tasks show --id <task-id>` | Inspect one queue item |
 | `tasks create --repo <repo> --title <title>` | Create a manual queue item |
 | `tasks start/block/review/complete/cancel` | Advance queue state |
+| `agents {list,show,create,pause,resume,retire}` | Agent registry CRUD |
+| `routines {list,show,run,pause,resume}` | Routine CRUD + manual run |
+| `budgets {list,spend,evaluate}` | Budget visibility + cost rollups |
+| `tokens {issue,revoke,revoke-all,list}` | Per-agent API tokens |
+| `runs {list,show}` | Inspect run records |
+| `export [--out path]` | Deterministic export of operator-owned config |
+| `import path [--apply] [--overwrite]` | Validate (and optionally apply) an export payload |
 | `regression` | Run the regression suite |
 
 The CLI routing in `backoffice/__main__.py` maps:
@@ -521,6 +529,8 @@ Audit and dashboard workflow:
 | `make jobs` | Start the local dashboard server |
 | `make test` | Run pytest |
 | `make test-coverage` | Run pytest with coverage |
+| `make smoke` | End-to-end agent loop smoke harness |
+| `make smoke-claude-code` | Claude Code adapter wire-up + safety smoke (no real model call) |
 
 ### Local Server APIs
 
@@ -543,6 +553,20 @@ The local dashboard server exposes concrete JSON endpoints:
 | `/api/tasks/request-pr` | `POST` | Open a draft GitHub PR |
 | `/api/ops/product/suggest` | `POST` | Submit a product suggestion |
 | `/api/ops/product/approve` | `POST` | Approve a suggested product and add it to config |
+| `/api/health` | `GET` | Liveness check (no auth) |
+| `/api/agents` | `GET` | Agent registry snapshot |
+| `/api/runs` | `GET` | Active + recent runs |
+| `/api/audit-events` | `GET` | Last N structured audit events |
+| `/api/tokens` | `GET` | List issued tokens (operator-only; hashes only) |
+| `/api/tokens/issue` | `POST` | Issue a per-agent token (operator-only; plaintext returned once) |
+| `/api/tokens/revoke` | `POST` | Revoke by `token`, `token_hash`, or `agent_id` (operator-only) |
+| `/api/tasks/<id>/checkout` | `POST` | Atomic claim by an agent (Bearer agent token) |
+| `/api/runs/<id>/log` | `POST` | Agent appends a structured log entry |
+| `/api/runs/<id>/cost` | `POST` | Agent records a `CostEvent` |
+| `/api/runs/<id>/ready-for-review` | `POST` | Agent declares the run done |
+| `/api/runs/<id>/cancel` | `POST` | Agent cancels its own run |
+| `/api/approvals/request` | `POST` | Request an approval (agent or operator) |
+| `/api/approvals/<id>/decide` | `POST` | Decide an approval (operator-only) |
 
 ### Dashboard Run Panel
 
@@ -575,34 +599,179 @@ an isolated branch for review instead of editing `main` on the target.
 
 ---
 
+## Control Plane
+
+The control plane is the typed layer that sits beneath the existing
+audit + queue + dashboard surface. Every actor that does work in the
+system is a registered agent with identity, status, and a budget;
+every action is a `Run` with explicit lifecycle; every mutation
+emits a structured audit event. Existing flows continue to work
+unchanged — these primitives are additive.
+
+```mermaid
+flowchart LR
+    OP[Operator] -->|approve| TASK[Task]
+    OP -->|issue token| AGENT[Agent registry]
+    AGENT -->|Bearer token| API[/api/tasks/<id>/checkout]
+    API --> CHECKOUT[Atomic checkout]
+    CHECKOUT --> RUN[Run record]
+    RUN --> ADAPTER[Adapter invoke]
+    ADAPTER --> RESULT{Result}
+    RESULT -->|succeeded| READY[/api/runs/<id>/ready-for-review]
+    READY --> REVIEW[Task: ready_for_review]
+    REVIEW -->|operator| PR[/api/tasks/request-pr]
+    PR --> GH[Draft GitHub PR]
+    RUN -->|cost| LEDGER[results/cost-events.jsonl]
+    LEDGER --> BUDGETS[Budget evaluation]
+    BUDGETS -->|hard limit| BLOCK[Checkout 402]
+    AGENT --> AUDIT[results/audit-events.jsonl]
+    CHECKOUT --> AUDIT
+    READY --> AUDIT
+```
+
+### Concepts
+
+| Concept | Owner | Persistence |
+|---|---|---|
+| **Agent** | `backoffice.agents.AgentRegistry` | `results/agents/<id>.json` |
+| **Task** | `backoffice.tasks` (legacy) + `backoffice.store.transition_task` (typed) | `config/task-queue.yaml` |
+| **Run** | `backoffice.store.FileStore.checkout_task` / `create_run` | `results/runs/<id>.json` |
+| **Approval** | `backoffice.agent_api.handle_request_approval` / `handle_decide_approval` | Audit log (events) + `task["approval"]` |
+| **Adapter** | `backoffice.adapters.{noop,process,legacy_backend,claude_code}` | code |
+| **Budget** | `backoffice.budgets` | `config/backoffice.yaml` (`budgets:`) |
+| **CostEvent** | `backoffice.budgets.record_cost` | `results/cost-events.jsonl` |
+| **Routine** | `backoffice.routines.Scheduler` | `results/routines/<id>.json` |
+| **Workspace** | `backoffice.workspaces.WorkspaceRegistry` | `results/workspaces/<id>.json` |
+| **AuditEvent** | every mutating call | `results/audit-events.jsonl` (rotates at 10 MiB) |
+| **Token** | `backoffice.auth` | `results/agent-tokens.json` (SHA-256 hashes only) |
+
+### Configuration
+
+`config/backoffice.yaml` has new optional blocks (validated at load
+time via `validate_extensions`):
+
+```yaml
+agents:
+  fix-agent:
+    role: fixer
+    adapter_type: process
+    adapter_config:
+      command: "bash agents/fix-bugs.sh"
+      env_allowlist: [PATH, HOME]
+      timeout_seconds: 1800
+
+routines:
+  hourly-portfolio-audit:
+    name: Hourly portfolio audit
+    trigger_kind: cron
+    trigger:
+      interval_seconds: 3600
+    action_kind: noop
+    budget_id: global-monthly
+
+budgets:
+  - id: global-monthly
+    scope: global
+    period: monthly
+    soft_limit_usd: 50
+    hard_limit_usd: 100
+  - id: fix-agent-day
+    scope: agent
+    scope_id: fix-agent
+    period: daily
+    hard_limit_usd: 5
+
+plugins:
+  - name: my-adapter
+    extension_point: adapter
+    path: /opt/backoffice-plugins/my_adapter.py
+    attribute: MyAdapter
+```
+
+### Operator workflow
+
+1. Add the relevant block to `config/backoffice.yaml`.
+2. Reconcile the registry: `python -m backoffice agents create ...`
+   or rely on automatic sync via `agents.sync_from_config()` (called
+   wherever the config is loaded — e.g. setup wizard).
+3. Issue a token: `python -m backoffice tokens issue --agent-id agent-fix`.
+4. Run the smoke harness: `make smoke && make smoke-claude-code`.
+5. The dashboard's **Control plane** section (Agents · Recent runs ·
+   Activity · Tokens) shows live state.
+
+### Safety guarantees
+
+- Concurrent task checkout is atomic — exactly one of N parallel
+  agents wins; the others receive a structured `CheckoutConflict`.
+- Cross-agent mutations are denied at the auth layer; an agent
+  cannot log against, cancel, or report cost on another agent's run.
+- The Claude Code adapter refuses to invoke without an `approval_id`
+  on the run, refuses against any path in its `refuse_against` list,
+  and respects `dry_run`.
+- Operator-only actions (decide approval, issue/revoke token) require
+  the operator API key — agent tokens cannot impersonate.
+- Hard-limit budgets return HTTP 402 from `/api/tasks/<id>/checkout`
+  before any work begins; soft limits warn and audit-log.
+- Every state mutation appends one structured event to
+  `results/audit-events.jsonl`. The legacy `task["history"]` list is
+  preserved for backwards compatibility.
+
+See:
+
+- [Task Lifecycle](docs/task-lifecycle.md) — state diagram, transitions, audit guarantees
+- [Agents](docs/agents.md) — registration, roles, agent HTTP API
+- [Adapters](docs/adapters.md) — adapter contract + built-ins
+- [Security](docs/security.md) — trust model, auth, secret handling
+- [Budgets](docs/budgets.md) — cost recording + time-windowed evaluation
+- [Claude Code Adapter](docs/claude-code-adapter.md) — runbook and safety rules
+- [Architecture docs](docs/architecture/) — current state, target state, phased roadmap
+
+[Back to top](#table-of-contents)
+
+---
+
 ## Architecture
 
 ### System Topology
 
 ```mermaid
 flowchart TD
-    CFG[config/backoffice.yaml + config/targets.yaml]
-    AGENTS[agents/*.sh]
+    CFG[config/backoffice.yaml]
+    AGENTS[agents/*.sh + registered agents]
     RUNNER[run-agent.sh]
     RESULTS[results/<repo>/*-findings.json]
     AGG[backoffice.aggregate]
     BACKLOG[backoffice.backlog]
     TASKS[backoffice.tasks]
-    SERVER[backoffice.server]
-    DASH[dashboard/*.json + index.html]
+    STORE[backoffice.store FileStore]
+    REGISTRY[backoffice.agents AgentRegistry]
+    ADAPTERS[backoffice.adapters noop / process / claude_code]
+    BUDGETS[backoffice.budgets]
+    AUTH[backoffice.auth tokens]
+    AUDIT[results/audit-events.jsonl]
+    SERVER[backoffice.server + agent_api]
+    DASH[dashboard/*.json + index.html + control-plane.js]
     SYNC[backoffice.sync]
     BUNNY[Bunny Storage + Pull Zone]
     GH[GitHub PR review]
 
     CFG --> AGENTS
+    CFG --> REGISTRY
+    CFG --> BUDGETS
     AGENTS --> RUNNER
     RUNNER --> RESULTS
     RESULTS --> AGG
     RESULTS --> BACKLOG
     BACKLOG --> DASH
     AGG --> DASH
-    TASKS --> DASH
-    SERVER --> TASKS
+    TASKS --> STORE
+    REGISTRY --> STORE
+    ADAPTERS --> STORE
+    BUDGETS --> STORE
+    AUTH --> STORE
+    STORE --> AUDIT
+    STORE --> DASH
+    SERVER --> STORE
     SERVER --> GH
     DASH --> SERVER
     DASH --> SYNC
@@ -617,10 +786,19 @@ flowchart TD
 | `dashboard/*-data.json` | Dashboard-ready department payloads |
 | `dashboard/backlog.json` | Persistent finding registry with recurrence |
 | `dashboard/score-history.json` | Trend history for sparkline rendering |
+| `dashboard/agents-data.json`, `dashboard/runs-data.json`, `dashboard/audit-events.json` | Control-plane payloads consumed by `control-plane.js` |
 | `config/task-queue.yaml` | Source-of-truth task queue |
 | `results/task-queue.json` | Machine-readable queue payload |
 | `dashboard/task-queue.json` | Frontend-facing queue payload |
 | `results/local-audit-log.json` | Audit log and target snapshot data |
+| `results/audit-events.jsonl` | Append-only structured audit log of every state mutation across the system; rotates at 10 MiB |
+| `results/cost-events.jsonl` | Recorded AI execution cost events (estimated by default, verified when adapters report) |
+| `results/runs/<run-id>.json` | Per-run records (Phase 3 atomic checkout output) |
+| `results/agents/<id>.json` | Registered agent records |
+| `results/workspaces/<id>.json` | Tracked branches / worktrees |
+| `results/routines/<id>.json` | Scheduled routine records |
+| `results/agent-tokens.json` | Hashed per-agent API tokens — plaintext never persisted |
+| `results/.locks/*.lock` | POSIX advisory locks for atomic queue mutations |
 | `results/overnight-ledger.jsonl` | Append-only JSONL audit trail of every gate decision, skip, rollback, or deploy (written by the overnight loop; never rotated in place) |
 | `results/overnight-history.json` | Last 50 cycle summaries — used to compute the failure-memory window and quarantine streaks |
 | `results/quarantine-clear.json` | Operator override: `{"cleared": ["repo-a", ...]}` clears a repo back into rotation |
@@ -636,14 +814,36 @@ flowchart TD
 | `backoffice/config_drift.py` | Detects drift between `backoffice.yaml` and legacy `targets.yaml` |
 | `backoffice/overnight_state.py` | Execution ledger, failure-memory backoff, per-repo quarantine |
 | `backoffice/tasks.py` | Approval queue model and queue lifecycle |
-| `backoffice/server.py` | Dashboard server and approval APIs |
+| `backoffice/server.py` | Dashboard server, approval APIs, agent endpoint dispatch |
+| `backoffice/agent_api.py` | Phase 9 agent-facing endpoint handlers (checkout, run log, cost, ready-for-review, approvals) |
+| `backoffice/agents.py` | Agent registry CRUD + config sync |
+| `backoffice/adapters/` | `noop`, `process`, `legacy_backend`, `claude_code` adapters + adapter contract |
+| `backoffice/auth.py` | Per-agent API tokens (issue / authenticate / revoke / scopes) |
+| `backoffice/budgets.py` | Cost recording + time-windowed budget evaluation (daily / weekly / monthly / rolling_24h / lifetime) |
+| `backoffice/routines.py` | Routine + Scheduler with manual / cron / event triggers |
+| `backoffice/workspaces.py` | Workspace lifecycle + `pr_body()` provenance renderer |
+| `backoffice/portable.py` | Deterministic export with secret redaction; dry-run import |
+| `backoffice/plugins.py` | Experimental plugin loader (config-registered) |
+| `backoffice/store/` | `FileStore`, atomic write helpers, `LockFile`, `transition_task`, `checkout_task` |
+| `backoffice/domain/` | Typed models + state machines for Task / Run / Approval |
+| `backoffice/audit_rotation.py` | JSONL rotation when over 10 MiB |
 | `backoffice/__main__.py` | CLI routing |
 | `dashboard/index.html` | Main control-plane UI |
-| `Makefile` | Operator shortcuts for audits, serving, sync, and tests |
+| `dashboard/control-plane.js` | Agents / Runs / Activity / Tokens cards |
+| `scripts/smoke-agent-loop.py` | End-to-end agent lifecycle smoke (`make smoke`) |
+| `scripts/smoke-claude-code.py` | Claude Code adapter wire-up smoke (`make smoke-claude-code`) |
+| `Makefile` | Operator shortcuts for audits, serving, sync, tests, smoke |
 | `scripts/sync-dashboard.sh` | Dashboard publishing entrypoint |
 | `docs/WORKFLOW-ARCHITECTURE.md` | Detailed architecture doc |
 | `docs/CICD-REFERENCE.md` | Delivery and GitHub review model |
 | `docs/COST_GUARDRAILS.md` | CDN and infrastructure cost controls |
+| `docs/architecture/` | Phase docs: current-state, target-state, phased-roadmap |
+| `docs/task-lifecycle.md` | Task state machine, transitions, audit guarantees |
+| `docs/agents.md` | Agent registry + agent HTTP API |
+| `docs/adapters.md` | Adapter contract + built-ins |
+| `docs/security.md` | Trust model, auth, secret handling |
+| `docs/budgets.md` | Cost tracking + time-windowed budget evaluation |
+| `docs/claude-code-adapter.md` | Claude Code adapter runbook |
 
 [Back to top](#table-of-contents)
 

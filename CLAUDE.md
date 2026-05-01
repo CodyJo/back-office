@@ -23,19 +23,44 @@ This is the Cody Jo Method Back Office: a multi-department operating system of A
 
 ```
 backoffice/       — Python package (CLI, aggregation, backlog, sync, config)
+  domain/         — Typed models + state machines (Phase 1)
+  store/          — Atomic file writes, FileStore, locks (Phase 2)
+  adapters/       — noop / process / legacy_backend / claude_code (Phase 4–5)
+  agents.py       — Agent registry + sync_from_config (Phase 4)
+  routines.py     — Routine + Scheduler (Phase 8)
+  budgets.py      — CostEvent + Budget evaluation (Phase 7)
+  auth.py         — Per-agent API tokens (Phase 9)
+  workspaces.py   — Workspace lifecycle + pr_body() (Phase 10)
+  agent_api.py    — Phase 9 agent-facing API handlers
+  portable.py     — Export/import (Phase 11)
+  plugins.py      — Plugin loader (Phase 12)
+  audit_rotation.py — JSONL rotation
+  errors.py       — Error envelope (no traceback leaks)
 agents/           — Shell agent launchers + system prompts
   prompts/        — System prompts for each agent type
 config/           — Target repo configuration (gitignored)
-  backoffice.yaml             — SINGLE SOURCE OF TRUTH (runner, deploy, scan, fix, targets, autonomy)
+  backoffice.yaml             — SINGLE SOURCE OF TRUTH (runner, deploy, scan, fix, targets, autonomy,
+                                 + agents, routines, budgets, plugins)
   backoffice.bunny.example.yaml — Example config for Bunny Storage/Pull Zone deployment
   targets.yaml                — DEPRECATED (still read by shell; run `python -m backoffice check-drift`)
 dashboard/        — Consolidated HQ dashboard with slide-over panels
   index.html      — Single HQ page (matrix view + all department panels)
   backlog.json    — Persistent finding registry (content-hash dedup)
   score-history.json — Score snapshots for sparklines
+  agents-data.json / runs-data.json / audit-events.json — Phase 6 payloads
 results/          — Agent findings output (gitignored, synced to Bunny Storage)
+  audit-events.jsonl  — Append-only mutation log (rotates at 10 MiB)
+  cost-events.jsonl   — Recorded AI cost events
+  runs/<id>.json      — Per-run records (Phase 3)
+  agents/<id>.json    — Registered agent records (Phase 4)
+  workspaces/<id>.json — Tracked branches / worktrees (Phase 10)
+  routines/<id>.json  — Scheduled routine records (Phase 8)
+  agent-tokens.json   — Hashed per-agent API tokens (Phase 9)
 scripts/          — Shell scripts (overnight loop, setup, sync, agent runner)
 ci/               — CI/CD webhook server for Bunny Magic Container
+docs/architecture/ — Phase docs (current-state.md, target-state.md, phased-roadmap.md)
+docs/             — Operator manuals (task-lifecycle.md, agents.md, adapters.md,
+                    budgets.md, security.md, claude-code-adapter.md)
 tests/            — Pytest suite
 lib/              — Standards references and severity definitions
 ```
@@ -75,6 +100,15 @@ lib/              — Standards references and severity definitions
 - `python3 -m backoffice serve --port 8070` — Local dashboard server
 - `python3 -m backoffice refresh` — Regenerate dashboard data from results
 - `python3 -m backoffice sync` — Deploy dashboards to Bunny Storage/Pull Zone
+
+### Control plane (Phase 4–12)
+- `python3 -m backoffice agents {list,show,create,pause,resume,retire}`
+- `python3 -m backoffice routines {list,show,run,pause,resume}`
+- `python3 -m backoffice budgets {list,spend,evaluate}`
+- `python3 -m backoffice tokens {issue,revoke,revoke-all,list}`
+- `python3 -m backoffice runs {list,show}`
+- `python3 -m backoffice export [--out path]`
+- `python3 -m backoffice import path [--apply] [--overwrite]`
 
 ### Testing
 - `make test` — Run pytest suite
