@@ -158,6 +158,14 @@ class Config:
     fix: FixConfig = field(default_factory=FixConfig)
     notifications: NotificationsConfig = field(default_factory=NotificationsConfig)
     targets: dict[str, Target] = field(default_factory=dict)
+    # Phase 4–12 extension blocks. Stored as raw declarations so the
+    # owning modules (backoffice.agents, backoffice.routines,
+    # backoffice.budgets, backoffice.plugins) can validate and load
+    # at startup without each touching the YAML.
+    agents: list[dict] = field(default_factory=list)
+    routines: list[dict] = field(default_factory=list)
+    budgets: list[dict] = field(default_factory=list)
+    plugins: list[dict] = field(default_factory=list)
 
 
 REQUIRED_SECTIONS = ("runner", "deploy", "targets")
@@ -331,6 +339,11 @@ def load_config(path: Path | None = None) -> Config:
         fallback_order=dict(routing_policy_raw.get("fallback_order", {})),
     )
 
+    agents_raw = _normalize_extension_block(raw.get("agents"), "name")
+    routines_raw = _normalize_extension_block(raw.get("routines"), "id")
+    budgets_raw = _normalize_extension_block(raw.get("budgets"), "id")
+    plugins_raw = _normalize_extension_block(raw.get("plugins"), "name")
+
     return Config(
         root=root,
         runner=RunnerConfig(
@@ -377,7 +390,95 @@ def load_config(path: Path | None = None) -> Config:
             sync_to_storage=bool(notif_raw.get("sync_to_storage", True)),
         ),
         targets=targets,
+        agents=agents_raw,
+        routines=routines_raw,
+        budgets=budgets_raw,
+        plugins=plugins_raw,
     )
+
+
+def _normalize_extension_block(raw, id_key: str) -> list[dict]:
+    """Accept dict-of-dicts or list-of-dicts; return a list of dicts.
+
+    For dict form, the dict key becomes the value of ``id_key`` if
+    not already set in the body. Garbage entries are dropped (logged
+    by callers when they re-validate).
+    """
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return [dict(item) for item in raw if isinstance(item, dict)]
+    if isinstance(raw, dict):
+        out: list[dict] = []
+        for k, body in raw.items():
+            if not isinstance(body, dict):
+                continue
+            merged = dict(body)
+            merged.setdefault(id_key, k)
+            out.append(merged)
+        return out
+    return []
+
+
+def validate_extensions(config: "Config") -> list[str]:
+    """Run each extension parser to surface validation errors at
+    startup. Returns a list of human-readable error strings; empty
+    list means the configuration is valid.
+
+    Production deployments can call this after :func:`load_config` and
+    fail closed.
+    """
+    errors: list[str] = []
+
+    # Routines and budgets validate via dataclass __post_init__.
+    try:
+        from backoffice.routines import Routine
+
+        for decl in config.routines:
+            try:
+                Routine(
+                    id=str(decl.get("id") or ""),
+                    name=str(decl.get("name") or decl.get("id") or ""),
+                    description=str(decl.get("description", "")),
+                    trigger_kind=str(decl.get("trigger_kind", "manual")),
+                    trigger=dict(decl.get("trigger", {}) or {}),
+                    action_kind=str(decl.get("action_kind", "noop")),
+                    action=dict(decl.get("action", {}) or {}),
+                )
+            except ValueError as exc:
+                errors.append(f"routine {decl.get('id')!r}: {exc}")
+    except ImportError:
+        pass
+
+    try:
+        from backoffice.budgets import Budget
+
+        for decl in config.budgets:
+            try:
+                Budget(
+                    id=str(decl.get("id") or ""),
+                    scope=str(decl.get("scope", "global")),
+                    scope_id=str(decl.get("scope_id", "")),
+                    period=str(decl.get("period", "lifetime")),
+                    soft_limit_usd=decl.get("soft_limit_usd"),
+                    hard_limit_usd=decl.get("hard_limit_usd"),
+                )
+            except ValueError as exc:
+                errors.append(f"budget {decl.get('id')!r}: {exc}")
+    except ImportError:
+        pass
+
+    try:
+        from backoffice.domain import AGENT_ROLES
+
+        for decl in config.agents:
+            role = decl.get("role")
+            if role and role not in AGENT_ROLES:
+                errors.append(f"agent {decl.get('name')!r}: unknown role {role!r}")
+    except ImportError:
+        pass
+
+    return errors
 
 
 _SHELL_UNSAFE = re.compile(r'[;|&`$(){}!\\\n\r]')

@@ -156,6 +156,18 @@ def build_parser() -> argparse.ArgumentParser:
     api.add_argument("--port", type=int)
     api.add_argument("--bind", default="0.0.0.0")
 
+    # ────────────────────────────────────────────────────────────────
+    # Phase 4–12 control-plane subcommands
+    # ────────────────────────────────────────────────────────────────
+
+    sub.add_parser("agents", help="Agent registry CRUD")
+    sub.add_parser("routines", help="Routine CRUD + manual run")
+    sub.add_parser("budgets", help="Budget visibility")
+    sub.add_parser("tokens", help="Per-agent API token issue / revoke / list")
+    sub.add_parser("runs", help="List / show recorded runs")
+    sub.add_parser("export", help="Deterministic export of operator-owned config")
+    sub.add_parser("import", help="Validate (and optionally apply) an export payload")
+
     # Preview — generate preview artifact for a fix-agent branch
     prev = sub.add_parser(
         "preview",
@@ -174,9 +186,23 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    effective_argv = list(argv) if argv is not None else sys.argv[1:]
+
+    # Phase 4–12 subcommands forward the rest of argv to their own
+    # parsers so we don't duplicate option declarations across modules.
+    if effective_argv and effective_argv[0] in {
+        "agents",
+        "routines",
+        "budgets",
+        "tokens",
+        "runs",
+        "export",
+        "import",
+    }:
+        return _dispatch_extension(effective_argv[0], effective_argv[1:])
+
     parser = build_parser()
     args = parser.parse_args(argv)
-    effective_argv = list(argv) if argv is not None else sys.argv[1:]
 
     setup_logging(verbose=args.verbose, json_output=args.json_log)
 
@@ -298,7 +324,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "targets-json":
         from backoffice.config import load_config
-        import json, os
+        import json
+        import os
         cfg = load_config()
         filter_list: list[str] = []
         if args.filter:
@@ -464,6 +491,39 @@ def _derive_remote(repo_path) -> str | None:
         return None
     url = result.stdout.strip()
     return url or None
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Phase 4–12 subcommand dispatcher
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _dispatch_extension(name: str, argv: list[str]) -> int:
+    """Forward to the relevant module's CLI ``main(argv)``."""
+    setup_logging(verbose=False, json_output=False)
+    if name == "agents":
+        from backoffice.agents import main as agents_main
+        return agents_main(argv)
+    if name == "routines":
+        from backoffice.routines_cli import main as routines_main
+        return routines_main(argv)
+    if name == "budgets":
+        from backoffice.budgets_cli import main as budgets_main
+        return budgets_main(argv)
+    if name == "tokens":
+        from backoffice.tokens_cli import main as tokens_main
+        return tokens_main(argv)
+    if name == "runs":
+        from backoffice.runs_cli import main as runs_main
+        return runs_main(argv)
+    if name == "export":
+        from backoffice.portable_cli import export_main
+        return export_main(argv)
+    if name == "import":
+        from backoffice.portable_cli import import_main
+        return import_main(argv)
+    print(f"unknown extension subcommand: {name}", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
