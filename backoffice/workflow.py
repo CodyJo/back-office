@@ -359,6 +359,42 @@ def refresh_dashboard_artifacts(
     # 4. Write audit log
     write_audit_log(targets, results_dir, dashboard_dir)
 
+    # 5. Refresh control-plane payloads (agents, runs, audit events).
+    # Best-effort: failures here must not block the existing audit
+    # refresh path that operators rely on.
+    try:
+        from pathlib import Path
+        from backoffice.dashboard_data import refresh_all as refresh_control_plane
+        from backoffice.store import FileStore
+
+        refresh_control_plane(
+            store=FileStore(root=Path(DATA_ROOT)),
+            dashboard_dir=Path(dashboard_dir),
+        )
+        logger.info("Control-plane payloads refreshed (agents/runs/audit-events)")
+    except Exception:  # noqa: BLE001
+        logger.exception("control-plane refresh failed; continuing")
+
+    # 6. Reconcile agents/budgets from config so dashboard listings
+    # match the declarative source of truth. When the caller didn't
+    # pass a config, we lazily load the live config — but only here,
+    # so handlers that depend on ``config=None`` semantics for target
+    # lookup are unaffected.
+    try:
+        from backoffice.agents import sync_from_config as sync_agents
+        agents_decl = getattr(config, "agents", None) if config is not None else None
+        if agents_decl is None:
+            try:
+                from backoffice.config import load_config as _load_config
+                agents_decl = getattr(_load_config(), "agents", None)
+            except Exception:  # noqa: BLE001
+                agents_decl = None
+        if agents_decl:
+            sync_agents(agents_decl)
+            logger.info("Agents reconciled from config (%d declarations)", len(agents_decl))
+    except Exception:  # noqa: BLE001
+        logger.exception("agents reconciliation failed; continuing")
+
 
 def run_job_status(command: str, *args: str) -> None:
     """Run the job-status.sh shell script."""
