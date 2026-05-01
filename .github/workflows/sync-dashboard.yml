@@ -17,6 +17,14 @@ name: Sync dashboard to Bunny
 #   vars.BUNNY_STORAGE_REGION        — e.g. de | ny | la | sg | syd | uk | se | br | jh
 #   vars.BUNNY_DASHBOARD_CDN_ID      — Pull Zone numeric id
 #   vars.BUNNY_DASHBOARD_SUBDOMAIN   — e.g. admin.codyjo.com
+#
+# Optional but recommended:
+#   secrets.BUNNY_API_KEY            — Bunny.net account API key. When set,
+#                                      the sync engine purges the Pull Zone
+#                                      cache via the HTTP API; without it,
+#                                      uploads succeed but the CDN keeps
+#                                      serving the cached version until its
+#                                      TTL expires.
 
 on:
   workflow_dispatch:
@@ -51,6 +59,7 @@ jobs:
       BO_CDN: ${{ vars.BUNNY_DASHBOARD_CDN_ID }}
       BO_SUBDOMAIN: ${{ vars.BUNNY_DASHBOARD_SUBDOMAIN }}
       BUNNY_STORAGE_KEY: ${{ secrets.BUNNY_STORAGE_KEY }}
+      BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
       RUN_REF: ${{ github.ref }}
       RUN_SHA: ${{ github.sha }}
       RUN_EVENT: ${{ github.event_name }}

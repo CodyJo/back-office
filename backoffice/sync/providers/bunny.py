@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -156,6 +157,13 @@ class BunnyCDN(CDNProvider):
     def invalidate(self, distribution_id: str, paths: list[str]) -> None:
         """Purge the entire Pull Zone cache.
 
+        Two strategies, in order:
+
+        1. If ``BUNNY_API_KEY`` is in the environment, call Bunny's
+           HTTP API directly (POST ``/pullzone/{id}/purgeCache``).
+           This is the path CI takes — no Node tooling required.
+        2. Otherwise fall back to the local ``dustbunny`` CLI.
+
         The distribution_id parameter is semantically a Pull Zone ID for
         Bunny targets.  The paths parameter is accepted for interface
         compatibility but ignored — Bunny purge is always zone-wide and free.
@@ -163,6 +171,12 @@ class BunnyCDN(CDNProvider):
         if not distribution_id:
             return
         pull_zone_id = distribution_id
+
+        api_key = os.environ.get("BUNNY_API_KEY", "").strip()
+        if api_key:
+            self._invalidate_via_http_api(pull_zone_id, api_key)
+            return
+
         cmd = [self._bin, "pz", "purge", pull_zone_id]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -171,3 +185,37 @@ class BunnyCDN(CDNProvider):
                 f"CDN cache purge failed for zone {pull_zone_id}: {stderr}"
             )
         logger.info("Purged CDN zone %s", pull_zone_id)
+
+    @staticmethod
+    def _invalidate_via_http_api(pull_zone_id: str, api_key: str) -> None:
+        """Purge a Bunny Pull Zone via the account-level HTTP API.
+
+        See https://docs.bunny.net/reference/pullzonepublic_purgecache.
+        ``api_key`` is the Bunny.net account API key (My Account → API).
+        """
+        url = f"https://api.bunny.net/pullzone/{pull_zone_id}/purgeCache"
+        req = urllib.request.Request(
+            url=url,
+            method="POST",
+            headers={
+                "AccessKey": api_key,
+                "Accept": "application/json",
+                "Content-Length": "0",
+            },
+            data=b"",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                logger.info(
+                    "Purged Bunny Pull Zone %s via API (http=%d)",
+                    pull_zone_id, resp.status,
+                )
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(
+                f"CDN cache purge failed for zone {pull_zone_id}: "
+                f"HTTP {exc.code} {exc.reason}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(
+                f"CDN cache purge failed for zone {pull_zone_id}: {exc.reason}"
+            ) from exc

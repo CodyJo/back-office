@@ -1,7 +1,7 @@
 """Tests for Bunny storage and CDN providers."""
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -480,3 +480,93 @@ def test_invalidate_succeeds_on_zero_exit(mock_run):
     mock_run.return_value.returncode = 0
     cdn = BunnyCDN(dustbunny_bin="dustbunny")
     cdn.invalidate("123", ["/*"])  # should not raise
+
+
+# ──────────────────────────────────────────────────────────────────────
+# HTTP API fallback — used when BUNNY_API_KEY is set (CI path).
+# ──────────────────────────────────────────────────────────────────────
+
+
+@patch("backoffice.sync.providers.bunny.urllib.request.urlopen")
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_uses_http_api_when_bunny_api_key_set(
+    mock_run, mock_urlopen, monkeypatch
+):
+    """With BUNNY_API_KEY in the env, purge via the Bunny HTTP API
+    instead of shelling out to dustbunny."""
+    monkeypatch.setenv("BUNNY_API_KEY", "account-api-key")
+
+    fake_resp = MagicMock()
+    fake_resp.status = 204
+    fake_resp.__enter__ = lambda self: self
+    fake_resp.__exit__ = lambda self, *_: None
+    mock_urlopen.return_value = fake_resp
+
+    cdn = BunnyCDN()
+    cdn.invalidate("5603475", ["/*"])
+
+    # Subprocess (dustbunny) must not be called when API key is present.
+    mock_run.assert_not_called()
+    # urlopen is called with the right URL + headers.
+    request = mock_urlopen.call_args[0][0]
+    assert request.full_url == "https://api.bunny.net/pullzone/5603475/purgeCache"
+    assert request.method == "POST"
+    assert request.headers["Accesskey"] == "account-api-key"
+
+
+@patch("backoffice.sync.providers.bunny.urllib.request.urlopen")
+def test_invalidate_http_api_raises_on_non_200(mock_urlopen, monkeypatch):
+    """A 4xx/5xx from the Bunny purge API surfaces as RuntimeError."""
+    monkeypatch.setenv("BUNNY_API_KEY", "bad-key")
+    import urllib.error
+    mock_urlopen.side_effect = urllib.error.HTTPError(
+        url="https://api.bunny.net/pullzone/x/purgeCache",
+        code=401,
+        msg="Unauthorized",
+        hdrs=None,
+        fp=None,
+    )
+    cdn = BunnyCDN()
+    with pytest.raises(RuntimeError, match="HTTP 401"):
+        cdn.invalidate("5603475", ["/*"])
+
+
+@patch("backoffice.sync.providers.bunny.urllib.request.urlopen")
+@patch("backoffice.sync.providers.bunny.subprocess.run")
+def test_invalidate_http_api_falls_back_when_no_api_key(
+    mock_run, mock_urlopen, monkeypatch
+):
+    """Without BUNNY_API_KEY, the dustbunny CLI path is used."""
+    monkeypatch.delenv("BUNNY_API_KEY", raising=False)
+    mock_run.return_value.returncode = 0
+    cdn = BunnyCDN(dustbunny_bin="/usr/local/bin/dustbunny")
+    cdn.invalidate("123", ["/*"])
+    mock_run.assert_called_once()
+    mock_urlopen.assert_not_called()
+
+
+@patch("backoffice.sync.providers.bunny.urllib.request.urlopen")
+def test_invalidate_http_api_skipped_when_distribution_id_empty(
+    mock_urlopen, monkeypatch
+):
+    monkeypatch.setenv("BUNNY_API_KEY", "x")
+    cdn = BunnyCDN()
+    cdn.invalidate("", ["/*"])
+    mock_urlopen.assert_not_called()
+
+
+@patch("backoffice.sync.providers.bunny.urllib.request.urlopen")
+def test_invalidate_http_api_strips_whitespace_from_env_key(
+    mock_urlopen, monkeypatch
+):
+    """Trailing whitespace in the env var must not break the auth header."""
+    monkeypatch.setenv("BUNNY_API_KEY", "  account-api-key  \n")
+    fake_resp = MagicMock()
+    fake_resp.status = 204
+    fake_resp.__enter__ = lambda self: self
+    fake_resp.__exit__ = lambda self, *_: None
+    mock_urlopen.return_value = fake_resp
+    cdn = BunnyCDN()
+    cdn.invalidate("123", ["/*"])
+    request = mock_urlopen.call_args[0][0]
+    assert request.headers["Accesskey"] == "account-api-key"
