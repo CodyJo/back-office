@@ -1,0 +1,134 @@
+name: Sync dashboard to Bunny
+
+# Publishes the static dashboard assets (index.html, control-plane.js,
+# theme files, app.js) to the configured Bunny Storage Zone and purges
+# the Pull Zone cache.
+#
+# Data files (dashboard/*-data.json, backlog.json, score-history.json)
+# are gitignored — they are operator-generated and continue to flow
+# through `python -m backoffice sync` on the operator's local machine.
+# This workflow ships dashboard *code* changes; missing data files on
+# Bunny remain untouched (the sync engine uploads what it has and does
+# not delete remote files).
+#
+# Required repository config:
+#   secrets.BUNNY_STORAGE_KEY        — Bunny Storage Zone access key
+#   vars.BUNNY_STORAGE_ZONE          — e.g. admin-codyjo-backoffice
+#   vars.BUNNY_STORAGE_REGION        — e.g. de | ny | la | sg | syd | uk | se | br | jh
+#   vars.BUNNY_DASHBOARD_CDN_ID      — Pull Zone numeric id
+#   vars.BUNNY_DASHBOARD_SUBDOMAIN   — e.g. admin.codyjo.com
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+      - 'backoffice/sync/**'
+      - 'backoffice/dashboard_data.py'
+      - '.github/workflows/sync-dashboard.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  # Serialize syncs so two concurrent pushes can never race the same
+  # storage zone. Inflight uploads finish before a queued one starts.
+  group: sync-dashboard-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync to Bunny
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # All ${{ }} values are bound to env at the job level so step
+    # `run:` blocks reference them via $VAR — see GitHub's guidance on
+    # workflow injection (no untrusted input lands in a shell parser).
+    env:
+      BO_ZONE: ${{ vars.BUNNY_STORAGE_ZONE }}
+      BO_REGION: ${{ vars.BUNNY_STORAGE_REGION }}
+      BO_CDN: ${{ vars.BUNNY_DASHBOARD_CDN_ID }}
+      BO_SUBDOMAIN: ${{ vars.BUNNY_DASHBOARD_SUBDOMAIN }}
+      BUNNY_STORAGE_KEY: ${{ secrets.BUNNY_STORAGE_KEY }}
+      RUN_REF: ${{ github.ref }}
+      RUN_SHA: ${{ github.sha }}
+      RUN_EVENT: ${{ github.event_name }}
+      RUN_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime deps
+        # backoffice itself only needs PyYAML at runtime — see pyproject.toml.
+        run: python -m pip install --upgrade pip pyyaml
+
+      - name: Render CI config
+        # Synthesizes a minimal CI-only config from repo variables so
+        # the sync engine knows the storage zone and CDN target. The
+        # operator's gitignored config/backoffice.yaml is never used.
+        run: |
+          set -euo pipefail
+          : "${BO_ZONE:?BUNNY_STORAGE_ZONE repo variable is required}"
+          : "${BO_REGION:?BUNNY_STORAGE_REGION repo variable is required}"
+          : "${BO_CDN:?BUNNY_DASHBOARD_CDN_ID repo variable is required}"
+          : "${BO_SUBDOMAIN:?BUNNY_DASHBOARD_SUBDOMAIN repo variable is required}"
+
+          mkdir -p config
+          cat > config/backoffice.yaml <<YAML
+          runner:
+            command: "claude"
+            mode: "claude-print"
+
+          deploy:
+            provider: bunny
+            bunny:
+              storage_zone: "${BO_ZONE}"
+              storage_region: "${BO_REGION}"
+              dashboard_targets:
+                - cdn_id: "${BO_CDN}"
+                  base_path: ""
+                  subdomain: "${BO_SUBDOMAIN}"
+                  filter_repo: null
+                  allow_public_read: false
+
+          targets: {}
+          YAML
+
+          # Echo non-sensitive values so the run log shows what got rendered.
+          python3 -c "
+          import yaml
+          c = yaml.safe_load(open('config/backoffice.yaml'))
+          d = c['deploy']['bunny']
+          print(f'storage_zone:   {d[\"storage_zone\"]}')
+          print(f'storage_region: {d[\"storage_region\"]}')
+          for t in d['dashboard_targets']:
+              print(f'dashboard:      cdn_id={t[\"cdn_id\"]} subdomain={t[\"subdomain\"]}')
+          "
+
+      - name: Sync to Bunny
+        # GitHub Actions auto-sets CI=true; backoffice.sync.engine
+        # honors that as the remote-sync gate, so no extra env needed.
+        run: |
+          set -euo pipefail
+          if [ -z "${BUNNY_STORAGE_KEY}" ]; then
+            echo "::error::BUNNY_STORAGE_KEY secret is empty. Set it via:"
+            echo "::error::  gh secret set BUNNY_STORAGE_KEY --repo \"${RUN_REPO}\""
+            exit 1
+          fi
+          python -m backoffice sync
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Sync result"
+            echo ""
+            echo "- ref: \`${RUN_REF}\`"
+            echo "- sha: \`${RUN_SHA}\`"
+            echo "- triggered by: \`${RUN_EVENT}\`"
+            echo "- subdomain: \`${BO_SUBDOMAIN}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
