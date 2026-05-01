@@ -316,12 +316,16 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     # ------------------------------------------------------------------
 
     def _check_auth(self) -> bool:
-        """Return True if the request passes auth checks.
+        """Return True if the request passes operator-key auth.
 
         When no ``api_key`` is configured auth is disabled (open access for
         local dev).  Comparison uses :func:`hmac.compare_digest` to prevent
         timing attacks.  The key can be supplied via the ``Authorization``
         header (``Bearer <key>``) or an ``api_key`` query parameter.
+
+        Agent-token authentication uses :meth:`_authenticate_agent` and
+        is checked separately by handlers that need scoped per-agent
+        identity.
         """
         key = self._api_key
         if not key:
@@ -348,6 +352,39 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return True
 
         return False
+
+    def _bearer_token(self) -> str:
+        """Extract the Bearer token from the Authorization header (if any)."""
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            return auth_header[7:]
+        return ""
+
+    def _authenticate_agent(self):
+        """Resolve the request to an :class:`AuthResult` for an agent token.
+
+        Returns an unauthenticated AuthResult when no token is present
+        or the token is unknown. Operator keys deliberately do not
+        authenticate as agents — operators use the operator-key path.
+        """
+        from backoffice.auth import (  # noqa: PLC0415
+            AuthResult,
+            authenticate_token,
+        )
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        token = self._bearer_token()
+        if not token:
+            return AuthResult(ok=False, reason="missing_token")
+        # Reject the operator key when it shows up in this path —
+        # operator-only endpoints use _check_auth() instead.
+        if self._api_key and hmac.compare_digest(token, self._api_key):
+            return AuthResult(ok=False, reason="operator_key_not_agent")
+        return authenticate_token(FileStore(root=self._root), token)
+
+    def _is_operator_authenticated(self) -> bool:
+        """Operator key was presented (Bearer/header/query)."""
+        return bool(self._api_key) and self._check_auth()
 
     # ------------------------------------------------------------------
     # Request parsing helpers
@@ -432,12 +469,31 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_deploy_control_get()
         elif path == "/api/github-actions/history":
             self._handle_github_actions_history_get()
+        elif path == "/api/health":
+            self._handle_health_get()
+        elif path == "/api/agents":
+            self._handle_agents_get()
+        elif path == "/api/runs":
+            self._handle_runs_get()
+        elif path == "/api/audit-events":
+            self._handle_audit_events_get()
+        elif path == "/api/tokens":
+            self._handle_tokens_list()
         else:
             # Fall through to SimpleHTTPRequestHandler for static files
             super().do_GET()
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+
+        # Phase 9 agent endpoints accept either operator key or agent
+        # token. They handle their own auth; we only enforce the body
+        # size limit here.
+        if self._is_agent_endpoint(path):
+            if not self._check_body_size():
+                return
+            self._dispatch_agent_endpoint(path)
+            return
 
         # Auth gate — same pattern as api_server.py
         if not self._check_auth():
@@ -494,6 +550,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_deploy_dispatch()
         elif path == "/api/github-actions/archive":
             self._handle_github_actions_archive()
+        elif path == "/api/tokens/issue":
+            self._handle_tokens_issue()
+        elif path == "/api/tokens/revoke":
+            self._handle_tokens_revoke()
         else:
             self.send_error(404, "Not found")
 
@@ -722,6 +782,187 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response(500, {"error": f"Failed to build deploy control payload: {exc}"})
             return
 
+        self._json_response(200, payload)
+
+    def _handle_health_get(self) -> None:
+        """GET /api/health — liveness check.
+
+        Returns 200 with a small JSON payload when the server is up
+        and the file-backed store directories are accessible. Operators
+        and load balancers can curl this without authenticating.
+        """
+        try:
+            from backoffice.store import FileStore  # noqa: PLC0415
+
+            store = FileStore(root=self._root)
+            checks = {
+                "config": (self._root / "config" / "backoffice.yaml").exists(),
+                "results_dir_writable": store.audit_log_path().parent.exists()
+                or store.audit_log_path().parent.parent.exists(),
+                "dashboard_dir": (self._root / "dashboard").exists(),
+            }
+            healthy = all(checks.values())
+            self._json_response(200 if healthy else 503, {
+                "status": "ok" if healthy else "degraded",
+                "checks": checks,
+            })
+        except Exception:  # noqa: BLE001
+            logger.exception("health check failed")
+            self._json_response(503, {"status": "degraded"})
+
+    def _handle_agents_get(self) -> None:
+        """GET /api/agents — agent registry snapshot."""
+        from backoffice.dashboard_data import build_agents_payload  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        try:
+            payload = build_agents_payload(FileStore(root=self._root))
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to build agents payload")
+            self._json_response(500, {"error": f"Failed to build agents payload: {exc}"})
+            return
+        self._json_response(200, payload)
+
+    def _handle_runs_get(self) -> None:
+        """GET /api/runs — recent runs + active runs."""
+        from backoffice.dashboard_data import build_runs_payload  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        try:
+            payload = build_runs_payload(FileStore(root=self._root))
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to build runs payload")
+            self._json_response(500, {"error": f"Failed to build runs payload: {exc}"})
+            return
+        self._json_response(200, payload)
+
+    # ──────────────────────────────────────────────────────────────────
+    # Operator-only token management
+    # ──────────────────────────────────────────────────────────────────
+
+    def _handle_tokens_list(self) -> None:
+        """GET /api/tokens — list issued tokens (hashes only)."""
+        from backoffice.auth import list_tokens  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        if not self._is_operator_authenticated():
+            self._json_response(401, {"error": "operator_only"})
+            return
+        tokens = list_tokens(FileStore(root=self._root))
+        self._json_response(200, {
+            "tokens": [
+                {
+                    "token_hash": t.token_hash,
+                    "agent_id": t.agent_id,
+                    "scopes": list(t.scopes),
+                    "created_at": t.created_at,
+                    "last_used_at": t.last_used_at,
+                }
+                for t in tokens
+            ],
+        })
+
+    def _dispatch_tokens_issue(self, body: dict) -> None:
+        """Operator-only issue path that reuses an already-parsed body."""
+        if not self._is_operator_authenticated():
+            self._json_response(401, {"error": "operator_only"})
+            return
+        self._issue_token_with_body(body)
+
+    def _dispatch_tokens_revoke(self, body: dict) -> None:
+        if not self._is_operator_authenticated():
+            self._json_response(401, {"error": "operator_only"})
+            return
+        self._revoke_token_with_body(body)
+
+    def _handle_tokens_issue(self) -> None:
+        """POST /api/tokens/issue — operator issues a new agent token.
+
+        Returns the **plaintext** in the response. The dashboard must
+        capture and display it once; the server never returns it again.
+        """
+        if not self._is_operator_authenticated():
+            self._json_response(401, {"error": "operator_only"})
+            return
+
+        body = self._read_body()
+        if body is None:
+            return
+        self._issue_token_with_body(body)
+
+    def _issue_token_with_body(self, body: dict) -> None:
+        agent_id = (body.get("agent_id") or "").strip()
+        if not agent_id:
+            self._json_response(400, {"error": "agent_id required"})
+            return
+
+        scopes = body.get("scopes")
+        if scopes is not None and not isinstance(scopes, list):
+            self._json_response(400, {"error": "scopes must be a list"})
+            return
+
+        from backoffice.auth import issue_token  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        token = issue_token(
+            FileStore(root=self._root),
+            agent_id=agent_id,
+            scopes=scopes,
+            actor=str(body.get("by") or "operator"),
+        )
+        self._json_response(200, {
+            "ok": True,
+            "agent_id": agent_id,
+            "token": token,
+            "warning": "store this token now — it is not retrievable",
+        })
+
+    def _handle_tokens_revoke(self) -> None:
+        """POST /api/tokens/revoke — revoke a token by hash or plaintext."""
+        if not self._is_operator_authenticated():
+            self._json_response(401, {"error": "operator_only"})
+            return
+        body = self._read_body()
+        if body is None:
+            return
+        self._revoke_token_with_body(body)
+
+    def _revoke_token_with_body(self, body: dict) -> None:
+        token = (body.get("token") or "").strip()
+        token_hash = (body.get("token_hash") or "").strip()
+        agent_id = (body.get("agent_id") or "").strip()
+
+        from backoffice.auth import revoke_all_for_agent, revoke_token  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        store = FileStore(root=self._root)
+        if agent_id and not (token or token_hash):
+            count = revoke_all_for_agent(
+                store, agent_id, actor=str(body.get("by") or "operator"),
+            )
+            self._json_response(200, {"ok": True, "revoked": count, "agent_id": agent_id})
+            return
+        if not (token or token_hash):
+            self._json_response(400, {"error": "token, token_hash, or agent_id required"})
+            return
+        ok = revoke_token(
+            store,
+            token=token, token_hash=token_hash,
+            actor=str(body.get("by") or "operator"),
+        )
+        self._json_response(200, {"ok": ok})
+
+    def _handle_audit_events_get(self) -> None:
+        """GET /api/audit-events — most recent audit events."""
+        from backoffice.dashboard_data import build_audit_events_payload  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        try:
+            payload = build_audit_events_payload(FileStore(root=self._root))
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to build audit events payload")
+            self._json_response(500, {"error": f"Failed to build audit events payload: {exc}"})
+            return
         self._json_response(200, payload)
 
     def _handle_github_actions_history_get(self) -> None:
@@ -1061,6 +1302,191 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._root / "dashboard",
         )
 
+    # ──────────────────────────────────────────────────────────────────
+    # Phase 9 agent endpoint dispatch
+    # ──────────────────────────────────────────────────────────────────
+
+    _AGENT_ROUTE_PATTERNS = (
+        re.compile(r"^/api/tasks/(?P<task_id>[^/]+)/checkout$"),
+        re.compile(r"^/api/runs/(?P<run_id>[^/]+)/log$"),
+        re.compile(r"^/api/runs/(?P<run_id>[^/]+)/cost$"),
+        re.compile(r"^/api/runs/(?P<run_id>[^/]+)/ready-for-review$"),
+        re.compile(r"^/api/runs/(?P<run_id>[^/]+)/cancel$"),
+    )
+    _APPROVAL_REQUEST_RE = re.compile(r"^/api/approvals/request$")
+    _APPROVAL_DECIDE_RE = re.compile(r"^/api/approvals/(?P<approval_id>[^/]+)/decide$")
+    _OPERATOR_TOKEN_ROUTES = ("/api/tokens/issue", "/api/tokens/revoke")
+
+    def _is_agent_endpoint(self, path: str) -> bool:
+        if path == "/api/approvals/request":
+            return True
+        if self._APPROVAL_DECIDE_RE.match(path):
+            return True
+        if path in self._OPERATOR_TOKEN_ROUTES:
+            # Token endpoints self-handle operator-only auth so a
+            # missing token returns ``operator_only`` instead of a
+            # generic ``Unauthorized``.
+            return True
+        for pat in self._AGENT_ROUTE_PATTERNS:
+            if pat.match(path):
+                return True
+        return False
+
+    def _dispatch_agent_endpoint(self, path: str) -> None:
+        from backoffice.agent_api import (  # noqa: PLC0415
+            handle_checkout,
+            handle_decide_approval,
+            handle_request_approval,
+            handle_run_cancel,
+            handle_run_cost,
+            handle_run_log,
+            handle_run_ready_for_review,
+        )
+        from backoffice.budgets import from_config as budgets_from_config  # noqa: PLC0415
+        from backoffice.config import load_config  # noqa: PLC0415
+        from backoffice.store import FileStore  # noqa: PLC0415
+
+        body = self._read_body()
+        if body is None:
+            return  # 413 already sent
+
+        store = FileStore(root=self._root)
+        auth = self._authenticate_agent()
+
+        # Operator-only token routes. Body is already parsed; dispatch
+        # to the legacy helpers via a small adapter that reuses it.
+        if path == "/api/tokens/issue":
+            self._dispatch_tokens_issue(body)
+            return
+        if path == "/api/tokens/revoke":
+            self._dispatch_tokens_revoke(body)
+            return
+
+        # Approval request — agent OR operator may call it.
+        if path == "/api/approvals/request":
+            if not auth.ok:
+                # Allow operator-key callers; synthesize an operator AuthResult.
+                if self._is_operator_authenticated():
+                    from backoffice.auth import AuthResult, DEFAULT_AGENT_SCOPES  # noqa: PLC0415
+                    auth = AuthResult(ok=True, agent_id="operator", scopes=DEFAULT_AGENT_SCOPES)
+                else:
+                    self._json_response(401, {"error": auth.reason or "unauthenticated"})
+                    return
+            code, payload = handle_request_approval(store, auth, body=body)
+            self._json_response(code, payload)
+            return
+
+        # Approval decide — operator-only.
+        m = self._APPROVAL_DECIDE_RE.match(path)
+        if m:
+            operator = self._is_operator_authenticated()
+            from backoffice.auth import AuthResult  # noqa: PLC0415
+            decider_auth = auth if auth.ok else AuthResult(ok=True, agent_id="operator", scopes=())
+            code, payload = handle_decide_approval(
+                store,
+                decider_auth,
+                approval_id=m.group("approval_id"),
+                body=body,
+                operator_authenticated=operator,
+            )
+            self._json_response(code, payload)
+            return
+
+        # Per-agent endpoints — must authenticate as an agent.
+        if not auth.ok:
+            self._json_response(401, {"error": auth.reason or "unauthenticated"})
+            return
+
+        for pat in self._AGENT_ROUTE_PATTERNS:
+            m = pat.match(path)
+            if not m:
+                continue
+            try:
+                config = load_config()
+                budgets = budgets_from_config(config.budgets) or None
+            except Exception:  # noqa: BLE001
+                budgets = None
+            if pat.pattern.endswith("/checkout$"):
+                code, payload = handle_checkout(
+                    store, auth, task_id=m.group("task_id"), body=body, budgets=budgets,
+                )
+            elif pat.pattern.endswith("/log$"):
+                code, payload = handle_run_log(store, auth, run_id=m.group("run_id"), body=body)
+            elif pat.pattern.endswith("/cost$"):
+                code, payload = handle_run_cost(store, auth, run_id=m.group("run_id"), body=body)
+            elif pat.pattern.endswith("/ready-for-review$"):
+                code, payload = handle_run_ready_for_review(
+                    store, auth, run_id=m.group("run_id"), body=body,
+                )
+            elif pat.pattern.endswith("/cancel$"):
+                code, payload = handle_run_cancel(store, auth, run_id=m.group("run_id"), body=body)
+            else:  # pragma: no cover
+                self._json_response(404, {"error": "not_found"})
+                return
+            self._json_response(code, payload)
+            return
+
+        self._json_response(404, {"error": "not_found"})
+
+    def _guard_transition(self, from_state: str, to_state: str) -> bool:
+        """Return False (and emit a 409) when the transition is illegal."""
+        from backoffice.domain.state_machines import (  # noqa: PLC0415
+            TASK_TRANSITIONS,
+            is_legal_task_transition,
+        )
+        if is_legal_task_transition(from_state, to_state):
+            return True
+        legal = sorted(TASK_TRANSITIONS.get(from_state, set()))
+        self._json_response(
+            409,
+            {
+                "error": "illegal_transition",
+                "from": from_state,
+                "to": to_state,
+                "legal_targets": legal,
+            },
+        )
+        return False
+
+    def _emit_task_transition_audit(
+        self,
+        task_id: str,
+        from_state: str,
+        to_state: str,
+        actor: str,
+        reason: str,
+        *,
+        action: str = "task.transition",
+        extra_after: dict | None = None,
+    ) -> None:
+        """Append a structured audit event for a task state change.
+
+        Best-effort: failures here must never break the response.
+        Phase 4+ will refactor handlers onto :meth:`Store.transition_task`.
+        """
+        try:
+            from backoffice.domain import AuditEvent, iso_now  # noqa: PLC0415
+            from backoffice.store import FileStore  # noqa: PLC0415
+
+            store = FileStore(root=self._root)
+            after = {"status": to_state}
+            if extra_after:
+                after.update(extra_after)
+            store.append_audit_event(
+                AuditEvent(
+                    at=iso_now(),
+                    actor_id=actor,
+                    action=action,
+                    subject_kind="task",
+                    subject_id=task_id,
+                    before={"status": from_state},
+                    after=after,
+                    reason=reason,
+                )
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("failed to emit task transition audit event")
+
     def _save_task_queue(self, context) -> dict:
         from backoffice.tasks import save_payload  # noqa: PLC0415
 
@@ -1224,6 +1650,9 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
         actor = (body.get("by") or "operator").strip()
         note = (body.get("note") or "Approved for queued implementation").strip()
+        from_state = str(task.get("status", "proposed"))
+        if not self._guard_transition(from_state, "ready"):
+            return
         task["status"] = "ready"
         task["updated_at"] = iso_now()
         task["approval"] = {
@@ -1234,6 +1663,9 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         }
         append_history(task, "ready", actor, note)
         self._save_task_queue(context)
+        self._emit_task_transition_audit(
+            task_id, from_state, "ready", actor, note, action="task.approve"
+        )
         self._task_response(task, "Task approved and moved to ready queue.")
 
     def _handle_task_cancel(self) -> None:
@@ -1256,10 +1688,16 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
         actor = (body.get("by") or "operator").strip()
         note = (body.get("note") or "Cancelled during approval review").strip()
+        from_state = str(task.get("status", "proposed"))
+        if not self._guard_transition(from_state, "cancelled"):
+            return
         task["status"] = "cancelled"
         task["updated_at"] = iso_now()
         append_history(task, "cancelled", actor, note)
         self._save_task_queue(context)
+        self._emit_task_transition_audit(
+            task_id, from_state, "cancelled", actor, note, action="task.cancel"
+        )
         self._task_response(task, "Task cancelled.")
 
     def _handle_task_request_pr(self) -> None:
@@ -1310,21 +1748,41 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response(409, {"error": "Refusing to create PR from default branch. Use a review branch first."})
             return
 
+        # State-machine guard: only ready_for_review/in_progress/blocked can open a PR.
+        from_state = str(task.get("status", "proposed"))
+        if not self._guard_transition(from_state, "pr_open"):
+            return
+
         pr_title = (body.get("title") or f"Review: {task.get('title', 'Queued work')}").strip()
-        pr_body = (body.get("body") or "").strip()
-        if not pr_body:
-            pr_body = (
-                "## Approval Request\n"
-                f"- Task: {task.get('id')}\n"
-                f"- Repo: {task.get('repo')}\n"
-                f"- Status: {task.get('status')}\n"
-                "\n"
-                "This PR was opened from the Back Office human approval workflow and requires GitHub review before merge."
+
+        # Compose the PR body via backoffice.workspaces.pr_body so every
+        # PR carries Back Office provenance (task / run / approval /
+        # branch). pr_body() raises PRGuardError when attached test
+        # results show a failure — propagate as a 409.
+        pr_body_text = (body.get("body") or "").strip()
+        if not pr_body_text:
+            from backoffice.workspaces import (  # noqa: PLC0415
+                PRGuardError,
+                pr_body as render_pr_body,
             )
+            approval = task.get("approval") or {}
+            try:
+                pr_body_text = render_pr_body(
+                    task_id=str(task.get("id", "")),
+                    task_title=str(task.get("title", "")),
+                    repo=str(task.get("repo", "")),
+                    run_id=str(task.get("current_run_id", "")),
+                    approval_id=str(approval.get("id", "")),
+                    workspace_id="",
+                    branch=branch,
+                )
+            except PRGuardError as exc:
+                self._json_response(409, {"error": "tests_failed", "detail": str(exc)})
+                return
 
         try:
             pr_result = subprocess.run(
-                ["gh", "pr", "create", "--draft", "--title", pr_title, "--body", pr_body],
+                ["gh", "pr", "create", "--draft", "--title", pr_title, "--body", pr_body_text],
                 cwd=str(repo_path),
                 capture_output=True,
                 text=True,
@@ -1339,6 +1797,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         pr_url = pr_result.stdout.strip().splitlines()[-1] if pr_result.stdout.strip() else ""
+        actor = (body.get("by") or "operator").strip()
         task["status"] = "pr_open"
         task["updated_at"] = iso_now()
         task["pr"] = {
@@ -1347,8 +1806,17 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             "branch": branch,
             "created_at": iso_now(),
         }
-        append_history(task, "pr_open", body.get("by") or "operator", f"Draft PR opened on branch {branch}")
+        append_history(task, "pr_open", actor, f"Draft PR opened on branch {branch}")
         self._save_task_queue(context)
+        self._emit_task_transition_audit(
+            task_id,
+            from_state,
+            "pr_open",
+            actor,
+            f"Draft PR opened on branch {branch}",
+            action="task.request_pr",
+            extra_after={"pr_url": pr_url, "branch": branch},
+        )
         self._json_response(200, {"ok": True, "task": task, "pr_url": pr_url})
 
     def _handle_migration_plan_item_update(self) -> None:
