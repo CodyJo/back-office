@@ -189,6 +189,12 @@ test: ## Run scoring tests (pre-deploy gate)
 test-coverage: ## Run regression tests with Python line coverage reporting
 	python3 -m pytest tests/ --cov=backoffice --cov-report=term --cov-report=xml --cov-report=json:coverage.json
 
+smoke: ## End-to-end smoke harness for the Phase 4–9 agent loop
+	python3 scripts/smoke-agent-loop.py
+
+smoke-claude-code: ## Verify the Claude Code adapter wiring (uses a fake command — no real model call)
+	python3 scripts/smoke-claude-code.py
+
 local-targets: ## List configured local audit targets
 	python3 -m backoffice list-targets
 
