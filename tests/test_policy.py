@@ -14,14 +14,12 @@ from __future__ import annotations
 
 import json
 import textwrap
-from pathlib import Path
 
 import pytest
 
 from backoffice.config import Autonomy, Target, Config
 from backoffice.policy import (
     GATES,
-    GateDecision,
     evaluate_gate,
     load_autonomy,
     main as policy_main,

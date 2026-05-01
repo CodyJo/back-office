@@ -70,3 +70,15 @@ node_modules/
 
 # Scan state
 results/*.state
+
+# Phase 2–12 control-plane artifacts (file-backed Store).
+# These are generated locally and never checked in.
+results/*.jsonl
+results/runs/
+results/agents/
+results/workspaces/
+results/routines/
+results/.locks/
+results/agent-tokens.json
+results/audit-events.jsonl
+results/cost-events.jsonl

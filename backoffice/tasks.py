@@ -76,9 +76,15 @@ def load_yaml(path: Path) -> dict:
 
 
 def write_yaml(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as handle:
-        yaml.safe_dump(payload, handle, sort_keys=False)
+    """Atomic-write *payload* as YAML.
+
+    Bytes match the legacy ``yaml.safe_dump(payload, handle, sort_keys=False)``
+    output exactly. Crash safety comes from
+    :func:`backoffice.store.atomic.atomic_write_yaml`.
+    """
+    from backoffice.store.atomic import atomic_write_yaml  # local import — avoids cycle
+
+    atomic_write_yaml(path, payload, sort_keys=False)
 
 
 def load_targets(targets_path: Path) -> dict[str, dict]:
@@ -167,13 +173,14 @@ def save_payload(
         "version": payload.get("version", 1),
         "tasks": [ensure_task_defaults(task, targets) for task in payload.get("tasks", [])],
     }
+    from backoffice.store.atomic import atomic_write_json  # local — avoids cycle
+
     write_yaml(config_path, normalized)
     dashboard_payload = build_dashboard_payload(normalized["tasks"])
     results_path = results_dir / "task-queue.json"
     dashboard_path = dashboard_dir / "task-queue.json"
     for out_path in (results_path, dashboard_path):
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(dashboard_payload, indent=2, default=str) + "\n")
+        atomic_write_json(out_path, dashboard_payload)
     return dashboard_payload
 
 
@@ -521,10 +528,30 @@ def command_create(args: argparse.Namespace) -> int:
 
 
 def update_status(args: argparse.Namespace, status: str, default_note: str) -> int:
+    """Validate + apply a task status change for the CLI.
+
+    Validation runs before any disk write. An illegal transition
+    returns rc=2 with a clear log message; the queue is untouched.
+    """
+    from backoffice.domain.state_machines import (  # local — avoids cycle
+        TASK_TRANSITIONS,
+        is_legal_task_transition,
+    )
+
     context = load_context(args.config, args.targets_config, args.results_dir, args.dashboard_dir)
     tasks = context.payload.setdefault("tasks", [])
     task = find_task(tasks, args.id)
     actor = args.by or task.get("owner") or "back-office"
+    from_state = str(task.get("status", "proposed"))
+
+    if not is_legal_task_transition(from_state, status):
+        legal = sorted(TASK_TRANSITIONS.get(from_state, set()))
+        logger.error(
+            "illegal task transition for %s: %s -> %s (legal targets: %s)",
+            task["id"], from_state, status, legal,
+        )
+        return 2
+
     task["status"] = status
     if getattr(args, "owner", None):
         task["owner"] = args.owner
@@ -534,8 +561,54 @@ def update_status(args: argparse.Namespace, status: str, default_note: str) -> i
     save_payload(
         context.payload, context.targets, args.config, args.results_dir, args.dashboard_dir
     )
+
+    # Emit a structured audit event alongside the legacy mutation. The
+    # legacy ``task["history"]`` list is preserved unchanged for
+    # backwards compatibility — the audit log is the new source of
+    # truth for cross-task analysis.
+    _emit_task_transition_audit(args, args.id, from_state, status, actor, note)
+
     logger.info("%s -> %s", task["id"], status)
     return 0
+
+
+def _emit_task_transition_audit(
+    args: argparse.Namespace,
+    task_id: str,
+    from_state: str,
+    to_state: str,
+    actor: str,
+    reason: str,
+) -> None:
+    """Append a ``task.transition`` audit event via the local Store.
+
+    Best-effort: failures here must never break the queue write. Phase
+    4+ will refactor callers onto :meth:`Store.transition_task` which
+    bundles validation + audit + persistence atomically.
+    """
+    try:
+        from backoffice.domain import AuditEvent  # local — avoids cycles
+        from backoffice.store import FileStore
+
+        store = FileStore(
+            config_dir=Path(args.config).parent,
+            results_dir=args.results_dir,
+            dashboard_dir=args.dashboard_dir,
+        )
+        store.append_audit_event(
+            AuditEvent(
+                at=iso_now(),
+                actor_id=actor,
+                action="task.transition",
+                subject_kind="task",
+                subject_id=task_id,
+                before={"status": from_state},
+                after={"status": to_state},
+                reason=reason,
+            )
+        )
+    except Exception:  # noqa: BLE001 — audit must never break writes
+        logger.exception("failed to emit task transition audit event")
 
 
 def command_start(args: argparse.Namespace) -> int:

@@ -8,13 +8,11 @@ check for conflicts and surface them to the operator.
 from __future__ import annotations
 
 import textwrap
-from pathlib import Path
 
 import pytest
 
 from backoffice.config import load_config
 from backoffice.config_drift import (
-    DriftReport,
     detect_drift,
     load_legacy_targets,
 )

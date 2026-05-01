@@ -8,15 +8,12 @@ backoffice.yaml, with conservative defaults matching MASTER-PROMPT.md.
 from __future__ import annotations
 
 import textwrap
-from pathlib import Path
 
 import pytest
 
 from backoffice.config import (
     Autonomy,
-    Config,
     ConfigError,
-    Target,
     load_config,
 )
 
