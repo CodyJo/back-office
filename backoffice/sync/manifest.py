@@ -17,6 +17,7 @@ DASHBOARD_FILES: list[str] = [
     "faq-content.html",
     "docs-content.html",
     "app.js",
+    "control-plane.js",
     "theme.css",
     "theme.js",
     "theme-bootstrap.js",
@@ -58,6 +59,10 @@ SHARED_META_FILES: list[str] = [
     "cloud-cost-comparison.json",
     "remediation-plan.json",
     "task-queue.json",
+    # Control-plane payloads (Phase 6).
+    "agents-data.json",
+    "runs-data.json",
+    "audit-events.json",
 ]
 
 JOB_STATUS_FILES: list[str] = [".jobs.json", ".jobs-history.json"]
