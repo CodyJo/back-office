@@ -156,6 +156,8 @@ def build_parser() -> argparse.ArgumentParser:
     api.add_argument("--port", type=int)
     api.add_argument("--bind", default="0.0.0.0")
 
+    sub.add_parser("mcp", help="Run the read-only MCP server over stdio")
+
     # ────────────────────────────────────────────────────────────────
     # Phase 4–12 control-plane subcommands
     # ────────────────────────────────────────────────────────────────
@@ -442,6 +444,10 @@ def main(argv: list[str] | None = None) -> int:
         except ImportError:
             print("API server module not yet implemented", file=sys.stderr)
             return 1
+
+    if args.command == "mcp":
+        from backoffice.mcp_server import run_stdio
+        return run_stdio()
 
     if args.command == "preview":
         from pathlib import Path

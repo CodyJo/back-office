@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "backoffice": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "backoffice", "mcp"],
+      "cwd": "/home/merm/projects/back-office"
+    }
+  }
+}
