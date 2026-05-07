@@ -2269,6 +2269,52 @@
         });
         actions.appendChild(approveBtn);
       }
+      if (task.status === 'ready' && task.task_type === 'finding_fix') {
+        var dryBtn = el('button', {className: 'ops-btn', textContent: 'Preview Fix (Dry-Run)'});
+        dryBtn.addEventListener('click', function() {
+          dryBtn.disabled = true;
+          dryBtn.textContent = 'Running…';
+          fetch('/api/tasks/apply-fix', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: task.id, dry_run: true, by: 'dashboard'})
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            dryBtn.disabled = false;
+            dryBtn.textContent = 'Preview Fix (Dry-Run)';
+            var msg = res.ok
+              ? ('Dry-run: ' + (res.data.outcome ? res.data.outcome.status + ' — ' + res.data.outcome.reason : 'ok'))
+              : ('Error: ' + (res.data.error || 'Unknown error'));
+            opsFeedback(container, msg, !res.ok);
+            if (res.ok) refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
+          });
+        });
+        actions.appendChild(dryBtn);
+
+        var applyBtn = el('button', {className: 'ops-btn ops-btn-primary', textContent: 'Apply Fix (Commit)'});
+        applyBtn.addEventListener('click', function() {
+          if (!window.confirm('Commit this fix to a new branch in ' + (task.repo || 'the target repo') + '? Tests will run before commit; rollback on regression.')) return;
+          applyBtn.disabled = true;
+          applyBtn.textContent = 'Applying…';
+          fetch('/api/tasks/apply-fix', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: task.id, dry_run: false, by: 'dashboard'})
+          })
+          .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+          .then(function(res) {
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Apply Fix (Commit)';
+            var msg = res.ok
+              ? ('Applied: ' + (res.data.outcome ? res.data.outcome.status + ' on ' + (res.data.outcome.branch || 'no-branch') : 'ok'))
+              : ('Error: ' + (res.data.error || 'Unknown error'));
+            opsFeedback(container, msg, !res.ok);
+            if (res.ok) refreshTaskQueueCache().then(function() { opsRenderApprovalTab(); });
+          });
+        });
+        actions.appendChild(applyBtn);
+      }
       if (task.status === 'ready_for_review') {
         var prBtn = el('button', {className: 'ops-btn', textContent: 'Create Draft PR'});
         prBtn.addEventListener('click', function() {

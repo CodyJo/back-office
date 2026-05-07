@@ -273,6 +273,19 @@ def init_jobs(target: str, departments: list[str], root: Path | None = None) -> 
     )
 
 
+def _worktree_is_clean(repo_path: str) -> bool:
+    """Return True iff the repo at *repo_path* has no uncommitted changes."""
+    import subprocess
+    try:
+        res = subprocess.run(
+            ["git", "-C", repo_path, "status", "--porcelain"],
+            capture_output=True, text=True, check=False, timeout=5,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return True  # conservative: don't block on unknown state
+    return res.returncode == 0 and not res.stdout.strip()
+
+
 # ---------------------------------------------------------------------------
 # HTTP handler
 # ---------------------------------------------------------------------------
@@ -535,6 +548,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_task_queue_finding()
         elif path == "/api/tasks/approve":
             self._handle_task_approve()
+        elif path == "/api/tasks/apply-fix":
+            self._handle_task_apply_fix()
         elif path == "/api/tasks/cancel":
             self._handle_task_cancel()
         elif path == "/api/tasks/request-pr":
@@ -1672,6 +1687,172 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             task_id, from_state, "ready", actor, note, action="task.approve"
         )
         self._task_response(task, "Task approved and moved to ready queue.")
+
+    def _handle_task_apply_fix(self) -> None:
+        """POST /api/tasks/apply-fix — run the safe-apply framework against a queued task.
+
+        Body: ``{"id": "<task-id>", "dry_run": true, "by": "operator"}``.
+
+        - Task must be in ``ready`` state (post-approval).
+        - Looks up the source finding by id from the target's results dir.
+        - Resolves the target's path / lint_command / test_command from config.
+        - Calls ``backoffice.apply.runner.apply_finding`` with the target's autonomy
+          policy honored (``allow_fix`` gate, ``allow_auto_commit`` gate).
+        - Dry-run: task stays at ``ready``, returns the diff + outcome.
+        - Real apply: task transitions to ``ready_for_review`` (success) or ``blocked`` (failure).
+        """
+        body = self._read_body()
+        if body is None:
+            return
+        task_id = (body.get("id") or "").strip()
+        if not task_id:
+            self._json_response(400, {"error": "id is required"})
+            return
+        dry_run = bool(body.get("dry_run", True))
+        actor = (body.get("by") or "operator").strip()
+
+        from backoffice.apply.runner import _load_findings, apply_finding  # noqa: PLC0415
+        from backoffice.config import load_config  # noqa: PLC0415
+        from backoffice.policy import evaluate_gate  # noqa: PLC0415
+        from backoffice.tasks import append_history, find_task, iso_now  # noqa: PLC0415
+
+        context = self._task_queue_context()
+        try:
+            task = find_task(context.payload.setdefault("tasks", []), task_id)
+        except ValueError as exc:
+            self._json_response(404, {"error": str(exc)})
+            return
+
+        if task.get("task_type") != "finding_fix":
+            self._json_response(409, {
+                "error": "task is not a finding_fix",
+                "task_type": task.get("task_type"),
+            })
+            return
+
+        from_state = str(task.get("status", "proposed"))
+        if from_state != "ready":
+            self._json_response(409, {
+                "error": "task must be in 'ready' state to apply",
+                "from": from_state,
+            })
+            return
+
+        repo_name = task.get("repo", "")
+        finding_id = (task.get("source_finding") or {}).get("id", "")
+        if not repo_name or not finding_id:
+            self._json_response(409, {"error": "task is missing source_finding.id or repo"})
+            return
+
+        try:
+            cfg = load_config()
+        except Exception as exc:  # noqa: BLE001
+            self._json_response(500, {"error": f"config load failed: {exc}"})
+            return
+        target = cfg.targets.get(repo_name)
+        if target is None:
+            self._json_response(404, {"error": f"target {repo_name!r} not in config"})
+            return
+
+        # Look up the source finding by id across both AI and deterministic files.
+        results_dir = str(cfg.root / "results")
+        findings = _load_findings(repo_name, results_dir)
+        finding = next((f for f in findings if f.get("id") == finding_id), None)
+        if finding is None:
+            self._json_response(404, {
+                "error": f"source finding {finding_id!r} not found in results/{repo_name}/",
+            })
+            return
+
+        # Honor the fix gate.
+        fix_decision = evaluate_gate(target.autonomy, "fix", {
+            "worktree_clean": _worktree_is_clean(target.path),
+        })
+        if not fix_decision.allow and not dry_run:
+            self._json_response(403, {
+                "error": "fix gate denied",
+                "reason": fix_decision.reason,
+            })
+            return
+        auto_commit_decision = evaluate_gate(target.autonomy, "auto_commit", {})
+
+        # Run the safe-apply pipeline.
+        try:
+            outcome = apply_finding(
+                finding,
+                target_name=repo_name,
+                target_path=target.path,
+                lint_command=target.lint_command,
+                test_command=target.test_command,
+                dry_run=dry_run,
+                auto_commit_allowed=auto_commit_decision.allow,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("apply_finding crashed for task %s", task_id)
+            self._json_response(500, {"error": f"apply failed: {exc}"})
+            return
+
+        # Map outcome → task state changes (only on real apply, never on dry-run).
+        target_status = None
+        commit_message = None
+        if not dry_run:
+            if outcome.status in ("applied", "applied-uncommitted"):
+                target_status = "ready_for_review"
+                commit_message = (
+                    f"Applied via {outcome.strategy}; branch={outcome.branch}; "
+                    f"awaiting human review."
+                )
+            elif outcome.status == "rolled-back":
+                target_status = "blocked"
+                commit_message = f"Rolled back: {outcome.reason}"
+            elif outcome.status == "failed":
+                target_status = "blocked"
+                commit_message = f"Apply failed: {outcome.reason}"
+            elif outcome.status == "skipped":
+                # Skipped is informational; leave task at ready for the operator.
+                pass
+
+        if target_status:
+            if not self._guard_transition(from_state, target_status):
+                return
+            task["status"] = target_status
+            task["updated_at"] = iso_now()
+            task.setdefault("apply_runs", []).append({
+                "at": iso_now(),
+                "actor": actor,
+                "dry_run": dry_run,
+                "outcome": outcome.to_dict(),
+            })
+            if outcome.branch:
+                task["branch"] = outcome.branch
+            append_history(task, target_status, actor, commit_message or outcome.reason)
+            self._save_task_queue(context)
+            self._emit_task_transition_audit(
+                task_id, from_state, target_status, actor,
+                commit_message or outcome.reason,
+                action="task.apply_fix",
+                extra_after={"branch": outcome.branch, "strategy": outcome.strategy},
+            )
+        else:
+            # Dry-run or skipped — record the run without mutating state.
+            task.setdefault("apply_runs", []).append({
+                "at": iso_now(),
+                "actor": actor,
+                "dry_run": dry_run,
+                "outcome": outcome.to_dict(),
+            })
+            self._save_task_queue(context)
+
+        self._json_response(200, {
+            "ok": outcome.status in ("dry-run", "applied", "applied-uncommitted"),
+            "task": task,
+            "outcome": outcome.to_dict(),
+            "dry_run": dry_run,
+            "message": (
+                f"Dry-run complete: {outcome.status}" if dry_run
+                else f"Apply complete: {outcome.status} ({outcome.reason})"
+            ),
+        })
 
     def _handle_task_cancel(self) -> None:
         """POST /api/tasks/cancel — reject or cancel a queue item."""
