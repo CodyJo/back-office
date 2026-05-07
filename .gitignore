@@ -5,7 +5,11 @@ results/.jobs.json
 results/.jobs-history.json
 results/.jobs.lock
 results/.local-audit-run.lock
+results/*.lock
 results/local-audit-log.md
+
+# Codex CLI marker (empty file, not project content)
+.codex
 
 # Terraform
 terraform/.terraform/
