@@ -56,7 +56,15 @@ results/          — Agent findings output (gitignored, synced to Bunny Storage
   workspaces/<id>.json — Tracked branches / worktrees (Phase 10)
   routines/<id>.json  — Scheduled routine records (Phase 8)
   agent-tokens.json   — Hashed per-agent API tokens (Phase 9)
-scripts/          — Shell scripts (overnight loop, setup, sync, agent runner)
+scripts/          — Shell scripts (overnight loop, setup, sync, agent runner, check-scanner-tools)
+backoffice/scanners/ — Phase 1 deterministic scanner foundation (semgrep/ruff/bandit/pip-audit/
+                       npm-audit/gitleaks for QA; lighthouse/axe-core/checkov/etc. for other depts)
+                       severity.py, discovery.py, tools.py, dept_tools.py, runner.py, scan_state.py, triage.py
+backoffice/apply/    — Phase 2 safe-apply framework (worktree → verify → commit / rollback)
+                       strategies.py, verifier.py, runner.py
+backoffice/llm/      — Phase 4 Anthropic SDK + prompt-caching layer (opt-in; no-ops without API key)
+                       client.py, cost_estimator.py
+backoffice/budget_check.py — Phase 2b high-level budget gate facade for shell scripts
 ci/               — CI/CD webhook server for Bunny Magic Container
 docs/architecture/ — Phase docs (current-state.md, target-state.md, phased-roadmap.md)
 docs/             — Operator manuals (task-lifecycle.md, agents.md, adapters.md,
@@ -68,7 +76,7 @@ lib/              — Standards references and severity definitions
 ## Commands
 
 ### Auditing
-- `make qa TARGET=/path` — Run QA scan
+- `make qa TARGET=/path` — Run QA scan (hybrid: deterministic-first + Claude on changed files)
 - `make seo TARGET=/path` — Run SEO audit
 - `make ada TARGET=/path` — Run ADA compliance audit
 - `make compliance TARGET=/path` — Run regulatory compliance audit
@@ -77,9 +85,31 @@ lib/              — Standards references and severity definitions
 - `make audit-all-parallel TARGET=/path` — All 6 departments (2 parallel waves)
 - `make full-scan TARGET=/path` — All audits + auto-fix
 
-### Fixing
+### Deterministic scanners (free, $0 spend) — Phase 1
+- `python3 -m backoffice scan <target>` — Run free OSS scanners (semgrep/ruff/bandit/pip-audit/npm-audit/gitleaks)
+- `python3 -m backoffice scan <target> --department seo` — SEO scanners (lighthouse, html-validate)
+- `python3 -m backoffice scan <target> --department ada` — ADA scanners (axe-core)
+- `python3 -m backoffice scan <target> --department compliance` — Compliance (license-checker, gitleaks)
+- `python3 -m backoffice scan <target> --department cloud-ops` — Cloud Ops (checkov, tfsec)
+- `python3 -m backoffice scan <target> --force` — Override the SHA-skip cache and re-scan
+- `bash scripts/check-scanner-tools.sh` — Report which scanner binaries are installed
+- See `docs/ai-cost-guide.md` and `docs/deterministic-scanners.md`.
+
+### Safe-apply (auto-remediation) — Phase 2
+- `python3 -m backoffice apply <target>` — DRY-RUN preview of all auto-fixable findings
+- `python3 -m backoffice apply <target> --apply` — Actually apply fixes (worktree → verify → commit)
+- `python3 -m backoffice apply <target> --finding F001` — Apply one specific finding
+- `python3 -m backoffice apply <target> --source-tool ruff` — Filter by source tool
+- `python3 -m backoffice apply <target> --severity high` — Severity floor (default: medium)
+- `python3 -m backoffice apply <target> --max-changes 5` — Cap (default: target.autonomy.max_changes_per_cycle)
+- See `docs/safe-apply.md`.
+
+### Fixing (legacy AI-driven Fix Agent)
 - `make fix TARGET=/path` — Run fix agent on QA findings
 - `make watch TARGET=/path` — Continuous watch + auto-fix mode
+
+### Budget gate
+- `python3 -m backoffice budget-check <target> --department qa` — Evaluate AI-spend gate; exit 0 = allow/warn, 1 = block
 
 ### Overnight Autonomous Loop
 - `make overnight` — Start loop (audit, decide, fix, build, verify, deploy, repeat)

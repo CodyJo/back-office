@@ -5,6 +5,7 @@
 .PHONY: forgejo-up forgejo-down forgejo-mirror
 .PHONY: local-targets local-refresh local-audit local-audit-all self-audit-local
 .PHONY: overnight overnight-dry overnight-stop overnight-status overnight-rollback
+.PHONY: scan scan-all scan-tools-check apply apply-dry budget-check
 
 TARGET ?=
 
@@ -25,6 +26,31 @@ help: ## Show this help
 
 setup: ## Initial setup (create configs, check prerequisites)
 	bash scripts/setup.sh
+
+# ── Phase 1+ deterministic scanners + safe-apply ───────────────────────────────
+
+scan: ## Free deterministic scanners on a configured target name (make scan TARGET_NAME=back-office [DEPT=qa])
+	@test -n "$(TARGET_NAME)" || (echo "Usage: make scan TARGET_NAME=<name> [DEPT=qa|seo|ada|compliance|cloud-ops]" && exit 1)
+	python3 -m backoffice scan "$(TARGET_NAME)" $(if $(DEPT),--department "$(DEPT)",) $(if $(FORCE),--force,)
+
+scan-all: ## Run deterministic QA scan on all configured targets
+	python3 -m backoffice list-targets 2>&1 | awk -F: '/INFO/ { gsub(/.*backoffice.workflow: /, ""); split($$0, a, ":"); print a[1] }' | \
+	  while read t; do echo ">> scan $$t"; python3 -m backoffice scan "$$t" || true; done
+
+scan-tools-check: ## Report which deterministic scanner binaries are installed
+	bash scripts/check-scanner-tools.sh
+
+apply-dry: ## Dry-run safe auto-remediation (make apply-dry TARGET_NAME=back-office [SEV=medium])
+	@test -n "$(TARGET_NAME)" || (echo "Usage: make apply-dry TARGET_NAME=<name> [SEV=critical|high|medium|low|info] [SOURCE=ruff]" && exit 1)
+	python3 -m backoffice apply "$(TARGET_NAME)" $(if $(SEV),--severity "$(SEV)",) $(if $(SOURCE),--source-tool "$(SOURCE)",)
+
+apply: ## ACTUALLY apply auto-fixes (worktree, verify, commit). Honors Autonomy gates.
+	@test -n "$(TARGET_NAME)" || (echo "Usage: make apply TARGET_NAME=<name> [SEV=medium] [SOURCE=ruff] [MAX=3]" && exit 1)
+	python3 -m backoffice apply "$(TARGET_NAME)" --apply $(if $(SEV),--severity "$(SEV)",) $(if $(SOURCE),--source-tool "$(SOURCE)",) $(if $(MAX),--max-changes "$(MAX)",)
+
+budget-check: ## Check AI-spend budget gate for a target/department
+	@test -n "$(TARGET_NAME)" || (echo "Usage: make budget-check TARGET_NAME=<name> [DEPT=qa]" && exit 1)
+	python3 -m backoffice budget-check "$(TARGET_NAME)" $(if $(DEPT),--department "$(DEPT)",)
 
 regression: ## Run portfolio regression tests + coverage (best-effort)
 	python3 -m backoffice regression

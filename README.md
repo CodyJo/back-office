@@ -484,6 +484,9 @@ Key commands:
 |---|---|
 | `audit <target>` | Run audits for one configured target |
 | `audit-all` | Run audits across configured targets |
+| `scan <target>` | Run free deterministic OSS scanners (no AI cost). `--department qa\|seo\|ada\|compliance\|cloud-ops`, `--tools`, `--min-severity`, `--max-findings`, `--force`, `--dry-run` |
+| `apply <target>` | Safe auto-remediation (dry-run by default). Worktree → verify → commit / rollback. `--apply` to mutate, `--finding`, `--source-tool`, `--severity`, `--max-changes` |
+| `budget-check <target>` | Evaluate AI-spend budget gate (exit 0 = allow/warn, 1 = block) |
 | `refresh` | Regenerate dashboard artifacts from existing results |
 | `sync` | Publish dashboard artifacts |
 | `serve --port 8070` | Start the local dashboard server |

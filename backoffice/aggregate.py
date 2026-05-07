@@ -9,7 +9,7 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from backoffice.backlog import DEPARTMENT_TRUST_CLASS
+from backoffice.backlog import DEPARTMENT_TRUST_CLASS, finding_hash
 
 logger = logging.getLogger(__name__)
 
@@ -225,12 +225,40 @@ def aggregate_qa(results_dir, dashboard_dir, valid_repos=None):
 
         findings_data = load_json(os.path.join(repo_dir, "findings.json"))
         fixes_data = load_json(os.path.join(repo_dir, "fixes.json"))
+        det_data = load_json(os.path.join(repo_dir, "qa-deterministic-findings.json"))
 
-        if not findings_data:
+        if not findings_data and not det_data:
             continue
+        if not findings_data:
+            findings_data = {"summary": {}, "findings": []}
 
         summary = findings_data.get("summary", {})
-        findings = findings_data.get("findings", [])
+        findings = list(findings_data.get("findings", []))
+
+        # Merge deterministic-scanner findings (dedup by finding_hash).
+        if det_data:
+            def _path(f):
+                return f.get("file", "") or f.get("location", "")
+            existing_hashes = {
+                finding_hash("qa", repo_name, f.get("title", ""), _path(f))
+                for f in findings
+            }
+            added = 0
+            for det_f in det_data.get("findings", []):
+                h = finding_hash("qa", repo_name, det_f.get("title", ""), _path(det_f))
+                if h in existing_hashes:
+                    continue
+                existing_hashes.add(h)
+                findings.append(det_f)
+                added += 1
+            if added:
+                logger.info(
+                    "QA %s: merged %d deterministic findings (deduped from %d)",
+                    repo_name, added, len(det_data.get("findings", [])),
+                )
+            # Recompute summary so per-severity counts and totals reflect the merged set.
+            sev_counts = count_severities(findings)
+            summary = {**dict(summary), **sev_counts, "total": len(findings)}
 
         fix_map = {}
         if fixes_data:
@@ -267,9 +295,9 @@ def aggregate_qa(results_dir, dashboard_dir, valid_repos=None):
         totals["total_skipped"] += skipped
         totals["total_in_progress"] += in_progress
 
-        repos.append({
+        repo_entry = {
             "name": repo_name,
-            "scanned_at": findings_data.get("scanned_at", ""),
+            "scanned_at": findings_data.get("scanned_at", "") or (det_data or {}).get("scanned_at", ""),
             "summary": summary,
             "fix_summary": {
                 "fixed": fixed,
@@ -281,7 +309,10 @@ def aggregate_qa(results_dir, dashboard_dir, valid_repos=None):
             "lint": findings_data.get("lint_results", {}),
             "tests": findings_data.get("test_results", {}),
             "findings": enriched,
-        })
+        }
+        if det_data:
+            repo_entry["scanner_status"] = det_data.get("scanner_status", [])
+        repos.append(repo_entry)
 
     return {
         "department": "qa",
@@ -316,10 +347,39 @@ def aggregate_department(results_dir, findings_filename, department_name, valid_
             continue
 
         data = load_json(os.path.join(repo_dir, findings_filename))
-        if not data:
-            continue
+        det_filename = f"{department_name.replace('_', '-')}-deterministic-findings.json"
+        det_data = load_json(os.path.join(repo_dir, det_filename))
 
-        findings = data.get("findings", [])
+        if not data and not det_data:
+            continue
+        if not data:
+            data = {"summary": {}, "findings": []}
+
+        findings = list(data.get("findings", []))
+
+        # Merge deterministic-scanner findings (dedup by finding_hash on (title, file)).
+        if det_data:
+            def _path(f):
+                return f.get("file", "") or f.get("location", "")
+            existing_hashes = {
+                finding_hash(department_name, repo_name, f.get("title", ""), _path(f))
+                for f in findings
+            }
+            added = 0
+            for det_f in det_data.get("findings", []):
+                h = finding_hash(department_name, repo_name, det_f.get("title", ""), _path(det_f))
+                if h in existing_hashes:
+                    continue
+                existing_hashes.add(h)
+                findings.append(det_f)
+                added += 1
+            if added:
+                logger.info(
+                    "%s %s: merged %d deterministic findings (deduped from %d)",
+                    department_name.upper(), repo_name, added,
+                    len(det_data.get("findings", [])),
+                )
+
         summary = normalize_precalculated_summary(data, findings, department_name)
 
         totals["critical"] += summary.get("critical", 0)
@@ -340,11 +400,13 @@ def aggregate_department(results_dir, findings_filename, department_name, valid_
 
         repo_entry = {
             "name": repo_name,
-            "scanned_at": data.get("scanned_at", ""),
+            "scanned_at": data.get("scanned_at", "") or (det_data or {}).get("scanned_at", ""),
             "summary": summary,
             "findings": normalized_findings,
             "trust_class_counts": count_by_trust_class(normalized_findings),
         }
+        if det_data:
+            repo_entry["scanner_status"] = det_data.get("scanner_status", [])
 
         # Include department-specific metadata
         if "categories" in data:

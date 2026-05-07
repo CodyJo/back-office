@@ -184,6 +184,76 @@ def build_parser() -> argparse.ArgumentParser:
     prev.add_argument("--remote-url", help="Override for git remote URL")
     prev.add_argument("--out", required=True, help="Destination JSON path")
 
+    # Deterministic scanner — multi-department.
+    scan = sub.add_parser(
+        "scan",
+        help="Run free deterministic OSS scanners on a target",
+    )
+    scan.add_argument("target", help="Target name from backoffice.yaml")
+    scan.add_argument(
+        "--department", "-d",
+        default="qa",
+        choices=["qa", "seo", "ada", "compliance", "cloud-ops"],
+        help="Department to scan (qa | seo | ada | compliance | cloud-ops)",
+    )
+    scan.add_argument(
+        "--tools",
+        help="Comma-separated tool override (e.g. ruff,semgrep)",
+    )
+    scan.add_argument(
+        "--min-severity",
+        dest="min_severity",
+        choices=["critical", "high", "medium", "low", "info"],
+        help="Minimum severity to include (default: from config.scan.min_severity)",
+    )
+    scan.add_argument(
+        "--max-findings",
+        dest="max_findings",
+        type=int,
+        help="Cap findings per scan (default: from config.scan.max_findings)",
+    )
+    scan.add_argument(
+        "--out",
+        help="Override output path (default: results/<target>/qa-deterministic-findings.json)",
+    )
+    scan.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print which tools would run without executing them",
+    )
+    scan.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-scan even if HEAD SHA hasn't changed since the last successful scan",
+    )
+
+    # Safe-apply framework (Phase 2) — auto-remediate findings in a worktree.
+    apply_p = sub.add_parser(
+        "apply",
+        help="Safely apply auto-fixes for findings (dry-run by default; honors Autonomy)",
+    )
+    apply_p.add_argument("target", help="Target name from backoffice.yaml")
+    apply_p.add_argument("--finding", help="Apply one specific finding by id")
+    apply_p.add_argument("--source-tool", dest="source_tool",
+                         help="Filter by source_tool (ruff, npm-audit, semgrep, ...)")
+    apply_p.add_argument("--severity", default="medium",
+                         choices=["critical", "high", "medium", "low", "info"],
+                         help="Minimum severity to consider (default: medium)")
+    apply_p.add_argument("--max-changes", dest="max_changes", type=int,
+                         help="Cap (default: target.autonomy.max_changes_per_cycle, else 3)")
+    apply_p.add_argument("--apply", action="store_true",
+                         help="Actually mutate (default is dry-run)")
+    apply_p.add_argument("--dry-run", action="store_true",
+                         help="Force dry-run; wins if both --apply and --dry-run are set")
+
+    # Budget gate evaluator (Phase 2b)
+    bc = sub.add_parser(
+        "budget-check",
+        help="Evaluate the AI-spend budget gate for a target+department (exit 1 = block)",
+    )
+    bc.add_argument("target", help="Target name from backoffice.yaml")
+    bc.add_argument("--department", default="qa")
+
     return parser
 
 
@@ -448,6 +518,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "mcp":
         from backoffice.mcp_server import run_stdio
         return run_stdio()
+
+    if args.command == "scan":
+        from backoffice.scanners.runner import handle_scan_cli
+        return handle_scan_cli(args)
+
+    if args.command == "apply":
+        from backoffice.apply.runner import handle_apply_cli
+        return handle_apply_cli(args)
+
+    if args.command == "budget-check":
+        from backoffice.budget_check import main as budget_check_main
+        return budget_check_main([args.target, "--department", args.department])
 
     if args.command == "preview":
         from pathlib import Path

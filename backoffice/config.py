@@ -88,6 +88,10 @@ class ScanConfig:
     min_severity: str = "low"
     max_findings: int = 200
     exclude_patterns: list[str] = field(default_factory=list)
+    # Phase 5: optional Haiku triage of deterministic findings.
+    # Off by default — costs a small amount of Anthropic API spend even
+    # though Haiku is cheap. Enable per-deployment when the budget allows.
+    haiku_triage: bool = False
 
 
 @dataclass(frozen=True)
@@ -377,6 +381,7 @@ def load_config(path: Path | None = None) -> Config:
             min_severity=str(scan_raw.get("min_severity", "low")),
             max_findings=int(scan_raw.get("max_findings", 200)),
             exclude_patterns=list(scan_raw.get("exclude_patterns", [])),
+            haiku_triage=bool(scan_raw.get("haiku_triage", False)),
         ),
         fix=FixConfig(
             auto_fix_severity=str(fix_raw.get("auto_fix_severity", "high")),
